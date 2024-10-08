@@ -29,10 +29,10 @@ class EtudiantServiceImplTest {
         MockitoAnnotations.openMocks(this);
     }
 
-    // Test for adding an Etudiant
     @Test
     void testAddEtudiant() {
         Etudiant etudiant = new Etudiant();
+        // Assuming this Etudiant is valid
         when(etudiantRepository.save(any(Etudiant.class))).thenReturn(etudiant);
 
         Etudiant result = etudiantService.addEtudiant(etudiant);
@@ -40,17 +40,16 @@ class EtudiantServiceImplTest {
         verify(etudiantRepository, times(1)).save(etudiant);
     }
 
-    // Test for adding an Etudiant with invalid data
     @Test
     void testAddEtudiantWithInvalidData() {
         Etudiant etudiant = new Etudiant(); // Create an invalid Etudiant
 
+        // Adjust the addEtudiant method to throw a specific exception for invalid data
         assertThrows(RuntimeException.class, () -> {
-            etudiantService.addEtudiant(etudiant); // Assuming this will throw an exception
+            etudiantService.addEtudiant(etudiant);
         });
     }
 
-    // Test for retrieving all Etudiants
     @Test
     void testRetrieveAllEtudiants() {
         Etudiant etudiant1 = new Etudiant();
@@ -64,7 +63,6 @@ class EtudiantServiceImplTest {
         verify(etudiantRepository, times(1)).findAll();
     }
 
-    // Test for retrieving a single Etudiant by ID
     @Test
     void testRetrieveEtudiant() {
         Etudiant etudiant = new Etudiant();
@@ -85,7 +83,6 @@ class EtudiantServiceImplTest {
         verify(etudiantRepository, times(1)).findById(999L);
     }
 
-    // Test for updating an Etudiant
     @Test
     void testUpdateEtudiant() {
         Etudiant etudiant = new Etudiant();
@@ -98,7 +95,7 @@ class EtudiantServiceImplTest {
 
     @Test
     void testUpdateEtudiantNotFound() {
-        Etudiant etudiant = new Etudiant(); // Assuming this is an Etudiant not found in the DB
+        Etudiant etudiant = new Etudiant(); // Not found in DB
         when(etudiantRepository.save(any(Etudiant.class))).thenThrow(new RuntimeException("Etudiant not found"));
 
         assertThrows(RuntimeException.class, () -> {
@@ -107,7 +104,6 @@ class EtudiantServiceImplTest {
         verify(etudiantRepository, times(1)).save(etudiant);
     }
 
-    // Test for deleting an Etudiant
     @Test
     void testDeleteEtudiant() {
         Long id = 1L;
@@ -119,7 +115,7 @@ class EtudiantServiceImplTest {
 
     @Test
     void testDeleteEtudiantNotFound() {
-        Long id = 999L; // Assuming this ID does not exist
+        Long id = 999L; // ID does not exist
         doThrow(new RuntimeException("Etudiant not found")).when(etudiantRepository).deleteById(id);
 
         assertThrows(RuntimeException.class, () -> {
@@ -128,7 +124,6 @@ class EtudiantServiceImplTest {
         verify(etudiantRepository, times(1)).deleteById(id);
     }
 
-    // Test for retrieving an Etudiant by CIN
     @Test
     void testRetrieveEtudiantByCin() {
         Etudiant etudiant = new Etudiant();
@@ -142,7 +137,7 @@ class EtudiantServiceImplTest {
 
     @Test
     void testRetrieveEtudiantByCinNotFound() {
-        long cin = 99999999L; // Assuming this CIN does not exist
+        long cin = 99999999L; // CIN does not exist
         when(etudiantRepository.findEtudiantByCinEtudiant(cin)).thenReturn(null);
 
         assertThrows(RuntimeException.class, () -> {

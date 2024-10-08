@@ -15,6 +15,7 @@ import tn.esprit.tpfoyer.service.IEtudiantService;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -65,7 +66,8 @@ class EtudiantRestControllerTest {
         when(etudiantService.retrieveAllEtudiants()).thenReturn(etudiants);
 
         mockMvc.perform(get("/etudiant/retrieve-all-etudiants"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2))); // Ensure the size is correct
 
         verify(etudiantService, times(1)).retrieveAllEtudiants();
     }
