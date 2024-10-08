@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     tools {
-        jdk 'JDK 8'
         jdk 'JDK 17'
         maven 'Maven 3'
     }
@@ -35,8 +34,13 @@ pipeline {
 
         stage('Maven Compile') {
             steps {
-                echo 'Running mvn compile...'
-                sh 'mvn compile'
+                script {
+                    // Ensure JDK 17 is used for compilation
+                    env.JAVA_HOME = tool name: 'JDK 17', type: 'jdk'
+                    env.PATH = "${env.JAVA_HOME}/bin:${env.PATH}"
+                    sh 'java -version' // Verify Java version
+                    sh 'mvn compile'
+                }
             }
         }
 
@@ -50,7 +54,7 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     script {
-                        // Switch to Java 17 for SonarQube analysis
+                        // Ensure JDK 17 is used for SonarQube analysis
                         env.JAVA_HOME = tool name: 'JDK 17', type: 'jdk'
                         env.PATH = "${env.JAVA_HOME}/bin:${env.PATH}"
                         sh 'java -version' // Verify Java version
