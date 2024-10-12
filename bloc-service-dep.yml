@@ -63,16 +63,9 @@ spec:
           ports:
             - containerPort: 8050
           env:
-            - name: SPRING_DATASOURCE_URL
-              value: jdbc:postgresql://db-service-blocdb:5432/blocdb?useSSL=false
-            - name: SPRING_DATASOURCE_USERNAME
-              value: ricky
-            - name: SPRING_DATASOURCE_PASSWORD
-              value: "190199"  # Enclosed in double quotes
             - name: SPRING_PROFILES_ACTIVE
               value: k8s
-            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-              value: http://discovery-service:8761/eureka/
+          
 
 ---
 apiVersion: v1
