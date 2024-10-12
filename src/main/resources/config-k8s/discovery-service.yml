@@ -1,6 +1,6 @@
 eureka:
   instance:
-    hostname: localhost
+    hostname: discovery-service-K8S
   client:
     registerWithEureka: false
     fetchRegistry: false
