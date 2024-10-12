@@ -1,0 +1,36 @@
+server:
+  port: 9999
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        - id: bloc-service
+          uri: lb:http://BLOC-SERVICE
+          predicates:
+            - Path=/api/v1/blocs/**
+        - id: chambre-service
+          uri: lb:http://CHAMBRE-SERVICE
+          predicates:
+            - Path=/api/v1/chambres/**
+        - id: etudiant-service
+          uri: lb:http://ETUDIANT-SERVICE
+          predicates:
+            - Path=/api/v1/etudiants/**
+        - id: foyer-service
+          uri: lb:http://FOYER-SERVICE
+          predicates:
+            - Path=/api/v1/foyers/**
+        - id: reservation-service
+          uri: lb:http://RESERVATION-SERVICE
+          predicates:
+            - Path=/api/v1/reservations/**
+        - id: universite-service
+          uri: lb:http://UNIVERSITE-SERVICE
+          predicates:
+            - Path=/api/v1/universites/**
+
+
+
