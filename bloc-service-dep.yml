@@ -24,7 +24,7 @@ spec:
             - name: POSTGRES_USER
               value: ricky
             - name: POSTGRES_PASSWORD
-              value: 190199
+              value: "190199"  # Enclosed in double quotes
           volumeMounts:
             - name: postgres-storage
               mountPath: /var/lib/postgresql/data
@@ -73,7 +73,7 @@ spec:
             - name: SPRING_DATASOURCE_USERNAME
               value: ricky
             - name: SPRING_DATASOURCE_PASSWORD
-              value: 190199
+              value: "190199"  # Enclosed in double quotes
             - name: SPRING_PROFILES_ACTIVE
               value: k8s
 
