@@ -1,0 +1,23 @@
+services:
+  bloc:
+    container_name: ms-bloc-db
+    image: postgres
+    environment:
+      POSTGRES_USER: ricky
+      POSTGRES_PASSWORD: 190199
+      POSTGRES_DB: blocdb
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - postgres1:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    networks:
+      - microservices-net
+    restart: unless-stopped
+
+networks:
+  microservices-net:
+    driver: bridge
+
+volumes:
+  postgres1:
