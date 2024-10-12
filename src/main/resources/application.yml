@@ -1,17 +1,24 @@
-spring:
-  cloud:
-    config:
-      enabled: false
+  spring:
+  config:
+    import: optional:configserver:http://localhost:8888
   application:
     name: discovery-service
-eureka:
-  instance:
-    hostname: localhost
-  client:
-    registerWithEureka: false
-    fetchRegistry: false
-    serviceUrl:
-      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
 
-server:
-  port: 8761
+#spring:
+#  cloud:
+#    config:
+ #     enabled: false
+  #application:
+   # name: discovery-service
+#eureka:
+ # instance:
+  #  hostname: localhost
+  #client:
+   # registerWithEureka: false
+   # fetchRegistry: false
+   # serviceUrl:
+    #  defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+
+#server:
+  #port: 8761
+  
