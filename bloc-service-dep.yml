@@ -1,0 +1,104 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-service-blocdb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db-service-blocdb
+  template:
+    metadata:
+      labels:
+        app: db-service-blocdb
+    spec:
+      containers:
+        - name: db
+          image: postgres:latest
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: blocdb
+            - name: POSTGRES_USER
+              value: ricky
+            - name: POSTGRES_PASSWORD
+              value: 190199
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: postgres-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-service-blocdb
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+      targetPort: 5432
+  selector:
+    app: db-service-blocdb
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bloc-service-deployment
+spec:
+  selector:
+    matchLabels:
+      app: bloc-service
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: bloc-service
+    spec:
+      containers:
+        - name: bloc-service
+          image: samixouerfelli/bloc-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8050
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://db-service-blocdb:5432/blocdb?useSSL=false
+            - name: SPRING_DATASOURCE_USERNAME
+              value: ricky
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: 190199
+            - name: SPRING_PROFILES_ACTIVE
+              value: k8s
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bloc-service-ssvc
+spec:
+  selector:
+    app: bloc-service
+  ports:
+    - protocol: "TCP"
+      port: 8050
+      targetPort: 8050
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
