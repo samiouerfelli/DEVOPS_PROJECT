@@ -3,11 +3,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: config-server-deployment
+  namespace: webapps
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: config-server
-  replicas: 1
   template:
     metadata:
       labels:
@@ -19,19 +20,25 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8888
+          envFrom:
+            - configMapRef:
+                name: config-server-config
+            - secretRef:
+                name: config-server-secrets
           env:
-          - name: SPRING_PROFILES_ACTIVE
-            value: k8s
+            - name: SPRING_PROFILES_ACTIVE
+              value: k8s
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: config-server-service
+  namespace: webapps
 spec:
   selector:
     app: config-server
   ports:
-    - protocol: "TCP"
+    - protocol: TCP
       port: 8888
       targetPort: 8888
   type: ClusterIP

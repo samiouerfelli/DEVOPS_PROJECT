@@ -5,6 +5,10 @@ spring:
     name: config-server
   cloud:
     config:
-      server:
-        native:
-          search-locations: classpath:/config-k8s
+       server:
+        git:
+         uri: https://github.com/samiouerfelli/DEVOPS_PROJECT_G2.git
+         default-label: config-server
+         search-paths: config-k8s
+         
+         
