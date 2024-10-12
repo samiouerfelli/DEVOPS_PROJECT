@@ -22,16 +22,6 @@ spec:
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: k8s
-            - name: eureka.client.serviceUrl.defaultZone
-              value: http://discovery-service:8761/eureka/
-            - name: spring.cloud.config.uri
-              value: http://config-server-service:8888
-            - name: eureka.client.registerWithEureka
-              value: "false"
-            - name: eureka.client.fetchRegistry
-              value: "false"
-            - name: SERVER_PORT
-              value: "8761"
 
               
 ---
