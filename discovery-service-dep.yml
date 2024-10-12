@@ -27,7 +27,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: discovery-service-K8S
+  name: discovery-service-k8s
   namespace: webapps
 spec:
   selector:
