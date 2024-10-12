@@ -24,15 +24,10 @@ spec:
             - name: POSTGRES_USER
               value: ricky
             - name: POSTGRES_PASSWORD
-              value: "190199"  # Enclosed in double quotes
-          volumeMounts:
-            - name: postgres-storage
-              mountPath: /var/lib/postgresql/data
-      volumes:
-        - name: postgres-storage
-          persistentVolumeClaim:
-            claimName: postgres-pvc
-
+              value: "190199"  
+            - name: PGDATA
+              value: /var/lib/postgresql/data/dbfiles
+      
 ---
 apiVersion: v1
 kind: Service
@@ -76,6 +71,8 @@ spec:
               value: "190199"  # Enclosed in double quotes
             - name: SPRING_PROFILES_ACTIVE
               value: k8s
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: http://discovery-service:8761/eureka/
 
 ---
 apiVersion: v1
@@ -90,15 +87,3 @@ spec:
       port: 8050
       targetPort: 8050
   type: ClusterIP
-
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: postgres-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
