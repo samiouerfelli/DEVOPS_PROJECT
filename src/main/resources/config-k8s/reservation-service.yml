@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://db-service-reservationdb:5436/reservationdb?useSSL=false
+    username: ricky
+    password: 190199
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+
+server:
+  port: 8054
+
