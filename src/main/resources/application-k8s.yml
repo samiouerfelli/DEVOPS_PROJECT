@@ -10,4 +10,3 @@ spring:
          uri: https://github.com/samiouerfelli/DEVOPS_PROJECT_G2.git
          default-label: config-server
          clone-on-start: true
-         search-paths: "{profile}"
