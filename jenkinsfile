@@ -7,8 +7,7 @@ pipeline {
     }
     environment {
         SCANNER_HOME = tool 'sonar-scanner'
-        SPRING_PROFILES_ACTIVE = 'local'
-
+        SPRING_PROFILES_ACTIVE = 'k8s'
     }
 
 
