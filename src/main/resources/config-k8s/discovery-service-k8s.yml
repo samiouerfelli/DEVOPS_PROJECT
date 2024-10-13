@@ -9,3 +9,8 @@ eureka:
     serviceUrl:
       defaultZone: http://discovery-service:8761/eureka/
 
+spring:
+  cloud:
+    config:
+      uri: http://config-server:8888  # Address of the Config Server service in Kubernetes
+      fail-fast: true
