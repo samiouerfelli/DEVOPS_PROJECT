@@ -1,10 +1,6 @@
 spring:
   application:
     name: discovery-service
-  cloud:
-    config:
-      uri: http://config-server-service:8888
-  spring:
-    config:
-      enable: false
+  config:
+    import: optional:configserver:http://config-server-service:8888
 
