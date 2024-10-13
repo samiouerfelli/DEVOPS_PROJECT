@@ -1,8 +1,6 @@
 spring:
   application:
     name: discovery-service
-  profiles:
-    active: k8s
   cloud:
     config:
       uri: http://config-server-service:8888
