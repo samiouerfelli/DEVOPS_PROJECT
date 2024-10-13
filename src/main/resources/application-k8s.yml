@@ -1,27 +1,8 @@
-#spring:
- # cloud:
-  #  config:
-   #   enabled: false
-  #application:
-   # name: discovery-service
-#server:
- # port: 8761
-#eureka:
- # instance:
-  #  hostname: discovery-service
-  #client:
-   # registerWithEureka: false
-    #fetchRegistry: false
-    #serviceUrl:
-     # defaultZone: http://discovery-service:8761/eureka/
 spring:
-  spring:
-  cloud:
-    config:
-      uri: http://config-server-service:8888  # Address of the Config Server service in Kubernetes
-      fail-fast: true
   application:
     name: discovery-service
-
-
-    
+  profiles:
+    active: k8s
+  cloud:
+    config:
+      uri: http://config-server-service:8888
