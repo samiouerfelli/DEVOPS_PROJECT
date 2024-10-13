@@ -22,9 +22,8 @@ spec:
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: k8s
-            - name: spring.cloud.config.uri
-              value: http://config-server-service:8888
-
+            - name: SERVER_PORT
+              value: "8761"
               
 ---
 apiVersion: v1

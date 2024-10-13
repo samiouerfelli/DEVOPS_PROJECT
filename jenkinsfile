@@ -7,6 +7,7 @@ pipeline {
     }
     environment {
         SCANNER_HOME = tool 'sonar-scanner'
+        SPRING_PROFILES_ACTIVE = 'k8s'
     }
 
 
@@ -51,14 +52,14 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh "mvn package"
+                sh "mvn package -Dspring.profiles.active=local"
             }
         }
 
         stage('Publish To Nexus') {
             steps {
                 withMaven(globalMavenSettingsConfig: 'global-settings', jdk: 'JDK17', maven: 'Maven3', traceability: true) {
-                     sh 'mvn deploy -Dspring.profiles.active=k8s'
+                     sh 'mvn deploy -Dspring.profiles.active=local '
                 }
             }
         }
