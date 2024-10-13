@@ -10,6 +10,8 @@ spring:
     show-sql: true
     database: postgresql
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+  profiles:
+    active: k8s
 server:
   port: 8050
 
