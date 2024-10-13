@@ -10,12 +10,6 @@ spring:
     show-sql: true
     database: postgresql
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-  cloud:
-    config:
-      uri: http://config-server:8888  # Address of the Config Server service in Kubernetes
-      fail-fast: true
-
-
 server:
   port: 8050
 

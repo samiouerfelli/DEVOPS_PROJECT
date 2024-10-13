@@ -10,12 +10,5 @@ spring:
     show-sql: true
     database: postgresql
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-
-
 server:
   port: 8050
-application:
-  config:
-    chambre-url: http://localhost:8099/api/v1/chambres
-    reservation-url: http://localhost:8099/api/v1/reservations
-    foyer-url: http://localhost:8099/api/v1/foyers
