@@ -64,7 +64,7 @@ spec:
             - containerPort: 8050
           env:
             - name: SPRING_PROFILES_ACTIVE
-              value: k8s
+              value: prod
           
 
 ---
