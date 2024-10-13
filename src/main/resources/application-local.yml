@@ -1,0 +1,16 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: config-server
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/samiouerfelli/DEVOPS_PROJECT_G2.git
+          default-label: config-server
+          clone-on-start: true
+          search-paths: "{profile}"
+          username: samiouerfelli
+          password: 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
