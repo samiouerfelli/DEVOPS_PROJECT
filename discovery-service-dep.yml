@@ -21,7 +21,7 @@ spec:
             - containerPort: 8761
           env:
             - name: SPRING_PROFILES_ACTIVE
-              value: k8s
+              value: prod
             - name: SERVER_PORT
               value: "8761"
               
