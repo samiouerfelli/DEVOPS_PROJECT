@@ -60,7 +60,7 @@ pipeline {
         stage('Publish To Nexus') {
             steps {
                 withMaven(globalMavenSettingsConfig: 'global-settings', jdk: 'JDK17', maven: 'Maven3', traceability: true) {
-                     sh 'mvn deploy -Dspring.profiles.active=k8s'
+                     sh 'mvn deploy'
                 }
             }
         }
