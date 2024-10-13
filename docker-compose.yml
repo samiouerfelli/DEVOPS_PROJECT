@@ -1,0 +1,17 @@
+services:
+  chambre:
+    container_name: ms-chambre-db
+    image: postgres
+    environment:
+      POSTGRES_USER: ricky
+      POSTGRES_PASSWORD: 190199
+      POSTGRES_DB: chambredb
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - postgres2:/var/lib/postgresql/data
+    ports:
+      - 5433:5432
+    restart: unless-stopped
+
+volumes:
+  postgres2:
