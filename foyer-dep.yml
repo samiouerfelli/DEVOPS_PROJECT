@@ -1,0 +1,82 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-service-foyerdb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db-service-foyerdb
+  template:
+    metadata:
+      labels:
+        app: db-service-foyerdb
+    spec:
+      containers:
+        - name: db
+          image: postgres:latest
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: foyerdb
+            - name: POSTGRES_USER
+              value: ricky
+            - name: POSTGRES_PASSWORD
+              value: "190199"  
+            - name: PGDATA
+              value: /var/lib/postgresql/data/dbfiles
+      
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-service-foyerdb
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5435
+      targetPort: 5432
+  selector:
+    app: db-service-foyerdb
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: foyer-service-deployment
+spec:
+  selector:
+    matchLabels:
+      app: foyer-service
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: foyer-service
+    spec:
+      containers:
+        - name: foyer-service
+          image: samixouerfelli/foyer-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8053
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: prod
+          
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: foyer-service-ssvc
+spec:
+  selector:
+    app: foyer-service
+  ports:
+    - protocol: "TCP"
+      port: 8053
+      targetPort: 8053
+  type: ClusterIP

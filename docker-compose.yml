@@ -1,0 +1,17 @@
+services:
+  chambre:
+    container_name: ms-foyer-db
+    image: postgres
+    environment:
+      POSTGRES_USER: ricky
+      POSTGRES_PASSWORD: 190199
+      POSTGRES_DB: foyerdb
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - postgres3:/var/lib/postgresql/data
+    ports:
+      - 5435:5432
+    restart: unless-stopped
+
+volumes:
+  postgres3:
