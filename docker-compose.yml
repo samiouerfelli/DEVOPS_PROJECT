@@ -1,6 +1,6 @@
 services:
   universite:
-    container_name: universitedb
+    container_name: ms-universite-db
     image: postgres
     environment:
       POSTGRES_USER: ricky
