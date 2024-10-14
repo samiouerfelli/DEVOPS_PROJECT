@@ -1,6 +1,6 @@
 services:
-  chambre:
-    container_name: ms-universit-db
+  universite:
+    container_name: universitedb
     image: postgres
     environment:
       POSTGRES_USER: ricky
