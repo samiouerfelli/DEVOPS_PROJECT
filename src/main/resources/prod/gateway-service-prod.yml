@@ -31,6 +31,14 @@ spring:
           uri: lb:http://UNIVERSITE-SERVICE
           predicates:
             - Path=/api/v1/universites/**
-
-
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    hostname: gateway-service
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
 
