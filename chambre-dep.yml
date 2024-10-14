@@ -1,0 +1,82 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-service-chambredb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db-service-chambredb
+  template:
+    metadata:
+      labels:
+        app: db-service-chambredb
+    spec:
+      containers:
+        - name: db
+          image: postgres:latest
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: chambredb
+            - name: POSTGRES_USER
+              value: ricky
+            - name: POSTGRES_PASSWORD
+              value: "190199"  
+            - name: PGDATA
+              value: /var/lib/postgresql/data/dbfiles
+      
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-service-chambredb
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5433
+      targetPort: 5432
+  selector:
+    app: db-service-chambredb
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chambre-service-deployment
+spec:
+  selector:
+    matchLabels:
+      app: chambre-service
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: chambre-service
+    spec:
+      containers:
+        - name: chambre-service
+          image: samixouerfelli/chambre-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8051
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: prod
+          
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chambre-service-ssvc
+spec:
+  selector:
+    app: chambre-service
+  ports:
+    - protocol: "TCP"
+      port: 8051
+      targetPort: 8051
+  type: ClusterIP
