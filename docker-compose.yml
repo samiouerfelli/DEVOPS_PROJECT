@@ -1,0 +1,17 @@
+services:
+  etudiant:
+    container_name: ms-etudiant-db
+    image: postgres
+    environment:
+      POSTGRES_USER: ricky
+      POSTGRES_PASSWORD: 190199
+      POSTGRES_DB: etudiantdb
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - postgres3:/var/lib/postgresql/data
+    ports:
+      - 5434:5432
+    restart: unless-stopped
+
+volumes:
+  postgres3:
