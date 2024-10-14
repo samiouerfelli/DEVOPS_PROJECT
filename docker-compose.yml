@@ -8,10 +8,10 @@ services:
       POSTGRES_DB: reservationdb
       PGDATA: /var/lib/postgresql/data
     volumes:
-      - postgres4:/var/lib/postgresql/data
+      - postgres5:/var/lib/postgresql/data
     ports:
       - 5436:5432
     restart: unless-stopped
 
 volumes:
-  postgres4:
+  postgres5:
