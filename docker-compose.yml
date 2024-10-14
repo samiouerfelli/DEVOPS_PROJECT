@@ -1,0 +1,17 @@
+services:
+  chambre:
+    container_name: ms-universite-db
+    image: postgres
+    environment:
+      POSTGRES_USER: ricky
+      POSTGRES_PASSWORD: 190199
+      POSTGRES_DB: universitedb
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - postgres6:/var/lib/postgresql/data
+    ports:
+      - 5437:5432
+    restart: unless-stopped
+
+volumes:
+  postgres6:
