@@ -8,10 +8,10 @@ services:
       POSTGRES_DB: foyerdb
       PGDATA: /var/lib/postgresql/data
     volumes:
-      - postgres3:/var/lib/postgresql/data
+      - postgres4:/var/lib/postgresql/data
     ports:
       - 5435:5432
     restart: unless-stopped
 
 volumes:
-  postgres3:
+  postgres4:
