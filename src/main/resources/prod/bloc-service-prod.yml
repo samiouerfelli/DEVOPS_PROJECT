@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://db-service-blocdb:5432/blocdb?useSSL=false
-    username: ricky
-    password: 190199
+   # url: jdbc:postgresql://db-postgresql-nyc3-72282-do-user-17776513-0.m.db.ondigitalocean.com:25060/blocdb?useSSL=require
+   # username: ricky
+  #  password: AVNS_uIQzaMHDaubeDTEroHy
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
