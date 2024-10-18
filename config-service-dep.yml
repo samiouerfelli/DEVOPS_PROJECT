@@ -21,10 +21,10 @@ spec:
           ports:
             - containerPort: 8888
           envFrom:
-            - configMapRef:
-                name: config-server-config
+            #- configMapRef:
+            #  name: config-server-config #url of rep + branch + path
             - secretRef:
-                name: config-server-secrets
+                name: config-server-secrets #git username + git password
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: prod
