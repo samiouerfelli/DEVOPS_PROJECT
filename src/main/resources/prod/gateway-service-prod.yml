@@ -40,5 +40,4 @@ eureka:
   instance:
     hostname: gateway-service
     prefer-ip-address: true
-    instance-id: ${spring.application.name}:${server.port}
 

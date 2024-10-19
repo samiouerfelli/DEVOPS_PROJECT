@@ -1,8 +1,5 @@
 spring:
   datasource:
-   # url: jdbc:postgresql://db-postgresql-nyc3-72282-do-user-17776513-0.m.db.ondigitalocean.com:25060/blocdb?useSSL=require
-   # username: ricky
-  #  password: AVNS_uIQzaMHDaubeDTEroHy
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -21,4 +18,3 @@ eureka:
   instance:
     hostname: bloc-service
     prefer-ip-address: true
-    instance-id: ${spring.application.name}:${server.port}

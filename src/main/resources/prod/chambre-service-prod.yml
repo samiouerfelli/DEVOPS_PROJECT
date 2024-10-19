@@ -1,8 +1,5 @@
 spring:
   datasource:
-    url: jdbc:postgresql://db-service-chambredb:5433/chambredb?useSSL=false
-    username: ricky
-    password: 190199
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -21,4 +18,3 @@ eureka:
   instance:
     hostname: chambre-service
     prefer-ip-address: true
-    instance-id: ${spring.application.name}:${server.port}
