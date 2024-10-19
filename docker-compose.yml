@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  config-server:
+    image: samixouerfelli/config-server:latest
+    ports:
+      - "8888:8888"
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      GIT_USERNAME: ${GIT_USERNAME}
+      GIT_PASSWORD: ${GIT_PASSWORD}

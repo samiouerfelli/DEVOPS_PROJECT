@@ -82,6 +82,20 @@ pipeline {
                 }
             }
         }
+         stage('Run Config Server') {
+                   steps {
+                           withCredentials([
+                               string(credentialsId: 'GIT_USERNAME', variable: 'GIT_USERNAME'),
+                               string(credentialsId: 'GIT_PASSWORD', variable: 'GIT_PASSWORD')
+                           ]) {
+                               sh '''
+                                   export GIT_USERNAME=$GIT_USERNAME
+                                   export GIT_PASSWORD=$GIT_PASSWORD
+                                   docker-compose up -d
+                               '''
+                           }
+                       }
+         }
 
         stage('Deploy To Kubernetes') {
             steps {
