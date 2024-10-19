@@ -9,3 +9,9 @@ services:
       SPRING_PROFILES_ACTIVE: local
       GIT_USERNAME: ${GIT_USERNAME}
       GIT_PASSWORD: ${GIT_PASSWORD}
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
