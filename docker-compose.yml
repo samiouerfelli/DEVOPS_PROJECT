@@ -7,6 +7,4 @@ services:
       - "8761:8761"
     environment:
       SPRING_PROFILES_ACTIVE: local
-      CONFIG_SERVER_URL: http://host.docker.internal:8888
-    depends_on:
-      - oservices_pipeline_config-server_config-server_1
+      CONFIG_SERVER_URL: http://localhost:8888
