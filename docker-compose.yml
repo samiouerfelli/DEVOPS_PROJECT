@@ -7,4 +7,9 @@ services:
       - "8761:8761"
     environment:
       SPRING_PROFILES_ACTIVE: local
-      CONFIG_SERVER_URL: http://localhost:8888
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
