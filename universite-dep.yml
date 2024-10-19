@@ -1,45 +1,3 @@
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: db-service-universitedb
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: db-service-universitedb
-  template:
-    metadata:
-      labels:
-        app: db-service-universitedb
-    spec:
-      containers:
-        - name: db
-          image: postgres:latest
-          ports:
-            - containerPort: 5432
-          env:
-            - name: POSTGRES_DB
-              value: universitdb
-            - name: POSTGRES_USER
-              value: ricky
-            - name: POSTGRES_PASSWORD
-              value: "190199"  
-            - name: PGDATA
-              value: /var/lib/postgresql/data/dbfiles
-      
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: db-service-universitedb
-spec:
-  type: ClusterIP
-  ports:
-    - port: 5437
-      targetPort: 5432
-  selector:
-    app: db-service-universitedb
 
 ---
 apiVersion: apps/v1
@@ -62,11 +20,12 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8055
+          envFrom:
+            - secretRef:
+                name: universitedb-secrets
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: prod
-          
-
 ---
 apiVersion: v1
 kind: Service
