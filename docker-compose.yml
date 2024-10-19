@@ -9,4 +9,4 @@ services:
       SPRING_PROFILES_ACTIVE: local
       CONFIG_SERVER_URL: http://host.docker.internal:8888
     depends_on:
-      - config-server
+      - oservices_pipeline_config-server_config-server_1
