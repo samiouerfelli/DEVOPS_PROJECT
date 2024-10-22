@@ -11,7 +11,7 @@ spring:
          default-label: config-server
          clone-on-start: true
          searchPaths: src/main/resources/prod
-         username: ${GIT_USERNAME}
-         password: ${GIT_PASSWORD}
+         username: ${git.username}
+         password: ${git.password}
 
 
