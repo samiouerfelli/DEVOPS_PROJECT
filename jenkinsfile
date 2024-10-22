@@ -82,11 +82,6 @@ pipeline {
                 }
             }
         }
-               stage('Run Discovery Server') {
-                           steps {
-                           sh " docker-compose up -d "
-                            }
-                 }
 
         stage('Deploy To Kubernetes') {
             steps {
