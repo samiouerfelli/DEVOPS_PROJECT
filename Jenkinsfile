@@ -121,11 +121,20 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build and Load Docker Image') {
             steps {
                 script {
                     echo 'Building Docker image...'
-                    sh 'docker build -t $DOCKER_IMAGE .'
+                    sh '''
+                        # Build the image
+                        docker build -t $DOCKER_IMAGE .
+                        
+                        # Load the image into Kind cluster
+                        kind load docker-image $DOCKER_IMAGE --name devops-cluster
+                        
+                        # Verify the image is loaded
+                        docker exec devops-cluster-control-plane crictl images | grep myapp
+                    '''
                 }
             }
         }
@@ -155,21 +164,46 @@ pipeline {
             steps {
                 script {
                     sh '''
+                        # Debug information
+                        echo "Current context:"
+                        kubectl --kubeconfig=${KUBECONFIG} config current-context
+                        
+                        echo "Available nodes:"
+                        kubectl --kubeconfig=${KUBECONFIG} get nodes
+                        
+                        # Create namespace
                         kubectl --kubeconfig=${KUBECONFIG} create namespace myapp || true
+                        
+                        # Apply configurations with debug output
+                        echo "Applying deployment..."
                         kubectl --kubeconfig=${KUBECONFIG} apply -f k8s-deployment.yaml -n myapp
+                        
+                        echo "Applying service..."
                         kubectl --kubeconfig=${KUBECONFIG} apply -f k8s-service.yaml -n myapp
+                        
+                        # Wait for deployment
+                        echo "Waiting for deployment..."
+                        kubectl --kubeconfig=${KUBECONFIG} rollout status deployment/myapp-deployment -n myapp --timeout=180s
                     '''
                 }
             }
         }
 
-        stage('Verify Kubernetes Deployment') {
+        stage('Verify Deployment') {
             steps {
                 script {
                     sh '''
-                        kubectl --kubeconfig=${KUBECONFIG} get pods -n myapp
+                        echo "Pod status:"
+                        kubectl --kubeconfig=${KUBECONFIG} get pods -n myapp -o wide
+                        
+                        echo "\nPod details:"
+                        kubectl --kubeconfig=${KUBECONFIG} describe pods -n myapp
+                        
+                        echo "\nService status:"
                         kubectl --kubeconfig=${KUBECONFIG} get services -n myapp
-                        kubectl --kubeconfig=${KUBECONFIG} rollout status deployment/myapp-deployment -n myapp
+                        
+                        echo "\nEvents:"
+                        kubectl --kubeconfig=${KUBECONFIG} get events -n myapp --sort-by='.lastTimestamp'
                     '''
                 }
             }
