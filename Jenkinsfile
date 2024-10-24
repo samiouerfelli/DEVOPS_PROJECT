@@ -234,22 +234,78 @@ pipeline {
 }
 
         stage('Deploy to Kubernetes') {
-            steps {
-                script {
-                    sh """
-                        # Verify namespace is ready
-                        kubectl --kubeconfig=${KUBECONFIG} get namespace ${APP_NAMESPACE}
-                        
-                        # Apply configurations
-                        kubectl --kubeconfig=${KUBECONFIG} apply -f k8s-deployment.yaml
-                        kubectl --kubeconfig=${KUBECONFIG} apply -f k8s-service.yaml
-                        
-                        # Wait for deployment
-                        kubectl --kubeconfig=${KUBECONFIG} rollout status deployment/myapp-deployment -n ${APP_NAMESPACE} --timeout=300s
-                    """
-                }
+    steps {
+        script {
+            try {
+                sh """
+                    # Show current deployments and pods
+                    echo "Current deployments:"
+                    kubectl --kubeconfig=${KUBECONFIG} get deployments -n myapp
+                    
+                    echo "Current pods:"
+                    kubectl --kubeconfig=${KUBECONFIG} get pods -n myapp
+                    
+                    echo "Applying deployment..."
+                    kubectl --kubeconfig=${KUBECONFIG} apply -f k8s-deployment.yaml
+                    
+                    echo "Applying service..."
+                    kubectl --kubeconfig=${KUBECONFIG} apply -f k8s-service.yaml
+                    
+                    # Wait for deployment with detailed status
+                    echo "Waiting for deployment rollout..."
+                    timeout 300s bash -c '
+                        while true; do
+                            echo "Checking deployment status..."
+                            kubectl --kubeconfig=${KUBECONFIG} get deployment myapp-deployment -n myapp -o wide
+                            echo "Checking pods status..."
+                            kubectl --kubeconfig=${KUBECONFIG} get pods -n myapp -o wide
+                            echo "Checking pod logs..."
+                            for pod in \$(kubectl --kubeconfig=${KUBECONFIG} get pods -n myapp -l app=myapp -o name); do
+                                echo "Logs for \$pod:"
+                                kubectl --kubeconfig=${KUBECONFIG} logs \$pod -n myapp --tail=50 || true
+                            done
+                            
+                            READY=\$(kubectl --kubeconfig=${KUBECONFIG} get deployment myapp-deployment -n myapp -o jsonpath='{.status.readyReplicas}')
+                            DESIRED=\$(kubectl --kubeconfig=${KUBECONFIG} get deployment myapp-deployment -n myapp -o jsonpath='{.status.replicas}')
+                            
+                            if [ "\$READY" = "\$DESIRED" ]; then
+                                echo "Deployment completed successfully"
+                                exit 0
+                            fi
+                            
+                            echo "Checking for pod events..."
+                            kubectl --kubeconfig=${KUBECONFIG} get events -n myapp --sort-by=.metadata.creationTimestamp
+                            
+                            echo "Waiting 10 seconds before next check..."
+                            sleep 10
+                        done
+                    '
+                """
+            } catch (Exception e) {
+                echo "Deployment failed: ${e.message}"
+                sh """
+                    echo "Collecting diagnostic information..."
+                    
+                    echo "Deployment description:"
+                    kubectl --kubeconfig=${KUBECONFIG} describe deployment myapp-deployment -n myapp
+                    
+                    echo "Pod descriptions:"
+                    kubectl --kubeconfig=${KUBECONFIG} describe pods -n myapp -l app=myapp
+                    
+                    echo "Recent events:"
+                    kubectl --kubeconfig=${KUBECONFIG} get events -n myapp --sort-by=.metadata.creationTimestamp
+                    
+                    echo "Docker images in Kind cluster:"
+                    docker exec devops-cluster-control-plane crictl images
+                    
+                    echo "Node status:"
+                    kubectl --kubeconfig=${KUBECONFIG} describe nodes
+                """
+                error "Deployment failed. Check the logs above for details."
             }
         }
+    }
+}
 
         stage('Verify Deployment') {
             steps {
