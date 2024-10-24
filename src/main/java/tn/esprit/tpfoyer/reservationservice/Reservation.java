@@ -25,8 +25,7 @@ public class Reservation {
     Date anneeUniversitaire;
     boolean estValide;
 
-    @ElementCollection
-    List<Long> idEtudiants;
+    private Long idEtudiant;
 
     private Long idChambre;
 
