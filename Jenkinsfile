@@ -16,6 +16,7 @@ pipeline {
         NEXUS_REPOSITORY = "maven-releases-rep"
         NEXUS_CREDENTIAL_ID = "nexus-credentials"
         KUBECONFIG = credentials('kubeconfig-credentials-id')
+        APP_NAMESPACE = "myapp"
     }
 
     stages {
@@ -162,40 +163,44 @@ pipeline {
             }
         }
 
+        stage('Prepare Kubernetes Namespace') {
+            steps {
+                script {
+                    sh """
+                        # Check if namespace exists and is stuck
+                        NAMESPACE_STATUS=\$(kubectl --kubeconfig=${KUBECONFIG} get namespace ${APP_NAMESPACE} -o json 2>/dev/null | jq -r '.status.phase' || echo "NotFound")
+                        
+                        if [ "\$NAMESPACE_STATUS" = "Terminating" ]; then
+                            echo "Namespace is stuck in Terminating state. Forcing deletion..."
+                            kubectl --kubeconfig=${KUBECONFIG} get namespace ${APP_NAMESPACE} -o json | jq '.spec = {"finalizers":[]}' > temp.json
+                            kubectl --kubeconfig=${KUBECONFIG} replace --raw "/api/v1/namespaces/${APP_NAMESPACE}/finalize" -f temp.json
+                            sleep 10
+                        fi
+                        
+                        # Create namespace if it doesn't exist
+                        kubectl --kubeconfig=${KUBECONFIG} create namespace ${APP_NAMESPACE} || true
+                        
+                        # Wait for namespace to be active
+                        kubectl --kubeconfig=${KUBECONFIG} wait --for=condition=Active namespace/${APP_NAMESPACE} --timeout=60s
+                    """
+                }
+            }
+        }
+
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    sh '''
-                        # Debug information
-                        echo "Current context:"
-                        kubectl --kubeconfig=${KUBECONFIG} config current-context
+                    sh """
+                        # Verify namespace is ready
+                        kubectl --kubeconfig=${KUBECONFIG} get namespace ${APP_NAMESPACE}
                         
-                        echo "Available nodes:"
-                        kubectl --kubeconfig=${KUBECONFIG} get nodes
+                        # Apply configurations
+                        kubectl --kubeconfig=${KUBECONFIG} apply -f k8s-deployment.yaml
+                        kubectl --kubeconfig=${KUBECONFIG} apply -f k8s-service.yaml
                         
-                        # Create namespace if it doesn't exist
-                        kubectl --kubeconfig=${KUBECONFIG} create namespace myapp || true
-                        
-                        # Apply configurations with debug output
-                        echo "Applying deployment..."
-                        kubectl --kubeconfig=${KUBECONFIG} apply -f k8s-deployment.yaml -n myapp
-                        
-                        echo "Applying service..."
-                        kubectl --kubeconfig=${KUBECONFIG} apply -f k8s-service.yaml -n myapp
-                        
-                        # Wait for deployment with increased timeout
-                        echo "Waiting for deployment..."
-                        kubectl --kubeconfig=${KUBECONFIG} rollout status deployment/myapp-deployment -n myapp --timeout=300s
-                        
-                        # Add verification steps
-                        echo "Verifying deployment..."
-                        kubectl --kubeconfig=${KUBECONFIG} get pods -n myapp -o wide
-                        kubectl --kubeconfig=${KUBECONFIG} get services -n myapp
-                        
-                        # Check if pods are running
-                        echo "Checking pod status..."
-                        kubectl --kubeconfig=${KUBECONFIG} get pods -n myapp | grep "Running"
-                    '''
+                        # Wait for deployment
+                        kubectl --kubeconfig=${KUBECONFIG} rollout status deployment/myapp-deployment -n ${APP_NAMESPACE} --timeout=300s
+                    """
                 }
             }
         }
@@ -203,43 +208,49 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 script {
-                    sh '''
-                        echo "Pod status:"
-                        kubectl --kubeconfig=${KUBECONFIG} get pods -n myapp -o wide
+                    sh """
+                        # Wait for pods to be ready
+                        kubectl --kubeconfig=${KUBECONFIG} wait --for=condition=ready pods -l app=myapp -n ${APP_NAMESPACE} --timeout=300s
                         
-                        echo "\nPod details:"
-                        kubectl --kubeconfig=${KUBECONFIG} describe pods -n myapp
+                        # Check deployment status
+                        echo "Deployment Status:"
+                        kubectl --kubeconfig=${KUBECONFIG} get deployment myapp-deployment -n ${APP_NAMESPACE} -o wide
                         
-                        echo "\nService status:"
-                        kubectl --kubeconfig=${KUBECONFIG} get services -n myapp
+                        # Check pod status
+                        echo "Pod Status:"
+                        kubectl --kubeconfig=${KUBECONFIG} get pods -n ${APP_NAMESPACE} -o wide
                         
-                        echo "\nDeployment status:"
-                        kubectl --kubeconfig=${KUBECONFIG} describe deployment myapp-deployment -n myapp
+                        # Check service status
+                        echo "Service Status:"
+                        kubectl --kubeconfig=${KUBECONFIG} get service myapp-service -n ${APP_NAMESPACE}
                         
-                        echo "\nEvents:"
-                        kubectl --kubeconfig=${KUBECONFIG} get events -n myapp --sort-by='.lastTimestamp'
-                        
-                        echo "\nService endpoints:"
-                        kubectl --kubeconfig=${KUBECONFIG} get endpoints -n myapp
-                    '''
+                        # Get service endpoint
+                        echo "Service Endpoint:"
+                        kubectl --kubeconfig=${KUBECONFIG} get service myapp-service -n ${APP_NAMESPACE} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+                    """
                 }
             }
         }
     }
     
 
-    post {
-        always {
-            echo 'Cleaning up workspace...'
-            cleanWs()
-        }
-
+     post {
         success {
-            echo 'Build succeeded!'
+            echo 'Deployment successful!'
         }
-
         failure {
-            echo 'Build failed.'
+            script {
+                sh """
+                    echo "Deployment failed. Collecting diagnostic information..."
+                    kubectl --kubeconfig=${KUBECONFIG} describe deployment myapp-deployment -n ${APP_NAMESPACE}
+                    kubectl --kubeconfig=${KUBECONFIG} describe pods -l app=myapp -n ${APP_NAMESPACE}
+                    kubectl --kubeconfig=${KUBECONFIG} logs -l app=myapp -n ${APP_NAMESPACE} --tail=100
+                    kubectl --kubeconfig=${KUBECONFIG} get events -n ${APP_NAMESPACE} --sort-by='.lastTimestamp'
+                """
+            }
+        }
+        always {
+            cleanWs()
         }
     }
 }
