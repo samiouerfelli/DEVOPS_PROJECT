@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: myapp-service
+  namespace: myapp
 spec:
   selector:
     app: myapp
@@ -9,4 +10,4 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 8080
-  type: NodePort
+  type: ClusterIP  # Changed to ClusterIP for Kind
