@@ -27,4 +27,7 @@ public class Reservation {
 
     @ElementCollection
     List<Long> idEtudiants;
+
+    private Long idChambre;
+
 }
