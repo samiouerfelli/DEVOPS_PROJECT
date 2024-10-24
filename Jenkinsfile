@@ -139,6 +139,8 @@ pipeline {
             }
         }
 
+        
+
         stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
@@ -171,7 +173,7 @@ pipeline {
                         echo "Available nodes:"
                         kubectl --kubeconfig=${KUBECONFIG} get nodes
                         
-                        # Create namespace
+                        # Create namespace if it doesn't exist
                         kubectl --kubeconfig=${KUBECONFIG} create namespace myapp || true
                         
                         # Apply configurations with debug output
@@ -181,9 +183,18 @@ pipeline {
                         echo "Applying service..."
                         kubectl --kubeconfig=${KUBECONFIG} apply -f k8s-service.yaml -n myapp
                         
-                        # Wait for deployment
+                        # Wait for deployment with increased timeout
                         echo "Waiting for deployment..."
-                        kubectl --kubeconfig=${KUBECONFIG} rollout status deployment/myapp-deployment -n myapp --timeout=180s
+                        kubectl --kubeconfig=${KUBECONFIG} rollout status deployment/myapp-deployment -n myapp --timeout=300s
+                        
+                        # Add verification steps
+                        echo "Verifying deployment..."
+                        kubectl --kubeconfig=${KUBECONFIG} get pods -n myapp -o wide
+                        kubectl --kubeconfig=${KUBECONFIG} get services -n myapp
+                        
+                        # Check if pods are running
+                        echo "Checking pod status..."
+                        kubectl --kubeconfig=${KUBECONFIG} get pods -n myapp | grep "Running"
                     '''
                 }
             }
@@ -202,8 +213,14 @@ pipeline {
                         echo "\nService status:"
                         kubectl --kubeconfig=${KUBECONFIG} get services -n myapp
                         
+                        echo "\nDeployment status:"
+                        kubectl --kubeconfig=${KUBECONFIG} describe deployment myapp-deployment -n myapp
+                        
                         echo "\nEvents:"
                         kubectl --kubeconfig=${KUBECONFIG} get events -n myapp --sort-by='.lastTimestamp'
+                        
+                        echo "\nService endpoints:"
+                        kubectl --kubeconfig=${KUBECONFIG} get endpoints -n myapp
                     '''
                 }
             }

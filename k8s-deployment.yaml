@@ -6,26 +6,18 @@ metadata:
   labels:
     app: myapp
 spec:
-  replicas: 1  # Starting with 1 replica for testing
   selector:
     matchLabels:
       app: myapp
+  replicas: 2  # Increased to 2 replicas like in the example
   template:
     metadata:
       labels:
         app: myapp
     spec:
       containers:
-      - name: myapp
-        image: lookabj/myapp:latest
-        imagePullPolicy: IfNotPresent  # Important for Kind
-        ports:
-        - containerPort: 8080
-        resources:
-          requests:
-            memory: "128Mi"  # Reduced for Kind
-            cpu: "100m"
-          limits:
-            memory: "256Mi"
-            cpu: "200m"
-      # No readiness/liveness probes for initial testing
+        - name: myapp
+          image: lookabj/myapp:latest
+          imagePullPolicy: Always  # Changed to Always like in the example
+          ports:
+            - containerPort: 8080

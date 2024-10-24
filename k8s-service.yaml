@@ -8,6 +8,6 @@ spec:
     app: myapp
   ports:
     - protocol: TCP
-      port: 80
+      port: 8080  # Changed to 8080 to match the example
       targetPort: 8080
-  type: ClusterIP  # Changed to ClusterIP for Kind
+  type: LoadBalancer  # Changed to LoadBalancer like in the example
