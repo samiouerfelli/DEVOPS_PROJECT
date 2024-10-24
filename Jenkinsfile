@@ -164,28 +164,74 @@ pipeline {
         }
 
         stage('Prepare Kubernetes Namespace') {
-            steps {
-                script {
-                    sh """
-                        # Check if namespace exists and is stuck
-                        NAMESPACE_STATUS=\$(kubectl --kubeconfig=${KUBECONFIG} get namespace ${APP_NAMESPACE} -o json 2>/dev/null | jq -r '.status.phase' || echo "NotFound")
+    steps {
+        script {
+            try {
+                // First attempt to force remove the stuck namespace using a temporary JSON file
+                sh """
+                    echo '{"kind":"Namespace","apiVersion":"v1","metadata":{"name":"myapp"},"spec":{"finalizers":[]}}' > temp_ns.json
+                    
+                    # Try to force cleanup the namespace if it exists
+                    kubectl --kubeconfig=${KUBECONFIG} get namespace myapp && {
+                        echo "Namespace exists, attempting cleanup..."
                         
-                        if [ "\$NAMESPACE_STATUS" = "Terminating" ]; then
-                            echo "Namespace is stuck in Terminating state. Forcing deletion..."
-                            kubectl --kubeconfig=${KUBECONFIG} get namespace ${APP_NAMESPACE} -o json | jq '.spec = {"finalizers":[]}' > temp.json
-                            kubectl --kubeconfig=${KUBECONFIG} replace --raw "/api/v1/namespaces/${APP_NAMESPACE}/finalize" -f temp.json
-                            sleep 10
+                        # Force remove finalizers
+                        kubectl --kubeconfig=${KUBECONFIG} replace --raw "/api/v1/namespaces/myapp/finalize" -f temp_ns.json || true
+                        
+                        # Wait a bit for cleanup
+                        sleep 10
+                        
+                        # Force delete the namespace
+                        kubectl --kubeconfig=${KUBECONFIG} delete namespace myapp --force --grace-period=0 || true
+                        
+                        # Wait for namespace to be fully deleted
+                        for i in \$(seq 1 30); do
+                            if ! kubectl --kubeconfig=${KUBECONFIG} get namespace myapp > /dev/null 2>&1; then
+                                echo "Namespace successfully deleted"
+                                break
+                            fi
+                            echo "Waiting for namespace deletion... \$i/30"
+                            sleep 2
+                        done
+                    } || echo "Namespace doesn't exist, proceeding with creation"
+                    
+                    # Clean up temporary file
+                    rm -f temp_ns.json
+                    
+                    # Create new namespace
+                    echo "Creating new namespace..."
+                    kubectl --kubeconfig=${KUBECONFIG} create namespace myapp
+                    
+                    # Wait for namespace to be active
+                    for i in \$(seq 1 30); do
+                        if kubectl --kubeconfig=${KUBECONFIG} get namespace myapp | grep -q Active; then
+                            echo "Namespace is active"
+                            break
                         fi
-                        
-                        # Create namespace if it doesn't exist
-                        kubectl --kubeconfig=${KUBECONFIG} create namespace ${APP_NAMESPACE} || true
-                        
-                        # Wait for namespace to be active
-                        kubectl --kubeconfig=${KUBECONFIG} wait --for=condition=Active namespace/${APP_NAMESPACE} --timeout=60s
-                    """
-                }
+                        echo "Waiting for namespace to become active... \$i/30"
+                        sleep 2
+                    done
+                """
+            } catch (Exception e) {
+                echo "Failed to prepare namespace: ${e.message}"
+                
+                // Additional diagnostic information
+                sh """
+                    echo "Current namespaces:"
+                    kubectl --kubeconfig=${KUBECONFIG} get namespaces
+                    
+                    echo "Detailed namespace information:"
+                    kubectl --kubeconfig=${KUBECONFIG} describe namespace myapp || true
+                    
+                    echo "Cluster events:"
+                    kubectl --kubeconfig=${KUBECONFIG} get events --all-namespaces | grep myapp || true
+                """
+                
+                error "Failed to prepare namespace. Check the logs above for details."
             }
         }
+    }
+}
 
         stage('Deploy to Kubernetes') {
             steps {
