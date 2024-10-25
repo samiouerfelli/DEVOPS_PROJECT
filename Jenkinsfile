@@ -143,27 +143,27 @@ pipeline {
             }
         }
 
-        // stage('Setup Kubernetes Namespace') {
-        //     steps {
-        //         script {
-        //             echo 'Setting up Kubernetes namespace and service account...'
-        //             sh '''
-        //                 # Verify namespace exists or create it
-        //                 if ! kubectl --kubeconfig=$KUBECONFIG get namespace $APP_NAMESPACE > /dev/null 2>&1; then
-        //                     kubectl --kubeconfig=$KUBECONFIG create namespace $APP_NAMESPACE
-        //                 fi
+        stage('Setup Kubernetes Namespace') {
+            steps {
+                script {
+                    echo 'Setting up Kubernetes namespace and service account...'
+                    sh '''
+                        # Verify namespace exists or create it
+                        if ! kubectl --kubeconfig=$KUBECONFIG get namespace $APP_NAMESPACE > /dev/null 2>&1; then
+                            kubectl --kubeconfig=$KUBECONFIG create namespace $APP_NAMESPACE
+                        fi
                         
-        //                 # Create or update service account
-        //                 kubectl --kubeconfig=$KUBECONFIG apply -f k8s-namespace-setup.yaml
+                        # Create or update service account
+                        kubectl --kubeconfig=$KUBECONFIG apply -f k8s-namespace-setup.yaml
                         
-        //                 # Verify setup
-        //                 echo "Verifying namespace setup..."
-        //                 kubectl --kubeconfig=$KUBECONFIG get serviceaccount -n $APP_NAMESPACE
-        //                 kubectl --kubeconfig=$KUBECONFIG get rolebinding -n $APP_NAMESPACE
-        //             '''
-        //         }
-        //     }
-        // }
+                        # Verify setup
+                        echo "Verifying namespace setup..."
+                        kubectl --kubeconfig=$KUBECONFIG get serviceaccount -n $APP_NAMESPACE
+                        kubectl --kubeconfig=$KUBECONFIG get rolebinding -n $APP_NAMESPACE
+                    '''
+                }
+            }
+        }
 
         stage('Deploy to Kubernetes') {
             steps {
