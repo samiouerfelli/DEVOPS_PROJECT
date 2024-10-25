@@ -20,7 +20,16 @@ spec:
           image: lookabj/myapp:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 8080
+            - containerPort: 8089
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:mysql://mysql-db:3307/tpfoyer?allowPublicKeyRetrieval=true&useSSL=false"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "root"
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: ""
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              value: "update"
 ---
 apiVersion: v1
 kind: Service
@@ -32,7 +41,7 @@ spec:
     app: myapp
   ports:
     - protocol: TCP
-      port: 8080  # The port that the service will expose
-      targetPort: 8080  # The port that the application listens on
-      nodePort: 30007  # Optional: specify a port number in the range 30000-32767
+      port: 8089
+      targetPort: 8089
+      nodePort: 30007
   type: NodePort
