@@ -143,28 +143,6 @@ pipeline {
             }
         }
 
-        stage('Setup Kubernetes Namespace') {
-            steps {
-                script {
-                    echo 'Setting up Kubernetes namespace and service account...'
-                    sh '''
-                        # Verify namespace exists or create it
-                        if ! kubectl --kubeconfig=$KUBECONFIG get namespace $APP_NAMESPACE > /dev/null 2>&1; then
-                            kubectl --kubeconfig=$KUBECONFIG create namespace $APP_NAMESPACE
-                        fi
-                        
-                        # Create or update service account
-                        kubectl --kubeconfig=$KUBECONFIG apply -f k8s-namespace-setup.yaml
-                        
-                        # Verify setup
-                        echo "Verifying namespace setup..."
-                        kubectl --kubeconfig=$KUBECONFIG get serviceaccount -n $APP_NAMESPACE
-                        kubectl --kubeconfig=$KUBECONFIG get rolebinding -n $APP_NAMESPACE
-                    '''
-                }
-            }
-        }
-
         stage('Deploy to Kubernetes') {
             steps {
                 script {
@@ -172,9 +150,6 @@ pipeline {
                         # Apply the deployment and service
                         kubectl --kubeconfig=$KUBECONFIG apply -f k8s-deployment.yaml
                         kubectl --kubeconfig=$KUBECONFIG apply -f k8s-service.yaml
-                        
-                        # Wait for deployment to roll out
-                        kubectl --kubeconfig=$KUBECONFIG rollout status deployment/myapp-deployment -n $APP_NAMESPACE --timeout=180s
                     '''
                 }
             }
@@ -187,14 +162,6 @@ pipeline {
                         kubectl --kubeconfig=$KUBECONFIG get deployments -n $APP_NAMESPACE
                         kubectl --kubeconfig=$KUBECONFIG get pods -n $APP_NAMESPACE
                         kubectl --kubeconfig=$KUBECONFIG get services -n $APP_NAMESPACE
-                        
-                        # Get detailed information about any pods that aren't running
-                        for pod in $(kubectl --kubeconfig=$KUBECONFIG get pods -n $APP_NAMESPACE -o jsonpath='{.items[?(@.status.phase!="Running")].metadata.name}'); do
-                            echo "Details for pod $pod:"
-                            kubectl --kubeconfig=$KUBECONFIG describe pod $pod -n $APP_NAMESPACE
-                            echo "Logs for pod $pod:"
-                            kubectl --kubeconfig=$KUBECONFIG logs $pod -n $APP_NAMESPACE
-                        done
                     '''
                 }
             }
