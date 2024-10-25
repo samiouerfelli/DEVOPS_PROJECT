@@ -149,7 +149,6 @@ pipeline {
                     sh '''
                         # Apply the deployment and service
                         kubectl --kubeconfig=$KUBECONFIG apply -f k8s-deployment.yaml
-                        kubectl --kubeconfig=$KUBECONFIG apply -f k8s-service.yaml
                     '''
                 }
             }
