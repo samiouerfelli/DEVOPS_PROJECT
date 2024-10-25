@@ -36,10 +36,9 @@ pipeline {
         stage('Maven Compile') {
             steps {
                 script {
-                    // Ensure JDK 17 is used for compilation
                     env.JAVA_HOME = tool name: 'JDK 17', type: 'jdk'
                     env.PATH = "${env.JAVA_HOME}/bin:${env.PATH}"
-                    sh 'java -version' // Verify Java version
+                    sh 'java -version'
                     sh 'mvn compile'
                 }
             }
@@ -55,10 +54,9 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     script {
-                        // Ensure JDK 17 is used for SonarQube analysis
                         env.JAVA_HOME = tool name: 'JDK 17', type: 'jdk'
                         env.PATH = "${env.JAVA_HOME}/bin:${env.PATH}"
-                        sh 'java -version' // Verify Java version
+                        sh 'java -version'
                         sh """
                         mvn sonar:sonar \
                           -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
@@ -69,15 +67,6 @@ pipeline {
                 }
             }
         }
-
-        // stage('Quality Gate') {
-        //     steps {
-        //         timeout(time: 1, unit: 'MINUTES') {
-        //             waitForQualityGate abortPipeline: true
-        //         }
-        //     }
-        // }
-
 
         stage('Build Package') {
             steps {
@@ -133,14 +122,16 @@ pipeline {
                         # Load the image into Kind cluster
                         kind load docker-image $DOCKER_IMAGE --name devops-cluster
                         
-                        # Verify the image is loaded
+                        # Verify the image is loaded in all nodes
+                        echo "Verifying image in control-plane..."
                         docker exec devops-cluster-control-plane crictl images | grep myapp
+                        echo "Verifying image in worker nodes..."
+                        docker exec devops-cluster-worker crictl images | grep myapp
+                        docker exec devops-cluster-worker2 crictl images | grep myapp
                     '''
                 }
             }
         }
-
-        
 
         stage('Push Docker Image to Docker Hub') {
             steps {
@@ -152,24 +143,39 @@ pipeline {
             }
         }
 
-        stage('Test Kubernetes Access') {
+        stage('Setup Kubernetes Namespace') {
             steps {
                 script {
+                    echo 'Setting up Kubernetes namespace and service account...'
                     sh '''
-                        kubectl --kubeconfig=${KUBECONFIG} get nodes
-                        kubectl --kubeconfig=${KUBECONFIG} cluster-info
+                        # Verify namespace exists or create it
+                        if ! kubectl --kubeconfig=$KUBECONFIG get namespace $APP_NAMESPACE > /dev/null 2>&1; then
+                            kubectl --kubeconfig=$KUBECONFIG create namespace $APP_NAMESPACE
+                        fi
+                        
+                        # Create or update service account
+                        kubectl --kubeconfig=$KUBECONFIG apply -f k8s-namespace-setup.yaml
+                        
+                        # Verify setup
+                        echo "Verifying namespace setup..."
+                        kubectl --kubeconfig=$KUBECONFIG get serviceaccount -n $APP_NAMESPACE
+                        kubectl --kubeconfig=$KUBECONFIG get rolebinding -n $APP_NAMESPACE
                     '''
                 }
             }
         }
-        
 
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Apply the deployment and service YAML files
-                    sh 'kubectl --kubeconfig=$KUBECONFIG apply -f k8s-deployment.yaml'
-                    sh 'kubectl --kubeconfig=$KUBECONFIG apply -f k8s-service.yaml'
+                    sh '''
+                        # Apply the deployment and service
+                        kubectl --kubeconfig=$KUBECONFIG apply -f k8s-deployment.yaml
+                        kubectl --kubeconfig=$KUBECONFIG apply -f k8s-service.yaml
+                        
+                        # Wait for deployment to roll out
+                        kubectl --kubeconfig=$KUBECONFIG rollout status deployment/myapp-deployment -n $APP_NAMESPACE --timeout=180s
+                    '''
                 }
             }
         }
@@ -178,17 +184,24 @@ pipeline {
             steps {
                 script {
                     sh '''
-                    kubectl --kubeconfig=$KUBECONFIG get deployments -n $APP_NAMESPACE
-                    kubectl --kubeconfig=$KUBECONFIG get pods -n $APP_NAMESPACE
-                    kubectl --kubeconfig=$KUBECONFIG get services -n $APP_NAMESPACE
+                        kubectl --kubeconfig=$KUBECONFIG get deployments -n $APP_NAMESPACE
+                        kubectl --kubeconfig=$KUBECONFIG get pods -n $APP_NAMESPACE
+                        kubectl --kubeconfig=$KUBECONFIG get services -n $APP_NAMESPACE
+                        
+                        # Get detailed information about any pods that aren't running
+                        for pod in $(kubectl --kubeconfig=$KUBECONFIG get pods -n $APP_NAMESPACE -o jsonpath='{.items[?(@.status.phase!="Running")].metadata.name}'); do
+                            echo "Details for pod $pod:"
+                            kubectl --kubeconfig=$KUBECONFIG describe pod $pod -n $APP_NAMESPACE
+                            echo "Logs for pod $pod:"
+                            kubectl --kubeconfig=$KUBECONFIG logs $pod -n $APP_NAMESPACE
+                        done
                     '''
                 }
             }
         }
     }
-    
 
-     post {
+    post {
         success {
             echo 'Deployment completed successfully!'
         }
