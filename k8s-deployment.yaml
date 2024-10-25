@@ -15,6 +15,8 @@ spec:
       labels:
         app: myapp
     spec:
+      hostNetwork: true  # Add this to access host network
+      dnsPolicy: ClusterFirstWithHostNet  # Add this for DNS resolution
       containers:
         - name: myapp
           image: lookabj/myapp:latest
@@ -23,7 +25,7 @@ spec:
             - containerPort: 8089
           env:
             - name: SPRING_DATASOURCE_URL
-              value: "jdbc:mysql://mysql-db:3307/tpfoyer?allowPublicKeyRetrieval=true&useSSL=false"
+              value: "jdbc:mysql://172.17.0.1:3307/tpfoyer?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false"
             - name: SPRING_DATASOURCE_USERNAME
               value: "root"
             - name: SPRING_DATASOURCE_PASSWORD
