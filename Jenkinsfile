@@ -111,24 +111,11 @@ pipeline {
             }
         }
 
-        stage('Build and Load Docker Image') {
+        stage('Build Docker Image') {
             steps {
                 script {
                     echo 'Building Docker image...'
-                    sh '''
-                        # Build the image
-                        docker build -t $DOCKER_IMAGE .
-                        
-                        # Load the image into Kind cluster
-                        kind load docker-image $DOCKER_IMAGE --name devops-cluster
-                        
-                        # Verify the image is loaded in all nodes
-                        echo "Verifying image in control-plane..."
-                        docker exec devops-cluster-control-plane crictl images | grep myapp
-                        echo "Verifying image in worker nodes..."
-                        docker exec devops-cluster-worker crictl images | grep myapp
-                        docker exec devops-cluster-worker2 crictl images | grep myapp
-                    '''
+                    sh 'docker build -t $DOCKER_IMAGE .'
                 }
             }
         }
@@ -139,6 +126,17 @@ pipeline {
                     echo 'Pushing Docker image to Docker Hub...'
                     sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
                     sh 'docker push $DOCKER_IMAGE'
+                }
+            }
+        }
+
+        stage('Test Kubernetes Access') {
+            steps {
+                script {
+                    sh '''
+                        kubectl --kubeconfig=${KUBECONFIG} get nodes
+                        kubectl --kubeconfig=${KUBECONFIG} cluster-info
+                    '''
                 }
             }
         }
