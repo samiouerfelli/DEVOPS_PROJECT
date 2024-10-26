@@ -12,6 +12,7 @@ import tn.esprit.tpfoyer.Exception.ReservationException;
 import tn.esprit.tpfoyer.RestController.ReservationRestController;
 import tn.esprit.tpfoyer.Services.ReservationServiceImpl;
 
+import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
 
@@ -29,6 +30,8 @@ public class ReservationRestControllerTest {
     @MockBean
     private ReservationServiceImpl reservationService;
 
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
     @Test
     public void testCreateReservation() throws Exception {
         Reservation reservation = new Reservation();
@@ -40,7 +43,7 @@ public class ReservationRestControllerTest {
         mockMvc.perform(post("/api/v1/reservations/create")
                         .param("idEtudiant", "1")
                         .param("idChambre", "1")
-                        .param("anneeUniversitaire", "2024-01-01")  // Update date format as needed
+                        .param("anneeUniversitaire", dateFormat.format(new Date()))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.idReservation").value("1"));
@@ -54,7 +57,7 @@ public class ReservationRestControllerTest {
         mockMvc.perform(post("/api/v1/reservations/create")
                         .param("idEtudiant", "1")
                         .param("idChambre", "1")
-                        .param("anneeUniversitaire", "2024-01-01")  // Update date format as needed
+                        .param("anneeUniversitaire", dateFormat.format(new Date()))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Etudiant not found with ID: 1"));
@@ -101,7 +104,7 @@ public class ReservationRestControllerTest {
                 .thenReturn(Collections.singletonList(reservation));
 
         mockMvc.perform(get("/api/v1/reservations/retrieve-by-chambre-year/1")
-                        .param("anneeUniversitaire", "2024-01-01")  // Update date format as needed
+                        .param("anneeUniversitaire", dateFormat.format(new Date()))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].idReservation").value("1"));
