@@ -10,6 +10,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import tn.esprit.tpfoyer.exception.GlobalExceptionHandler;
 import tn.esprit.tpfoyer.restcontroller.EtudiantRestController;
 import tn.esprit.tpfoyer.services.EtudiantServiceImpl;
 import tn.esprit.tpfoyer.entities.Etudiant;
@@ -38,7 +39,10 @@ class EtudiantRestControllerTest {
 
    @BeforeEach
    void setUp() {
-      this.mockMvc = MockMvcBuilders.standaloneSetup(etudiantRestController).build();
+      this.mockMvc = MockMvcBuilders
+              .standaloneSetup(etudiantRestController)
+              .setControllerAdvice(new GlobalExceptionHandler())  // Ensure GlobalExceptionHandler is recognized
+              .build();
    }
 
    ///////////// Etudiant Tests //////////////////
