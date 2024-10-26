@@ -1,6 +1,5 @@
-package tn.esprit.tpfoyer;
+package tn.esprit.tpfoyer.Entities;
 
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Id;
@@ -8,7 +7,6 @@ import lombok.*;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.util.Date;
-import java.util.List;
 
 @Entity
 @Getter

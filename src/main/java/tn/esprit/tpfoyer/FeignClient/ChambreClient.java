@@ -1,10 +1,11 @@
-package tn.esprit.tpfoyer;
+package tn.esprit.tpfoyer.FeignClient;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import tn.esprit.tpfoyer.Entities.ChambreDTO;
 
 @FeignClient(name = "chambre-service")
 public interface ChambreClient {

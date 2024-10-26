@@ -1,7 +1,14 @@
-package tn.esprit.tpfoyer;
+package tn.esprit.tpfoyer.Services;
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import tn.esprit.tpfoyer.Entities.ChambreDTO;
+import tn.esprit.tpfoyer.Entities.EtudiantDTO;
+import tn.esprit.tpfoyer.Entities.Reservation;
+import tn.esprit.tpfoyer.Entities.ReservationDTO;
+import tn.esprit.tpfoyer.FeignClient.ChambreClient;
+import tn.esprit.tpfoyer.FeignClient.EtudiantClient;
+import tn.esprit.tpfoyer.Repository.ReservationRepository;
 
 import java.util.Date;
 import java.util.List;
