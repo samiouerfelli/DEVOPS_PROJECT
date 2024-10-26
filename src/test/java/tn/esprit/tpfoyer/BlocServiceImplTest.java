@@ -6,10 +6,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.boot.test.context.SpringBootTest;
-import tn.esprit.tpfoyer.FeignClient.ChambreClient;
-import tn.esprit.tpfoyer.FeignClient.FoyerClient;
-import tn.esprit.tpfoyer.Repository.BlocRepository;
-import tn.esprit.tpfoyer.Services.BlocServiceImpl;
+import tn.esprit.tpfoyer.feignclient.ChambreClient;
+import tn.esprit.tpfoyer.feignclient.FoyerClient;
+import tn.esprit.tpfoyer.repository.BlocRepository;
+import tn.esprit.tpfoyer.services.BlocServiceImpl;
 import tn.esprit.tpfoyer.entities.Bloc;
 import tn.esprit.tpfoyer.entities.BlocDTO;
 import tn.esprit.tpfoyer.entities.FoyerDTO;
@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
-public class BlocServiceImplTest {
+ class BlocServiceImplTest {
 
     @InjectMocks
     private BlocServiceImpl blocService;
@@ -42,7 +42,7 @@ public class BlocServiceImplTest {
     }
 
     @Test
-    public void testAddBlocAndAssignToFoyer() {
+     void testAddBlocAndAssignToFoyer() {
         Bloc bloc = new Bloc();
         bloc.setIdBloc(1L);
         FoyerDTO foyerDTO = new FoyerDTO();
@@ -59,7 +59,7 @@ public class BlocServiceImplTest {
     }
 
     @Test
-    public void testDeleteBlocsByFoyerId() {
+     void testDeleteBlocsByFoyerId() {
         List<Bloc> blocs = new ArrayList<>();
         blocs.add(new Bloc());
 
@@ -71,7 +71,7 @@ public class BlocServiceImplTest {
     }
 
     @Test
-    public void testDeleteBlocAndRemoveFromFoyer() {
+     void testDeleteBlocAndRemoveFromFoyer() {
         Bloc bloc = new Bloc();
         bloc.setIdBloc(1L);
         bloc.setIdFoyer(1L);
@@ -85,7 +85,7 @@ public class BlocServiceImplTest {
     }
 
     @Test
-    public void testGetBlocsByFoyerId() {
+     void testGetBlocsByFoyerId() {
         Bloc bloc = new Bloc();
         bloc.setIdFoyer(1L);
         List<Bloc> blocs = new ArrayList<>();
@@ -99,7 +99,7 @@ public class BlocServiceImplTest {
     }
 
     @Test
-    public void testRetrieveBloc() {
+     void testRetrieveBloc() {
         Bloc bloc = new Bloc();
         bloc.setIdBloc(1L);
 
@@ -111,7 +111,7 @@ public class BlocServiceImplTest {
     }
 
     @Test
-    public void testAddChambreToBloc() {
+     void testAddChambreToBloc() {
         Bloc bloc = new Bloc();
         bloc.setIdBloc(1L);
         List<Long> chambres = new ArrayList<>();
@@ -127,7 +127,7 @@ public class BlocServiceImplTest {
     }
 
     @Test
-    public void testDeleteBlocAndChambres() {
+     void testDeleteBlocAndChambres() {
         Bloc bloc = new Bloc();
         bloc.setIdBloc(1L);
 
@@ -140,7 +140,7 @@ public class BlocServiceImplTest {
     }
 
     @Test
-    public void testRemoveChambreFromBloc() {
+     void testRemoveChambreFromBloc() {
         Bloc bloc = new Bloc();
         bloc.setIdBloc(1L);
         List<Long> chambres = new ArrayList<>();

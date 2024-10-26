@@ -1,11 +1,12 @@
-package tn.esprit.tpfoyer.Services;
+package tn.esprit.tpfoyer.services;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import tn.esprit.tpfoyer.FeignClient.ChambreClient;
-import tn.esprit.tpfoyer.FeignClient.FoyerClient;
-import tn.esprit.tpfoyer.Repository.BlocRepository;
+import tn.esprit.tpfoyer.exception.FoyerNotFoundException;
+import tn.esprit.tpfoyer.feignclient.ChambreClient;
+import tn.esprit.tpfoyer.feignclient.FoyerClient;
+import tn.esprit.tpfoyer.repository.BlocRepository;
 import tn.esprit.tpfoyer.entities.Bloc;
 import tn.esprit.tpfoyer.entities.BlocDTO;
 import tn.esprit.tpfoyer.entities.FoyerDTO;
@@ -30,12 +31,15 @@ public class BlocServiceImpl {
         return blocDTO;
     }
 
+    private static final String MESSAGE = "Bloc not found";
+
+
     ////////////////////// Foyers ////////////////////////
 
     public Bloc addBlocAndAssignToFoyer(Bloc bloc, Long idFoyer) {
         FoyerDTO foyer = foyerClient.retrieveFoyer(idFoyer);
         if (foyer == null) {
-            throw new RuntimeException("Foyer not found");
+            throw new FoyerNotFoundException("Foyer not found with ID: " + idFoyer);
         }
 
         bloc.setIdFoyer(idFoyer);
@@ -52,7 +56,7 @@ public class BlocServiceImpl {
     }
     public void deleteBlocAndRemoveFromFoyer(Long idBloc) {
         Bloc bloc = blocRepository.findById(idBloc)
-                .orElseThrow(() -> new RuntimeException("Bloc not found"));
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
 
         Long idFoyer = bloc.getIdFoyer();
 
@@ -72,7 +76,7 @@ public class BlocServiceImpl {
     public BlocDTO retrieveBloc(Long idBloc) {
         return blocRepository.findById(idBloc)
                 .map(this::convertToDto)
-                .orElseThrow(() -> new RuntimeException("Bloc not found"));
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
     }
 
 
@@ -80,7 +84,7 @@ public class BlocServiceImpl {
 
     public void addChambreToBloc(Long idBloc, Long idChambre) {
         Bloc bloc = blocRepository.findById(idBloc)
-                .orElseThrow(() -> new RuntimeException("Bloc not found"));
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
 
         if (!bloc.getIdChambres().contains(idChambre)) {
             bloc.getIdChambres().add(idChambre);
@@ -92,8 +96,8 @@ public class BlocServiceImpl {
 
 
     public void deleteBlocAndChambres(Long idBloc) {
-        Bloc bloc = blocRepository.findById(idBloc)
-                .orElseThrow(() -> new RuntimeException("Bloc not found"));
+        blocRepository.findById(idBloc)
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
 
         chambreClient.deleteChambresByBlocId(idBloc);
 
@@ -101,7 +105,7 @@ public class BlocServiceImpl {
     }
     public void removeChambreFromBloc(Long idBloc, Long idChambre) {
         Bloc bloc = blocRepository.findById(idBloc)
-                .orElseThrow(() -> new RuntimeException("Bloc not found"));
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
 
         bloc.getIdChambres().remove(idChambre);
         blocRepository.save(bloc);

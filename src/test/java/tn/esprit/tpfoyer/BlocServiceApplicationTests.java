@@ -7,7 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 class BlocServiceApplicationTests {
 
 	@Test
-	void contextLoads() {
+	void contextLoads() { // TEST
 	}
 
 }

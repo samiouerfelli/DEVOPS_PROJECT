@@ -9,8 +9,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import tn.esprit.tpfoyer.RestController.BlocRestController;
-import tn.esprit.tpfoyer.Services.BlocServiceImpl;
+import tn.esprit.tpfoyer.restcontroller.BlocRestController;
+import tn.esprit.tpfoyer.services.BlocServiceImpl;
 import tn.esprit.tpfoyer.entities.Bloc;
 import tn.esprit.tpfoyer.entities.BlocDTO;
 
@@ -23,7 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @ExtendWith(MockitoExtension.class)
 @WebMvcTest(BlocRestController.class)
-public class BlocRestControllerTest {
+ class BlocRestControllerTest {
 
     private MockMvc mockMvc;
 
@@ -33,7 +33,7 @@ public class BlocRestControllerTest {
     private BlocRestController blocRestController;
 
     @BeforeEach
-    public void setUp() {
+     void setUp() {
         this.blocRestController = new BlocRestController(blocService);
         this.mockMvc = MockMvcBuilders.standaloneSetup(blocRestController).build();
     }
@@ -41,7 +41,7 @@ public class BlocRestControllerTest {
     ////////////////////// Foyers ////////////////////////
 
     @Test
-    public void testAddBlocAndAssignToFoyer() throws Exception {
+     void testAddBlocAndAssignToFoyer() throws Exception {
         Bloc bloc = new Bloc();
         bloc.setIdBloc(1L);
 
@@ -57,7 +57,7 @@ public class BlocRestControllerTest {
     }
 
     @Test
-    public void testDeleteBlocsByFoyerId() throws Exception {
+     void testDeleteBlocsByFoyerId() throws Exception {
         mockMvc.perform(delete("/api/v1/blocs/delete-by-foyer/1"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("All blocs associated with Foyer ID 1 have been deleted successfully."));
@@ -66,7 +66,7 @@ public class BlocRestControllerTest {
     }
 
     @Test
-    public void testDeleteBlocAndRemoveFromFoyer() throws Exception {
+     void testDeleteBlocAndRemoveFromFoyer() throws Exception {
         mockMvc.perform(delete("/api/v1/blocs/delete-bloc-foyer/1"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Bloc with ID 1 has been deleted successfully, and it was removed from the associated Foyer."));
@@ -75,7 +75,7 @@ public class BlocRestControllerTest {
     }
 
     @Test
-    public void testGetBlocsByFoyerId() throws Exception {
+     void testGetBlocsByFoyerId() throws Exception {
         List<BlocDTO> blocs = new ArrayList<>();
         BlocDTO blocDTO = new BlocDTO();
         blocDTO.setIdFoyer(1L);
@@ -91,7 +91,7 @@ public class BlocRestControllerTest {
     }
 
     @Test
-    public void testGetBlocById() throws Exception {
+     void testGetBlocById() throws Exception {
         BlocDTO blocDTO = new BlocDTO();
         blocDTO.setIdBloc(1L);
 
@@ -107,7 +107,7 @@ public class BlocRestControllerTest {
     ////////////////////// Chambres ////////////////////////
 
     @Test
-    public void testAddChambreToBloc() throws Exception {
+     void testAddChambreToBloc() throws Exception {
         mockMvc.perform(put("/api/v1/blocs/1/add-chambre/2"))
                 .andExpect(status().isNoContent());
 
@@ -115,7 +115,7 @@ public class BlocRestControllerTest {
     }
 
     @Test
-    public void testDeleteBlocAndChambres() throws Exception {
+     void testDeleteBlocAndChambres() throws Exception {
         mockMvc.perform(delete("/api/v1/blocs/delete-bloc-chambres/1"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Bloc with ID 1 and all associated chambres have been deleted successfully."));
@@ -124,7 +124,7 @@ public class BlocRestControllerTest {
     }
 
     @Test
-    public void testRemoveChambreFromBloc() throws Exception {
+     void testRemoveChambreFromBloc() throws Exception {
         mockMvc.perform(put("/api/v1/blocs/1/remove-chambre/2"))
                 .andExpect(status().isNoContent());
 
