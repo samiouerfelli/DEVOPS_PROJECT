@@ -1,11 +1,15 @@
-package tn.esprit.tpfoyer;
+package tn.esprit.tpfoyer.Services;
 
-import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import tn.esprit.tpfoyer.FeignClient.ChambreClient;
+import tn.esprit.tpfoyer.FeignClient.FoyerClient;
+import tn.esprit.tpfoyer.Repository.BlocRepository;
+import tn.esprit.tpfoyer.entities.Bloc;
+import tn.esprit.tpfoyer.entities.BlocDTO;
+import tn.esprit.tpfoyer.entities.FoyerDTO;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
