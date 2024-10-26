@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tn.esprit.tpfoyer.Entities.Reservation;
+import tn.esprit.tpfoyer.Exception.ReservationException;
 import tn.esprit.tpfoyer.Services.ReservationServiceImpl;
 
 import java.util.Date;
@@ -18,10 +19,15 @@ public class ReservationRestController {
 
     ReservationServiceImpl reservationService;
 
+
     @PostMapping("/create")
-    public ResponseEntity<Reservation> createReservation(@RequestParam Long idEtudiant, @RequestParam Long idChambre, @RequestParam Date anneeUniversitaire) {
-        Reservation reservation = reservationService.createReservation(idEtudiant, idChambre, anneeUniversitaire);
-        return ResponseEntity.status(HttpStatus.CREATED).body(reservation);
+    public ResponseEntity<?> createReservation(@RequestParam Long idEtudiant, @RequestParam Long idChambre, @RequestParam Date anneeUniversitaire) {
+        try {
+            Reservation reservation = reservationService.createReservation(idEtudiant, idChambre, anneeUniversitaire);
+            return ResponseEntity.status(HttpStatus.CREATED).body(reservation);
+        } catch (ReservationException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 
     @PutMapping("/cancel/{idReservation}")

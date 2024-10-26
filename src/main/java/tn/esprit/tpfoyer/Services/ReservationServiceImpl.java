@@ -6,6 +6,7 @@ import tn.esprit.tpfoyer.Entities.ChambreDTO;
 import tn.esprit.tpfoyer.Entities.EtudiantDTO;
 import tn.esprit.tpfoyer.Entities.Reservation;
 import tn.esprit.tpfoyer.Entities.ReservationDTO;
+import tn.esprit.tpfoyer.Exception.ReservationException;
 import tn.esprit.tpfoyer.FeignClient.ChambreClient;
 import tn.esprit.tpfoyer.FeignClient.EtudiantClient;
 import tn.esprit.tpfoyer.Repository.ReservationRepository;
@@ -36,23 +37,23 @@ public class ReservationServiceImpl  {
     public Reservation createReservation(Long idEtudiant, Long idChambre, Date anneeUniversitaire) {
         EtudiantDTO etudiant = etudiantClient.getEtudiantById(idEtudiant);
         if (etudiant == null) {
-            throw new RuntimeException("Etudiant not found");
+            throw new ReservationException("Etudiant not found with ID: " + idEtudiant);
         }
 
         ChambreDTO chambre = chambreClient.getChambreById(idChambre);
         if (chambre == null) {
-            throw new RuntimeException("Chambre not found");
+            throw new ReservationException("Chambre not found with ID: " + idChambre);
         }
 
         Optional<Reservation> existingReservationForEtudiant = reservationRepository
                 .findByIdEtudiantAndAnneeUniversitaireAndEstValideTrue(idEtudiant, anneeUniversitaire);
         if (existingReservationForEtudiant.isPresent()) {
-            throw new RuntimeException("Etudiant already has an active reservation for the selected academic year");
+            throw new ReservationException("Etudiant already has an active reservation for the selected academic year");
         }
 
         int chambreReservationCount = reservationRepository.countByChambreAndAnneeUniversitaire(idChambre, anneeUniversitaire);
         if (chambreReservationCount >= 2) {
-            throw new RuntimeException("Chambre already has the maximum number of reservations for the selected academic year");
+            throw new ReservationException("Chambre already has the maximum number of reservations for the selected academic year");
         }
 
         Reservation reservation = new Reservation();
@@ -62,7 +63,11 @@ public class ReservationServiceImpl  {
         reservation.setIdEtudiant(idEtudiant);
         reservation.setIdChambre(idChambre);
 
-        return reservationRepository.save(reservation);
+        Reservation savedReservation = reservationRepository.save(reservation);
+        etudiant.getIdReservations().add(savedReservation.getIdReservation());
+        etudiantClient.updateEtudiantReservations(idEtudiant, etudiant.getIdReservations());
+
+        return savedReservation;
     }
 
     public void cancelReservation(String idReservation) {
