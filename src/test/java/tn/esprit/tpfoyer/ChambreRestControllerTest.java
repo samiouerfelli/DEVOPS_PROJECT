@@ -44,7 +44,7 @@ public class ChambreRestControllerTest {
 
         mockMvc.perform(post("/api/v1/chambres/add-chambre/1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"numeroChambre\":101,\"typeC\":\"SINGLE\",\"isReserved\":false}"))
+                        .content("{\"numeroChambre\":101,\"typeC\":\"SIMPLE\",\"isReserved\":false}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.idChambre").value(1L))
                 .andExpect(jsonPath("$.numeroChambre").value(101L))
