@@ -82,7 +82,10 @@ public class BlocServiceImpl {
         Bloc bloc = blocRepository.findById(idBloc)
                 .orElseThrow(() -> new RuntimeException("Bloc not found"));
 
-        bloc.getIdChambres().add(idChambre);
+        if (!bloc.getIdChambres().contains(idChambre)) {
+            bloc.getIdChambres().add(idChambre);
+        }
+
         blocRepository.save(bloc);
     }
 

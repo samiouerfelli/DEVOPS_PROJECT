@@ -2,6 +2,7 @@ package tn.esprit.tpfoyer.entities;
 
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -11,5 +12,5 @@ public class BlocDTO {
     Long capaciteBloc;
     Long idFoyer;
     FoyerDTO foyer;
-    List<Long> idChambres;
+    List<Long> idChambres = new ArrayList<>();
 }
