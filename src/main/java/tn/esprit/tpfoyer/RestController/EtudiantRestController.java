@@ -51,6 +51,13 @@ public class EtudiantRestController {
         return ResponseEntity.ok("Etudiant with ID " + idEtudiant + " has been deleted successfully.");
     }
 
+    @PutMapping("/{idEtudiant}/update-reservations")
+    public ResponseEntity<String> updateEtudiantReservations(@PathVariable Long idEtudiant, @RequestBody String idReservations) {
+        etudiantService.updateEtudiantReservations(idEtudiant, idReservations);
+        return ResponseEntity.ok("Reservations updated successfully for Etudiant with ID: " + idEtudiant);
+    }
+
+
 
 
 

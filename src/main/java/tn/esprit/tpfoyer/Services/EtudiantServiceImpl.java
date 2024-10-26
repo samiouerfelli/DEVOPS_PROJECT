@@ -64,6 +64,17 @@ public class EtudiantServiceImpl {
         etudiantRepository.delete(etudiant);
     }
 
+    public void updateEtudiantReservations(Long idEtudiant, String idReservations) {
+        Etudiant etudiant = etudiantRepository.findById(idEtudiant)
+                .orElseThrow(() -> new RuntimeException("Etudiant not found with ID: " + idEtudiant));
+
+        etudiant.getIdReservations().add(idReservations);
+        etudiantRepository.save(etudiant);
+    }
+
+
+
+
 
 
 
