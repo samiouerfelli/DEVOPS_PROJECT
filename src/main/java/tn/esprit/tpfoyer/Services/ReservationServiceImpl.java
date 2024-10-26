@@ -89,6 +89,15 @@ public class ReservationServiceImpl  {
         if (remainingReservations < 2) {
             chambreClient.updateChambreAvailability(idChambre, false);
         }
+
+        EtudiantDTO etudiant = etudiantClient.getEtudiantById(reservation.getIdEtudiant());
+        etudiant.getIdReservations().remove(idReservation);
+        etudiantClient.updateEtudiantReservations(reservation.getIdEtudiant(), etudiant.getIdReservations());
+
+        ChambreDTO chambre = chambreClient.getChambreById(idChambre);
+        chambre.getIdReservations().remove(idReservation);
+        chambreClient.updateChambreReservations(idChambre, chambre.getIdReservations());
+
     }
 
     public Reservation getReservationById(String idReservation) {
@@ -97,11 +106,21 @@ public class ReservationServiceImpl  {
     }
 
     public List<Reservation> getReservationsByEtudiant(Long idEtudiant) {
-        return reservationRepository.findByIdEtudiant(idEtudiant);
+        List<Reservation> reservations = reservationRepository.findByIdEtudiant(idEtudiant);
+
+        reservations.forEach(this::convertToDto);
+
+        return reservations;
     }
 
+
     public List<Reservation> getReservationsByChambreAndAnnee(Long idChambre, Date anneeUniversitaire) {
-        return reservationRepository.findByIdChambreAndAnneeUniversitaireAndEstValideTrue(idChambre, anneeUniversitaire);
+        List<Reservation> reservations = reservationRepository
+                .findByIdChambreAndAnneeUniversitaireAndEstValideTrue(idChambre, anneeUniversitaire);
+
+        reservations.forEach(this::convertToDto);
+
+        return reservations;
     }
 
 
