@@ -1,4 +1,3 @@
-// UniversiteRestControllerTest.java
 package tn.esprit.tpfoyer;
 
 import org.junit.jupiter.api.Test;
@@ -106,9 +105,10 @@ public class UniversiteRestControllerTest {
         UniversiteDTO universiteDTO = new UniversiteDTO();
         universiteDTO.setIdUniversite(1L);
         universiteDTO.setNomUniversite("University Without Foyer");
+
         when(universiteService.getUniversitesWithoutFoyer()).thenReturn(List.of(universiteDTO));
 
-        mockMvc.perform(get("/api/v1/universites/without-foyer"))
+        mockMvc.perform(get("/api/v1/universites/retrieve-universites-without-foyer"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].nomUniversite").value("University Without Foyer"));
     }
@@ -118,11 +118,10 @@ public class UniversiteRestControllerTest {
         UniversiteDTO universiteDTO = new UniversiteDTO();
         universiteDTO.setIdUniversite(1L);
         universiteDTO.setNomUniversite("Updated University");
-        universiteDTO.setAdresse("Test Address");
 
         when(universiteService.updateUniversite(anyLong(), Mockito.any(UniversiteDTO.class))).thenReturn(universiteDTO);
 
-        mockMvc.perform(put("/api/v1/universites/{id}", 1L)
+        mockMvc.perform(put("/api/v1/universites/update-universite/{idUniversite}", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nomUniversite\": \"Updated University\"}"))
                 .andExpect(status().isOk())
