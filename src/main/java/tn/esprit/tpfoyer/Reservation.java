@@ -1,4 +1,4 @@
-package tn.esprit.tpfoyer.reservationservice;
+package tn.esprit.tpfoyer;
 
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
@@ -20,8 +20,6 @@ import java.util.List;
 public class Reservation {
     @Id
     String idReservation;
-
-
     Date anneeUniversitaire;
     boolean estValide;
 
