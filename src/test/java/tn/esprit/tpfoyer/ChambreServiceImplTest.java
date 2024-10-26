@@ -40,23 +40,26 @@ import static org.mockito.Mockito.*;
     ////////////////////// Blocs ////////////////////////
 
     @Test
-     void testAddChambreAndAssignToBloc_Success() {
-        Chambre chambre = new Chambre();
-        chambre.setIdChambre(1L);
+    void testAddChambreAndAssignToBloc_Success() {
+       Chambre chambre = new Chambre();
+       chambre.setIdChambre(1L);
 
-        BlocDTO blocDTO = new BlocDTO();
-        blocDTO.setIdBloc(1L);
+       BlocDTO blocDTO = new BlocDTO();
+       blocDTO.setIdBloc(1L);
 
-        when(blocClient.retrieveBloc(1L)).thenReturn(blocDTO);
-        when(chambreRepository.save(any(Chambre.class))).thenReturn(chambre);
+       when(blocClient.retrieveBloc(1L)).thenReturn(blocDTO);
+       when(chambreRepository.save(any(Chambre.class))).thenReturn(chambre);
 
-        Chambre result = chambreService.addChambreAndAssignToBloc(chambre, 1L);
+       Chambre result = chambreService.addChambreAndAssignToBloc(chambre, 1L);
 
-        assertNotNull(result);
-        assertEquals(1L, result.getIdChambre());
-        verify(blocClient, times(1)).addChambreToBloc(1L, 1L);
-        verify(chambreRepository, times(1)).save(any(Chambre.class));
+       assertNotNull(result, "The saved chambre should not be null");
+       assertEquals(1L, result.getIdChambre(), "Chambre ID should match the expected ID");
+
+       verify(blocClient, times(1)).retrieveBloc(1L);
+       verify(blocClient, times(1)).addChambreToBloc(1L, 1L);
+       verify(chambreRepository, times(1)).save(any(Chambre.class));
     }
+
 
     @Test
      void testAddChambreAndAssignToBloc_BlocNotFound() {

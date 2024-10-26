@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import tn.esprit.tpfoyer.entities.BlocDTO;
 import tn.esprit.tpfoyer.entities.Chambre;
 import tn.esprit.tpfoyer.entities.ChambreDTO;
+import tn.esprit.tpfoyer.exception.BlocNotFoundException;
 import tn.esprit.tpfoyer.feignclient.BlocClient;
 import tn.esprit.tpfoyer.repository.ChambreRepository;
 
@@ -37,7 +38,8 @@ public class ChambreServiceImpl {
     public Chambre addChambreAndAssignToBloc(Chambre chambre, Long idBloc) {
         BlocDTO bloc = blocClient.retrieveBloc(idBloc);
         if (bloc == null) {
-             log.error("Bloc not found");
+            log.error("Bloc not found with ID: " + idBloc);
+            throw new BlocNotFoundException("Bloc not found with ID: " + idBloc);
         }
 
         chambre.setIdBloc(idBloc);
