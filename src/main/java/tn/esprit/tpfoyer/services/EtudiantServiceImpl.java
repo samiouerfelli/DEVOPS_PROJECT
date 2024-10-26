@@ -17,17 +17,6 @@ public class EtudiantServiceImpl {
 
     private static final String MESSAGE = "Etudiant not found with ID: ";
 
-    EtudiantDTO convertToDto(Etudiant etudiant) {
-        EtudiantDTO etudiantDTO = new EtudiantDTO();
-        etudiantDTO.setIdEtudiant(etudiant.getIdEtudiant());
-        etudiantDTO.setNomEtudiant(etudiant.getNomEtudiant());
-        etudiantDTO.setPrenomEtudiant(etudiant.getPrenomEtudiant());
-        etudiantDTO.setCinEtudiant(etudiant.getCinEtudiant());
-        etudiantDTO.setDateNaissance(etudiant.getDateNaissance());
-        etudiantDTO.getIdReservations().addAll(etudiant.getIdReservations());
-        return etudiantDTO;
-    }
-
     public Etudiant addEtudiant(Etudiant etudiant) {
         return etudiantRepository.save(etudiant);
     }
