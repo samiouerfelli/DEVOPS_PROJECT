@@ -1,8 +1,13 @@
-package tn.esprit.tpfoyer;
+package tn.esprit.tpfoyer.Services;
 
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import tn.esprit.tpfoyer.Entities.FoyerDTO;
+import tn.esprit.tpfoyer.Entities.Universite;
+import tn.esprit.tpfoyer.Entities.UniversiteDTO;
+import tn.esprit.tpfoyer.FeignClient.FoyerClient;
+import tn.esprit.tpfoyer.Repository.UniversiteRepository;
 
 import java.util.List;
 import java.util.stream.Collectors;
