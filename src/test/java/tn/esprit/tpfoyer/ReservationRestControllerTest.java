@@ -12,12 +12,11 @@ import tn.esprit.tpfoyer.Exception.ReservationException;
 import tn.esprit.tpfoyer.RestController.ReservationRestController;
 import tn.esprit.tpfoyer.Services.ReservationServiceImpl;
 
+import java.util.Collections;
 import java.util.Date;
-import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -35,24 +34,27 @@ public class ReservationRestControllerTest {
         Reservation reservation = new Reservation();
         reservation.setIdReservation("1");
 
-        when(reservationService.createReservation(anyLong(), anyLong(), any(Date.class))).thenReturn(reservation);
+        Mockito.when(reservationService.createReservation(anyLong(), anyLong(), any(Date.class)))
+                .thenReturn(reservation);
 
         mockMvc.perform(post("/api/v1/reservations/create")
                         .param("idEtudiant", "1")
                         .param("idChambre", "1")
-                        .param("anneeUniversitaire", "2024-01-01T00:00:00.000Z")
+                        .param("anneeUniversitaire", "2024-01-01")  // Update date format as needed
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.idReservation").value("1"));
     }
 
     @Test
     public void testCreateReservationThrowsException() throws Exception {
-        when(reservationService.createReservation(anyLong(), anyLong(), any(Date.class))).thenThrow(new ReservationException("Etudiant not found with ID: 1"));
+        Mockito.when(reservationService.createReservation(anyLong(), anyLong(), any(Date.class)))
+                .thenThrow(new ReservationException("Etudiant not found with ID: 1"));
 
         mockMvc.perform(post("/api/v1/reservations/create")
                         .param("idEtudiant", "1")
                         .param("idChambre", "1")
-                        .param("anneeUniversitaire", "2024-01-01T00:00:00.000Z")
+                        .param("anneeUniversitaire", "2024-01-01")  // Update date format as needed
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Etudiant not found with ID: 1"));
@@ -70,10 +72,9 @@ public class ReservationRestControllerTest {
         Reservation reservation = new Reservation();
         reservation.setIdReservation("1");
 
-        when(reservationService.getReservationById("1")).thenReturn(reservation);
+        Mockito.when(reservationService.getReservationById("1")).thenReturn(reservation);
 
-        mockMvc.perform(get("/api/v1/reservations/retrieve/1")
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/v1/reservations/retrieve/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.idReservation").value("1"));
     }
@@ -83,10 +84,10 @@ public class ReservationRestControllerTest {
         Reservation reservation = new Reservation();
         reservation.setIdReservation("1");
 
-        when(reservationService.getReservationsByEtudiant(anyLong())).thenReturn(List.of(reservation));
+        Mockito.when(reservationService.getReservationsByEtudiant(anyLong()))
+                .thenReturn(Collections.singletonList(reservation));
 
-        mockMvc.perform(get("/api/v1/reservations/retrieve-by-etudiant/1")
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/v1/reservations/retrieve-by-etudiant/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].idReservation").value("1"));
     }
@@ -96,10 +97,11 @@ public class ReservationRestControllerTest {
         Reservation reservation = new Reservation();
         reservation.setIdReservation("1");
 
-        when(reservationService.getReservationsByChambreAndAnnee(anyLong(), any(Date.class))).thenReturn(List.of(reservation));
+        Mockito.when(reservationService.getReservationsByChambreAndAnnee(anyLong(), any(Date.class)))
+                .thenReturn(Collections.singletonList(reservation));
 
         mockMvc.perform(get("/api/v1/reservations/retrieve-by-chambre-year/1")
-                        .param("anneeUniversitaire", "2024-01-01T00:00:00.000Z")
+                        .param("anneeUniversitaire", "2024-01-01")  // Update date format as needed
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].idReservation").value("1"));
