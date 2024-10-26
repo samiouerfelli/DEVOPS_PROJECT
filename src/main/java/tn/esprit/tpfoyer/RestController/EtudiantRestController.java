@@ -52,10 +52,11 @@ public class EtudiantRestController {
     }
 
     @PutMapping("/{idEtudiant}/update-reservations")
-    public ResponseEntity<String> updateEtudiantReservations(@PathVariable Long idEtudiant, @RequestBody String idReservations) {
+    public ResponseEntity<String> updateEtudiantReservations(@PathVariable Long idEtudiant, @RequestBody List<String> idReservations) {
         etudiantService.updateEtudiantReservations(idEtudiant, idReservations);
         return ResponseEntity.ok("Reservations updated successfully for Etudiant with ID: " + idEtudiant);
     }
+
 
 
 
