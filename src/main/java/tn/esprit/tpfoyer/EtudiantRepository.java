@@ -1,4 +1,4 @@
-package tn.esprit.tpfoyer.etudiantservice;
+package tn.esprit.tpfoyer;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
