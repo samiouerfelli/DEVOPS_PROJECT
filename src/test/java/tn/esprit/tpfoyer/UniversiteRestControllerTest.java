@@ -99,4 +99,32 @@ public class UniversiteRestControllerTest {
         mockMvc.perform(put("/api/v1/universites/unassign-foyer/1"))
                 .andExpect(status().isNoContent());
     }
+
+    @Test
+    public void testGetUniversitesWithoutFoyer() throws Exception {
+        UniversiteDTO universiteDTO = new UniversiteDTO();
+        universiteDTO.setIdUniversite(1L);
+        universiteDTO.setNomUniversite("Test University");
+        universiteDTO.setAdresse("Test Address");
+        when(universiteService.getUniversitesWithoutFoyer()).thenReturn(List.of(universiteDTO));
+
+        mockMvc.perform(get("/api/universites/without-foyer"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].nomUniversite").value("University1"));
+    }
+
+    @Test
+    public void testUpdateUniversite() throws Exception {
+        UniversiteDTO universiteDTO = new UniversiteDTO();
+        universiteDTO.setIdUniversite(1L);
+        universiteDTO.setNomUniversite("Test University");
+        universiteDTO.setAdresse("Test Address");
+        when(universiteService.updateUniversite(anyLong(), Mockito.any(UniversiteDTO.class))).thenReturn(universiteDTO);
+
+        mockMvc.perform(put("/api/universites/{id}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nomUniversite\": \"Updated University\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nomUniversite").value("Updated University"));
+    }
 }

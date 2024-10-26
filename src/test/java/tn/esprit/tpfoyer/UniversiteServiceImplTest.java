@@ -11,8 +11,9 @@ import tn.esprit.tpfoyer.Entities.UniversiteDTO;
 import tn.esprit.tpfoyer.FeignClient.FoyerClient;
 import tn.esprit.tpfoyer.Services.UniversiteServiceImpl;
 
-import java.util.Optional;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -123,5 +124,34 @@ public class UniversiteServiceImplTest {
 
         verify(universiteRepository, times(1)).save(universite);
         assertNull(universite.getIdFoyer());
+    }
+
+    @Test
+    public void testGetUniversitesWithoutFoyer() {
+        Universite universite = new Universite();
+        universite.setNomUniversite("University Without Foyer");
+
+        when(universiteRepository.findByIdFoyerIsNull()).thenReturn(Collections.singletonList(universite));
+
+        assertFalse(universiteService.getUniversitesWithoutFoyer().isEmpty());
+        assertEquals("University Without Foyer", universiteService.getUniversitesWithoutFoyer().get(0).getNomUniversite());
+    }
+
+    @Test
+    public void testUpdateUniversite() {
+        Universite universite = new Universite();
+        universite.setIdUniversite(1L);
+        universite.setNomUniversite("Original Name");
+
+        UniversiteDTO updatedDto = new UniversiteDTO();
+        updatedDto.setIdUniversite(1L);
+        updatedDto.setNomUniversite("Test University");
+        updatedDto.setAdresse("Test Address");
+
+        when(universiteRepository.findById(anyLong())).thenReturn(Optional.of(universite));
+        when(universiteRepository.save(any(Universite.class))).thenReturn(universite);
+
+        UniversiteDTO result = universiteService.updateUniversite(1L, updatedDto);
+        assertEquals("Updated University", result.getNomUniversite());
     }
 }
