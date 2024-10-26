@@ -1,8 +1,6 @@
-package tn.esprit.tpfoyer;
+package tn.esprit.tpfoyer.Entities;
 
-import jakarta.persistence.ElementCollection;
 import lombok.Data;
-import org.springframework.boot.autoconfigure.amqp.RabbitConnectionDetails;
 
 import java.util.List;
 

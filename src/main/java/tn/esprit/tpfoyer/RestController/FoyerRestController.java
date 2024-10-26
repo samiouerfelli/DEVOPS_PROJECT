@@ -1,9 +1,12 @@
-package tn.esprit.tpfoyer;
+package tn.esprit.tpfoyer.RestController;
 
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import tn.esprit.tpfoyer.Entities.Foyer;
+import tn.esprit.tpfoyer.Entities.FoyerDTO;
+import tn.esprit.tpfoyer.Services.FoyerServiceImpl;
 
 import java.util.List;
 
