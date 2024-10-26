@@ -5,21 +5,23 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.boot.test.context.SpringBootTest;
+import tn.esprit.tpfoyer.Repository.UniversiteRepository;
 import tn.esprit.tpfoyer.Entities.Universite;
 import tn.esprit.tpfoyer.Entities.UniversiteDTO;
 import tn.esprit.tpfoyer.FeignClient.FoyerClient;
-import tn.esprit.tpfoyer.Repository.UniversiteRepository;
 import tn.esprit.tpfoyer.Services.UniversiteServiceImpl;
 
-import java.util.Arrays;
 import java.util.Optional;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
-class UniversiteServiceImplTest {
+public class UniversiteServiceImplTest {
+
+    @InjectMocks
+    private UniversiteServiceImpl universiteService;
 
     @Mock
     private UniversiteRepository universiteRepository;
@@ -27,45 +29,32 @@ class UniversiteServiceImplTest {
     @Mock
     private FoyerClient foyerClient;
 
-    @InjectMocks
-    private UniversiteServiceImpl universiteService;
-
     @BeforeEach
-    void setUp() {
+    public void setup() {
         MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void testAddUniversite() {
+    public void testAddUniversite() {
         Universite universite = new Universite();
+        universite.setIdUniversite(1L);
         universite.setNomUniversite("Test University");
+        universite.setAdresse("Test Address");
 
         when(universiteRepository.save(any(Universite.class))).thenReturn(universite);
 
-        Universite createdUniversite = universiteService.addUniversite(universite);
-        assertNotNull(createdUniversite);
-        assertEquals("Test University", createdUniversite.getNomUniversite());
+        Universite result = universiteService.addUniversite(universite);
+
+        assertEquals("Test University", result.getNomUniversite());
+        assertEquals("Test Address", result.getAdresse());
     }
 
     @Test
-    void testRetrieveUniversite() {
-        Universite universite = new Universite();
-        universite.setIdUniversite(1L);
-        universite.setNomUniversite("Sample University");
-
-        when(universiteRepository.findById(1L)).thenReturn(Optional.of(universite));
-
-        UniversiteDTO retrievedUniversite = universiteService.retrieveUniversite(1L);
-        assertNotNull(retrievedUniversite);
-        assertEquals("Sample University", retrievedUniversite.getNomUniversite());
-    }
-
-    @Test
-    void testAssignFoyerToUniversite() {
+    public void testAssignFoyerToUniversite() {
         Universite universite = new Universite();
         universite.setIdUniversite(1L);
 
-        when(universiteRepository.findById(1L)).thenReturn(Optional.of(universite));
+        when(universiteRepository.findById(anyLong())).thenReturn(Optional.of(universite));
         when(universiteRepository.save(any(Universite.class))).thenReturn(universite);
 
         universiteService.assignFoyerToUniversite(1L, 2L);
@@ -75,16 +64,64 @@ class UniversiteServiceImplTest {
     }
 
     @Test
-    void testDeleteUniversite() {
+    public void testRetrieveUniversite() {
+        Universite mockUniversite = new Universite();
+        mockUniversite.setIdUniversite(1L);
+        mockUniversite.setNomUniversite("Test University");
+        mockUniversite.setAdresse("Test Address");
+
+        when(universiteRepository.findById(anyLong())).thenReturn(Optional.of(mockUniversite));
+
+        UniversiteDTO result = universiteService.retrieveUniversite(1L);
+
+        assertEquals("Test University", result.getNomUniversite());
+        assertEquals("Test Address", result.getAdresse());
+    }
+
+    @Test
+    public void testRetrieveAllUniversites() {
+        Universite universite1 = new Universite();
+        universite1.setIdUniversite(1L);
+        universite1.setNomUniversite("University A");
+
+        Universite universite2 = new Universite();
+        universite2.setIdUniversite(2L);
+        universite2.setNomUniversite("University B");
+
+        when(universiteRepository.findAll()).thenReturn(List.of(universite1, universite2));
+
+        List<UniversiteDTO> results = universiteService.retrieveAllUniversites();
+
+        assertEquals(2, results.size());
+        assertEquals("University A", results.get(0).getNomUniversite());
+        assertEquals("University B", results.get(1).getNomUniversite());
+    }
+
+    @Test
+    public void testDeleteUniversite() {
         Universite universite = new Universite();
         universite.setIdUniversite(1L);
         universite.setIdFoyer(2L);
 
-        when(universiteRepository.findById(1L)).thenReturn(Optional.of(universite));
+        when(universiteRepository.findById(anyLong())).thenReturn(Optional.of(universite));
 
         universiteService.deleteUniversite(1L);
 
         verify(foyerClient, times(1)).unassignFoyerFromUniversite(2L);
         verify(universiteRepository, times(1)).deleteById(1L);
+    }
+
+    @Test
+    public void testUnassignFoyerFromUniversite() {
+        Universite universite = new Universite();
+        universite.setIdUniversite(1L);
+        universite.setIdFoyer(2L);
+
+        when(universiteRepository.findById(anyLong())).thenReturn(Optional.of(universite));
+
+        universiteService.unassignFoyerFromUniversite(1L);
+
+        verify(universiteRepository, times(1)).save(universite);
+        assertNull(universite.getIdFoyer());
     }
 }
