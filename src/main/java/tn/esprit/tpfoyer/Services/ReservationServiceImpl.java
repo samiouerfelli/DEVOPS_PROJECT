@@ -67,6 +67,10 @@ public class ReservationServiceImpl  {
         etudiant.getIdReservations().add(savedReservation.getIdReservation());
         etudiantClient.updateEtudiantReservations(idEtudiant, etudiant.getIdReservations());
 
+        chambre.getIdReservations().add(reservation.getIdReservation());
+        chambreClient.updateChambreReservations(idChambre, chambre.getIdReservations());
+
+
         return savedReservation;
     }
 
