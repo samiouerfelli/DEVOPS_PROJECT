@@ -87,6 +87,18 @@ public class ChambreServiceImpl {
                 .orElseThrow(() -> new RuntimeException("Chambre not found"));
     }
 
+    public void updateChambreReservations(Long idChambre, List<String> idReservations) {
+        Chambre chambre = chambreRepository.findById(idChambre)
+                .orElseThrow(() -> new RuntimeException("Chambre not found with ID: " + idChambre));
+
+        chambre.setIdReservations(idReservations);
+        chambreRepository.save(chambre);
+    }
+
+
+
+
+
 
 
 

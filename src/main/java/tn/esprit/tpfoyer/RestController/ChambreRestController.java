@@ -57,6 +57,12 @@ public class ChambreRestController {
         return ResponseEntity.ok(chambre);
     }
 
+    @PutMapping("/{idChambre}/update-reservations")
+    public ResponseEntity<String> updateChambreReservations(@PathVariable Long idChambre, @RequestBody List<String> idReservations) {
+        chambreService.updateChambreReservations(idChambre, idReservations);
+        return ResponseEntity.ok("Reservations updated successfully for Chambre with ID: " + idChambre);
+    }
+
 
 
 }
