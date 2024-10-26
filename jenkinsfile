@@ -37,20 +37,27 @@ pipeline {
         }
 
 
-        stage('SonarQube Analysis') {
-            steps {
-                script {
-                    withSonarQubeEnv('sonar') {
-                        sh '''
-                            $SCANNER_HOME/bin/sonar-scanner \
-                            -Dsonar.projectName=bloc-service \
-                            -Dsonar.projectKey=bloc-service \
-                            -Dsonar.java.binaries=.
-                        '''
+          stage('Generate JaCoCo Report') {
+                            steps {
+                                sh "mvn jacoco:report"
+                            }
+                        }
+
+
+
+                  stage('SonarQube Analysis') {
+                        steps {
+                            script {
+                                withSonarQubeEnv('sonar') {
+                                    sh '''
+                                        $SCANNER_HOME/bin/sonar-scanner \
+                                        -Dsonar.projectName=bloc-service \
+                                        -Dsonar.projectKey=bloc-service
+                                    '''
+                                }
+                            }
+                        }
                     }
-                }
-            }
-        }
 
         stage('Quality Gate') {
             steps {
