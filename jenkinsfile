@@ -50,14 +50,13 @@ pipeline {
                             sh '''
                                 $SCANNER_HOME/bin/sonar-scanner \
                                 -Dsonar.projectName=universite-service \
-                                -Dsonar.projectKey=universite-service \
-                                -Dsonar.java.binaries=. \
-                                -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                                -Dsonar.projectKey=universite-service
                             '''
                         }
                     }
                 }
             }
+
 
 
 
