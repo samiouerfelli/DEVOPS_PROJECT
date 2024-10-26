@@ -1,8 +1,8 @@
-package tn.esprit.tpfoyer.FeignClient;
+package tn.esprit.tpfoyer.feignclient;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
-import tn.esprit.tpfoyer.Entities.UniversiteDTO;
+import tn.esprit.tpfoyer.entities.UniversiteDTO;
 
 @FeignClient(name = "universite-service")
 public interface UniversiteClient {

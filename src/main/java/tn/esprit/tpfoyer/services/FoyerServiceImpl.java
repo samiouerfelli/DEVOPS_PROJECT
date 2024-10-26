@@ -1,13 +1,15 @@
-package tn.esprit.tpfoyer.Services;
+package tn.esprit.tpfoyer.services;
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
-import tn.esprit.tpfoyer.FeignClient.BlocClient;
-import tn.esprit.tpfoyer.Entities.Foyer;
-import tn.esprit.tpfoyer.Entities.FoyerDTO;
-import tn.esprit.tpfoyer.Repository.FoyerRepository;
-import tn.esprit.tpfoyer.FeignClient.UniversiteClient;
-import tn.esprit.tpfoyer.Entities.UniversiteDTO;
+import tn.esprit.tpfoyer.exception.UniversiteAlreadyAssignedException;
+import tn.esprit.tpfoyer.exception.UniversiteNotFoundException;
+import tn.esprit.tpfoyer.feignclient.BlocClient;
+import tn.esprit.tpfoyer.entities.Foyer;
+import tn.esprit.tpfoyer.entities.FoyerDTO;
+import tn.esprit.tpfoyer.repository.FoyerRepository;
+import tn.esprit.tpfoyer.feignclient.UniversiteClient;
+import tn.esprit.tpfoyer.entities.UniversiteDTO;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,16 +33,19 @@ public class FoyerServiceImpl   {
         return foyerDTO;
     }
 
+    private static final String MESSAGE = "Foyer not found";
+
+
     ///////////////          Foyers          ////////////////////////
 
     public Foyer addFoyerAndAssignToUniversite(Foyer foyer, Long idUniversite) {
         UniversiteDTO universite = universiteClient.retrieveUniversite(idUniversite);
         if (universite == null) {
-            throw new RuntimeException("Universite not found");
+            throw new UniversiteNotFoundException("Universite not found");
         }
 
         if (universite.getIdFoyer() != null) {
-            throw new RuntimeException("This Universite already has a Foyer assigned.");
+            throw new UniversiteAlreadyAssignedException("This Universite already has a Foyer assigned.");
         }
 
         foyer.setIdUniversite(idUniversite);
@@ -52,7 +57,7 @@ public class FoyerServiceImpl   {
     }
     public FoyerDTO retrieveFoyer(Long idFoyer) {
         Foyer foyer = foyerRepository.findById(idFoyer)
-                .orElseThrow(() -> new RuntimeException("Foyer not found"));
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
         return convertToDto(foyer);
     }
 
@@ -67,14 +72,14 @@ public class FoyerServiceImpl   {
 
     public void unassignUniversiteFromFoyer(Long idFoyer) {
         Foyer foyer = foyerRepository.findById(idFoyer)
-                .orElseThrow(() -> new RuntimeException("Foyer not found"));
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
         foyer.setIdUniversite(null);
         foyerRepository.save(foyer);
     }
 
     public void deleteFoyer(Long idFoyer) {
         Foyer foyer = foyerRepository.findById(idFoyer)
-                .orElseThrow(() -> new RuntimeException("Foyer not found"));
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
 
         // If Foyer has an associated Universite, unassign it
         if (foyer.getIdUniversite() != null) {
@@ -92,7 +97,7 @@ public class FoyerServiceImpl   {
 
     public void addBlocToFoyer(Long idFoyer, Long idBloc) {
         Foyer foyer = foyerRepository.findById(idFoyer)
-                .orElseThrow(() -> new RuntimeException("Foyer not found"));
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
 
         foyer.getIdBlocs().add(idBloc);
         foyerRepository.save(foyer);
@@ -101,7 +106,7 @@ public class FoyerServiceImpl   {
 
     public void deleteFoyerAndBlocs(Long idFoyer) {
         Foyer foyer = foyerRepository.findById(idFoyer)
-                .orElseThrow(() -> new RuntimeException("Foyer not found"));
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
 
         blocClient.deleteBlocsByFoyerId(idFoyer);
 
@@ -114,7 +119,7 @@ public class FoyerServiceImpl   {
 
     public void removeBlocFromFoyer(Long idFoyer, Long idBloc) {
         Foyer foyer = foyerRepository.findById(idFoyer)
-                .orElseThrow(() -> new RuntimeException("Foyer not found"));
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
 
         foyer.getIdBlocs().remove(idBloc);
         foyerRepository.save(foyer);

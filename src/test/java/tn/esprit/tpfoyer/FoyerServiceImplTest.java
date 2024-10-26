@@ -5,13 +5,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import tn.esprit.tpfoyer.Entities.Foyer;
-import tn.esprit.tpfoyer.Entities.FoyerDTO;
-import tn.esprit.tpfoyer.Entities.UniversiteDTO;
-import tn.esprit.tpfoyer.FeignClient.BlocClient;
-import tn.esprit.tpfoyer.FeignClient.UniversiteClient;
-import tn.esprit.tpfoyer.Repository.FoyerRepository;
-import tn.esprit.tpfoyer.Services.FoyerServiceImpl;
+import tn.esprit.tpfoyer.entities.Foyer;
+import tn.esprit.tpfoyer.entities.FoyerDTO;
+import tn.esprit.tpfoyer.entities.UniversiteDTO;
+import tn.esprit.tpfoyer.feignclient.BlocClient;
+import tn.esprit.tpfoyer.feignclient.UniversiteClient;
+import tn.esprit.tpfoyer.repository.FoyerRepository;
+import tn.esprit.tpfoyer.services.FoyerServiceImpl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,28 +21,28 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-public class FoyerServiceImplTest {
+ class FoyerServiceImplTest {
 
     @Mock
-    private FoyerRepository foyerRepository;
+     FoyerRepository foyerRepository;
 
     @Mock
-    private UniversiteClient universiteClient;
+     UniversiteClient universiteClient;
 
     @Mock
-    private BlocClient blocClient;
+     BlocClient blocClient;
 
     @InjectMocks
-    private FoyerServiceImpl foyerService;
+     FoyerServiceImpl foyerService;
 
     @BeforeEach
-    public void setUp() {
+     void setUp() {
         MockitoAnnotations.openMocks(this);
     }
 
     // Test for adding a Foyer and assigning it to a Universite
     @Test
-    public void testAddFoyerAndAssignToUniversite() {
+     void testAddFoyerAndAssignToUniversite() {
         UniversiteDTO universiteDTO = new UniversiteDTO();
         universiteDTO.setIdUniversite(1L);
 
@@ -69,7 +69,7 @@ public class FoyerServiceImplTest {
 
     // Test for retrieving a Foyer by ID
     @Test
-    public void testRetrieveFoyer() {
+     void testRetrieveFoyer() {
         Foyer foyer = new Foyer();
         foyer.setIdFoyer(1L);
         foyer.setNomFoyer("Foyer1");
@@ -86,7 +86,7 @@ public class FoyerServiceImplTest {
 
     // Test for retrieving all Foyers
     @Test
-    public void testRetrieveAllFoyers() {
+     void testRetrieveAllFoyers() {
         Foyer foyer1 = new Foyer();
         foyer1.setIdFoyer(1L);
         foyer1.setNomFoyer("Foyer1");
@@ -106,7 +106,7 @@ public class FoyerServiceImplTest {
 
     // Test for unassigning a Universite from a Foyer
     @Test
-    public void testUnassignUniversiteFromFoyer() {
+     void testUnassignUniversiteFromFoyer() {
         Foyer foyer = new Foyer();
         foyer.setIdFoyer(1L);
         foyer.setIdUniversite(1L);
@@ -121,7 +121,7 @@ public class FoyerServiceImplTest {
 
     // Test for deleting a Foyer
     @Test
-    public void testDeleteFoyer() {
+     void testDeleteFoyer() {
         Foyer foyer = new Foyer();
         foyer.setIdFoyer(1L);
         foyer.setIdUniversite(1L);
@@ -136,7 +136,7 @@ public class FoyerServiceImplTest {
 
     // Test for adding a Bloc to a Foyer
     @Test
-    public void testAddBlocToFoyer() {
+     void testAddBlocToFoyer() {
         Foyer foyer = new Foyer();
         foyer.setIdFoyer(1L);
         foyer.setIdBlocs(new ArrayList<>());
@@ -151,7 +151,7 @@ public class FoyerServiceImplTest {
 
     // Test for deleting a Foyer and its associated Blocs
     @Test
-    public void testDeleteFoyerAndBlocs() {
+     void testDeleteFoyerAndBlocs() {
         Foyer foyer = new Foyer();
         foyer.setIdFoyer(1L);
         foyer.setIdUniversite(1L);
@@ -167,7 +167,7 @@ public class FoyerServiceImplTest {
 
     // Test for removing a Bloc from a Foyer
     @Test
-    public void testRemoveBlocFromFoyer() {
+     void testRemoveBlocFromFoyer() {
         Foyer foyer = new Foyer();
         foyer.setIdFoyer(1L);
         foyer.setIdBlocs(new ArrayList<>(List.of(2L)));
@@ -182,7 +182,7 @@ public class FoyerServiceImplTest {
 
     // Test for retrieving Foyers without Blocs
     @Test
-    public void testGetFoyersWithoutBlocs() {
+     void testGetFoyersWithoutBlocs() {
         Foyer foyer = new Foyer();
         foyer.setIdFoyer(1L);
         foyer.setNomFoyer("Foyer1");

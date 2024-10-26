@@ -6,10 +6,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import tn.esprit.tpfoyer.Entities.Foyer;
-import tn.esprit.tpfoyer.Entities.FoyerDTO;
-import tn.esprit.tpfoyer.RestController.FoyerRestController;
-import tn.esprit.tpfoyer.Services.FoyerServiceImpl;
+import tn.esprit.tpfoyer.entities.Foyer;
+import tn.esprit.tpfoyer.entities.FoyerDTO;
+import tn.esprit.tpfoyer.restcontroller.FoyerRestController;
+import tn.esprit.tpfoyer.services.FoyerServiceImpl;
 
 import java.util.List;
 
@@ -20,17 +20,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(FoyerRestController.class)
-public class FoyerRestControllerTest {
+ class FoyerRestControllerTest {
 
     @Autowired
-    private MockMvc mockMvc;
+     MockMvc mockMvc;
 
     @MockBean
-    private FoyerServiceImpl foyerService;
+     FoyerServiceImpl foyerService;
 
     // Test for adding a Foyer and assigning it to a Universite
     @Test
-    public void testAddFoyerAndAssignToUniversite() throws Exception {
+     void testAddFoyerAndAssignToUniversite() throws Exception {
         Foyer newFoyer = new Foyer();
         newFoyer.setIdFoyer(1L);
         newFoyer.setNomFoyer("Foyer1");
@@ -52,7 +52,7 @@ public class FoyerRestControllerTest {
 
     // Test for retrieving a single Foyer by ID
     @Test
-    public void testRetrieveFoyer() throws Exception {
+     void testRetrieveFoyer() throws Exception {
         FoyerDTO foyerDTO = new FoyerDTO();
         foyerDTO.setIdFoyer(1L);
         foyerDTO.setNomFoyer("Foyer1");
@@ -72,7 +72,7 @@ public class FoyerRestControllerTest {
 
     // Test for retrieving all Foyers
     @Test
-    public void testRetrieveAllFoyers() throws Exception {
+     void testRetrieveAllFoyers() throws Exception {
         FoyerDTO foyer1 = new FoyerDTO();
         foyer1.setIdFoyer(1L);
         foyer1.setNomFoyer("Foyer1");
@@ -94,7 +94,7 @@ public class FoyerRestControllerTest {
 
     // Test for deleting a Foyer
     @Test
-    public void testDeleteFoyer() throws Exception {
+     void testDeleteFoyer() throws Exception {
         mockMvc.perform(delete("/api/v1/foyers/delete-foyer/1"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Foyer with ID 1 has been deleted successfully."));
@@ -104,7 +104,7 @@ public class FoyerRestControllerTest {
 
     // Test for unassigning a Universite from a Foyer
     @Test
-    public void testUnassignUniversiteFromFoyer() throws Exception {
+     void testUnassignUniversiteFromFoyer() throws Exception {
         mockMvc.perform(put("/api/v1/foyers/unassign-universite/1"))
                 .andExpect(status().isNoContent());
 
@@ -113,7 +113,7 @@ public class FoyerRestControllerTest {
 
     // Test for adding a Bloc to a Foyer
     @Test
-    public void testAddBlocToFoyer() throws Exception {
+     void testAddBlocToFoyer() throws Exception {
         mockMvc.perform(put("/api/v1/foyers/1/add-bloc")
                         .param("idBloc", "2"))
                 .andExpect(status().isNoContent());
@@ -123,7 +123,7 @@ public class FoyerRestControllerTest {
 
     // Test for deleting a Foyer and its associated Blocs
     @Test
-    public void testDeleteFoyerAndBlocs() throws Exception {
+     void testDeleteFoyerAndBlocs() throws Exception {
         mockMvc.perform(delete("/api/v1/foyers/delete-foyer-and-blocs/1"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Foyer with ID 1 and all associated blocs have been deleted successfully."));
@@ -133,7 +133,7 @@ public class FoyerRestControllerTest {
 
     // Test for removing a Bloc from a Foyer
     @Test
-    public void testRemoveBlocFromFoyer() throws Exception {
+     void testRemoveBlocFromFoyer() throws Exception {
         mockMvc.perform(put("/api/v1/foyers/1/remove-bloc")
                         .param("idBloc", "2"))
                 .andExpect(status().isNoContent());
@@ -143,7 +143,7 @@ public class FoyerRestControllerTest {
 
     // Test for retrieving Foyers without any Blocs
     @Test
-    public void testGetFoyersWithoutBlocs() throws Exception {
+     void testGetFoyersWithoutBlocs() throws Exception {
         FoyerDTO foyerDTO = new FoyerDTO();
         foyerDTO.setIdFoyer(1L);
         foyerDTO.setNomFoyer("Foyer1");
