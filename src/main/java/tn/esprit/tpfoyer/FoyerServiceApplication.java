@@ -1,9 +1,11 @@
-package tn.esprit.tpfoyer.foyerservice;
+package tn.esprit.tpfoyer;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication
+@EnableFeignClients
 public class FoyerServiceApplication {
 
 	public static void main(String[] args) {
