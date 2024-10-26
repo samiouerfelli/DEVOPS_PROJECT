@@ -35,6 +35,12 @@ pipeline {
                 sh "mvn test -Dspring.profiles.active=local"
             }
         }
+        stage('Generate JaCoCo Report') {
+                    steps {
+                        sh "mvn jacoco:report"
+                    }
+                }
+
 
 
         stage('SonarQube Analysis') {
@@ -46,6 +52,8 @@ pipeline {
                             -Dsonar.projectName=universite-service \
                             -Dsonar.projectKey=universite-service \
                             -Dsonar.java.binaries=.
+                            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+
                         '''
                     }
                 }
@@ -112,4 +120,9 @@ pipeline {
             }
         }
     }
+     post {
+            always {
+                jacoco(execPattern: 'target/jacoco.exec')
+            }
+        }
 }
