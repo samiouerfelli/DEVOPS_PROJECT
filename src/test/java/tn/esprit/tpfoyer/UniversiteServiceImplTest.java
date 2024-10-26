@@ -1,3 +1,4 @@
+// UniversiteServiceImplTest.java
 package tn.esprit.tpfoyer;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -145,7 +146,7 @@ public class UniversiteServiceImplTest {
 
         UniversiteDTO updatedDto = new UniversiteDTO();
         updatedDto.setIdUniversite(1L);
-        updatedDto.setNomUniversite("Test University");
+        updatedDto.setNomUniversite("Updated University");
         updatedDto.setAdresse("Test Address");
 
         when(universiteRepository.findById(anyLong())).thenReturn(Optional.of(universite));

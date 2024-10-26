@@ -1,3 +1,4 @@
+// UniversiteRestControllerTest.java
 package tn.esprit.tpfoyer;
 
 import org.junit.jupiter.api.Test;
@@ -104,24 +105,24 @@ public class UniversiteRestControllerTest {
     public void testGetUniversitesWithoutFoyer() throws Exception {
         UniversiteDTO universiteDTO = new UniversiteDTO();
         universiteDTO.setIdUniversite(1L);
-        universiteDTO.setNomUniversite("Test University");
-        universiteDTO.setAdresse("Test Address");
+        universiteDTO.setNomUniversite("University Without Foyer");
         when(universiteService.getUniversitesWithoutFoyer()).thenReturn(List.of(universiteDTO));
 
-        mockMvc.perform(get("/api/universites/without-foyer"))
+        mockMvc.perform(get("/api/v1/universites/without-foyer"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].nomUniversite").value("University1"));
+                .andExpect(jsonPath("$[0].nomUniversite").value("University Without Foyer"));
     }
 
     @Test
     public void testUpdateUniversite() throws Exception {
         UniversiteDTO universiteDTO = new UniversiteDTO();
         universiteDTO.setIdUniversite(1L);
-        universiteDTO.setNomUniversite("Test University");
+        universiteDTO.setNomUniversite("Updated University");
         universiteDTO.setAdresse("Test Address");
+
         when(universiteService.updateUniversite(anyLong(), Mockito.any(UniversiteDTO.class))).thenReturn(universiteDTO);
 
-        mockMvc.perform(put("/api/universites/{id}", 1L)
+        mockMvc.perform(put("/api/v1/universites/{id}", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nomUniversite\": \"Updated University\"}"))
                 .andExpect(status().isOk())
