@@ -1,7 +1,6 @@
 package tn.esprit.tpfoyer.services;
 
 import lombok.AllArgsConstructor;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import tn.esprit.tpfoyer.entities.BlocDTO;
@@ -38,7 +37,7 @@ public class ChambreServiceImpl {
     public Chambre addChambreAndAssignToBloc(Chambre chambre, Long idBloc) {
         BlocDTO bloc = blocClient.retrieveBloc(idBloc);
         if (bloc == null) {
-            throw new RuntimeException("Bloc not found");
+             log.error("Bloc not found");
         }
 
         chambre.setIdBloc(idBloc);
