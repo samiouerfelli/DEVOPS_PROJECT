@@ -14,20 +14,19 @@ import java.util.List;
 public class EtudiantServiceImpl {
 
     private final EtudiantRepository etudiantRepository;
-    private static final String ETUDIANT_NOT_FOUND_MESSAGE = "Etudiant not found with ID: ";
 
-    public EtudiantDTO convertToDto(Etudiant etudiant) {
+    private static final String MESSAGE = "Etudiant not found with ID: ";
+
+    EtudiantDTO convertToDto(Etudiant etudiant) {
         EtudiantDTO etudiantDTO = new EtudiantDTO();
         etudiantDTO.setIdEtudiant(etudiant.getIdEtudiant());
         etudiantDTO.setNomEtudiant(etudiant.getNomEtudiant());
         etudiantDTO.setPrenomEtudiant(etudiant.getPrenomEtudiant());
         etudiantDTO.setCinEtudiant(etudiant.getCinEtudiant());
         etudiantDTO.setDateNaissance(etudiant.getDateNaissance());
-        etudiantDTO.setIdReservations(etudiant.getIdReservations());
+        etudiantDTO.getIdReservations().addAll(etudiant.getIdReservations());
         return etudiantDTO;
     }
-
-    ///////////////// Etudiant //////////////////
 
     public Etudiant addEtudiant(Etudiant etudiant) {
         return etudiantRepository.save(etudiant);
@@ -35,7 +34,7 @@ public class EtudiantServiceImpl {
 
     public Etudiant getEtudiantById(Long idEtudiant) {
         return etudiantRepository.findById(idEtudiant)
-                .orElseThrow(() -> new EtudiantNotFoundException(ETUDIANT_NOT_FOUND_MESSAGE + idEtudiant));
+                .orElseThrow(() -> new EtudiantNotFoundException(MESSAGE + idEtudiant));
     }
 
     public List<Etudiant> getAllEtudiants() {
@@ -44,7 +43,7 @@ public class EtudiantServiceImpl {
 
     public Etudiant updateEtudiant(Long idEtudiant, Etudiant updatedEtudiant) {
         Etudiant etudiant = etudiantRepository.findById(idEtudiant)
-                .orElseThrow(() -> new EtudiantNotFoundException(ETUDIANT_NOT_FOUND_MESSAGE + idEtudiant));
+                .orElseThrow(() -> new EtudiantNotFoundException(MESSAGE + idEtudiant));
 
         etudiant.setNomEtudiant(updatedEtudiant.getNomEtudiant());
         etudiant.setPrenomEtudiant(updatedEtudiant.getPrenomEtudiant());
@@ -57,14 +56,14 @@ public class EtudiantServiceImpl {
 
     public void deleteEtudiant(Long idEtudiant) {
         Etudiant etudiant = etudiantRepository.findById(idEtudiant)
-                .orElseThrow(() -> new EtudiantNotFoundException(ETUDIANT_NOT_FOUND_MESSAGE + idEtudiant));
+                .orElseThrow(() -> new EtudiantNotFoundException(MESSAGE + idEtudiant));
 
         etudiantRepository.delete(etudiant);
     }
 
     public void updateEtudiantReservations(Long idEtudiant, List<String> idReservations) {
         Etudiant etudiant = etudiantRepository.findById(idEtudiant)
-                .orElseThrow(() -> new EtudiantNotFoundException(ETUDIANT_NOT_FOUND_MESSAGE + idEtudiant));
+                .orElseThrow(() -> new EtudiantNotFoundException(MESSAGE + idEtudiant));
 
         etudiant.setIdReservations(idReservations);
         etudiantRepository.save(etudiant);

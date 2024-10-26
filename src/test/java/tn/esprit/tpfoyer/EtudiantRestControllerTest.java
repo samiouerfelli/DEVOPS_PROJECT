@@ -18,7 +18,8 @@ import tn.esprit.tpfoyer.exception.EtudiantNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -80,11 +81,11 @@ class EtudiantRestControllerTest {
 
    @Test
    void testGetEtudiantById_NotFound() throws Exception {
-      when(etudiantService.getEtudiantById(1L)).thenThrow(new EtudiantNotFoundException("Etudiant not found"));
+      when(etudiantService.getEtudiantById(1L)).thenThrow(new EtudiantNotFoundException("Etudiant not found with ID: 1"));
 
       mockMvc.perform(get("/api/v1/etudiants/retrieve-etudiant/1"))
               .andExpect(status().isNotFound())
-              .andExpect(content().string("Etudiant not found"));
+              .andExpect(content().string("Etudiant not found with ID: 1"));
 
       verify(etudiantService, times(1)).getEtudiantById(1L);
    }
@@ -128,13 +129,13 @@ class EtudiantRestControllerTest {
    @Test
    void testUpdateEtudiant_NotFound() throws Exception {
       when(etudiantService.updateEtudiant(eq(1L), any(Etudiant.class)))
-              .thenThrow(new EtudiantNotFoundException("Etudiant not found"));
+              .thenThrow(new EtudiantNotFoundException("Etudiant not found with ID: 1"));
 
       mockMvc.perform(put("/api/v1/etudiants/update-etudiant/1")
                       .contentType(MediaType.APPLICATION_JSON)
                       .content("{\"nomEtudiant\":\"Doe Updated\"}"))
               .andExpect(status().isNotFound())
-              .andExpect(content().string("Etudiant not found"));
+              .andExpect(content().string("Etudiant not found with ID: 1"));
 
       verify(etudiantService, times(1)).updateEtudiant(eq(1L), any(Etudiant.class));
    }
@@ -150,11 +151,11 @@ class EtudiantRestControllerTest {
 
    @Test
    void testDeleteEtudiant_NotFound() throws Exception {
-      doThrow(new EtudiantNotFoundException("Etudiant not found")).when(etudiantService).deleteEtudiant(1L);
+      doThrow(new EtudiantNotFoundException("Etudiant not found with ID: 1")).when(etudiantService).deleteEtudiant(1L);
 
       mockMvc.perform(delete("/api/v1/etudiants/delete-etudiant/1"))
               .andExpect(status().isNotFound())
-              .andExpect(content().string("Etudiant not found"));
+              .andExpect(content().string("Etudiant not found with ID: 1"));
 
       verify(etudiantService, times(1)).deleteEtudiant(1L);
    }
