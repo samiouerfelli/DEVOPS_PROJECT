@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import tn.esprit.tpfoyer.entities.Etudiant;
 import tn.esprit.tpfoyer.entities.EtudiantDTO;
+import tn.esprit.tpfoyer.exception.EtudiantNotFoundException;
 import tn.esprit.tpfoyer.repository.EtudiantRepository;
 
 import java.util.List;
@@ -12,23 +13,17 @@ import java.util.List;
 @AllArgsConstructor
 public class EtudiantServiceImpl {
 
+    private final EtudiantRepository etudiantRepository;
+    private static final String ETUDIANT_NOT_FOUND_MESSAGE = "Etudiant not found with ID: ";
 
-    EtudiantRepository etudiantRepository;
-
-    private static final String MESSAGE = "Etudiant not found";
-
-
-    EtudiantDTO convertToDto(Etudiant etudiant) {
+    public EtudiantDTO convertToDto(Etudiant etudiant) {
         EtudiantDTO etudiantDTO = new EtudiantDTO();
         etudiantDTO.setIdEtudiant(etudiant.getIdEtudiant());
         etudiantDTO.setNomEtudiant(etudiant.getNomEtudiant());
         etudiantDTO.setPrenomEtudiant(etudiant.getPrenomEtudiant());
         etudiantDTO.setCinEtudiant(etudiant.getCinEtudiant());
         etudiantDTO.setDateNaissance(etudiant.getDateNaissance());
-
-        for (String idReservation : etudiant.getIdReservations()) {
-            etudiantDTO.getIdReservations().add(idReservation);
-        }
+        etudiantDTO.setIdReservations(etudiant.getIdReservations());
         return etudiantDTO;
     }
 
@@ -40,7 +35,7 @@ public class EtudiantServiceImpl {
 
     public Etudiant getEtudiantById(Long idEtudiant) {
         return etudiantRepository.findById(idEtudiant)
-                .orElseThrow(() -> new RuntimeException(MESSAGE));
+                .orElseThrow(() -> new EtudiantNotFoundException(ETUDIANT_NOT_FOUND_MESSAGE + idEtudiant));
     }
 
     public List<Etudiant> getAllEtudiants() {
@@ -49,7 +44,7 @@ public class EtudiantServiceImpl {
 
     public Etudiant updateEtudiant(Long idEtudiant, Etudiant updatedEtudiant) {
         Etudiant etudiant = etudiantRepository.findById(idEtudiant)
-                .orElseThrow(() -> new RuntimeException(MESSAGE));
+                .orElseThrow(() -> new EtudiantNotFoundException(ETUDIANT_NOT_FOUND_MESSAGE + idEtudiant));
 
         etudiant.setNomEtudiant(updatedEtudiant.getNomEtudiant());
         etudiant.setPrenomEtudiant(updatedEtudiant.getPrenomEtudiant());
@@ -62,27 +57,16 @@ public class EtudiantServiceImpl {
 
     public void deleteEtudiant(Long idEtudiant) {
         Etudiant etudiant = etudiantRepository.findById(idEtudiant)
-                .orElseThrow(() -> new RuntimeException(MESSAGE));
+                .orElseThrow(() -> new EtudiantNotFoundException(ETUDIANT_NOT_FOUND_MESSAGE + idEtudiant));
 
         etudiantRepository.delete(etudiant);
     }
 
     public void updateEtudiantReservations(Long idEtudiant, List<String> idReservations) {
         Etudiant etudiant = etudiantRepository.findById(idEtudiant)
-                .orElseThrow(() -> new RuntimeException(MESSAGE + " with ID: " + idEtudiant));
+                .orElseThrow(() -> new EtudiantNotFoundException(ETUDIANT_NOT_FOUND_MESSAGE + idEtudiant));
 
         etudiant.setIdReservations(idReservations);
         etudiantRepository.save(etudiant);
     }
-
-
-
-
-
-
-
-
-
-
-
 }
