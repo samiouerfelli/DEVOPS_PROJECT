@@ -49,7 +49,7 @@ class EtudiantRestControllerTest {
    void testAddEtudiant() throws Exception {
       Etudiant etudiant = new Etudiant();
       etudiant.setIdEtudiant(1L);
-      etudiant.setNomEtudiant("Doe ");
+      etudiant.setNomEtudiant("Doe");
       etudiant.setPrenomEtudiant("John");
       when(etudiantService.addEtudiant(any(Etudiant.class))).thenReturn(etudiant);
 
@@ -68,7 +68,7 @@ class EtudiantRestControllerTest {
    void testGetEtudiantById() throws Exception {
       Etudiant etudiant = new Etudiant();
       etudiant.setIdEtudiant(1L);
-      etudiant.setNomEtudiant("Doe ");
+      etudiant.setNomEtudiant("Doe");
       etudiant.setPrenomEtudiant("John");
       when(etudiantService.getEtudiantById(1L)).thenReturn(etudiant);
 
@@ -97,7 +97,7 @@ class EtudiantRestControllerTest {
 
       Etudiant etudiant = new Etudiant();
       etudiant.setIdEtudiant(1L);
-      etudiant.setNomEtudiant("Doe ");
+      etudiant.setNomEtudiant("Doe");
       etudiant.setPrenomEtudiant("John");
 
 
