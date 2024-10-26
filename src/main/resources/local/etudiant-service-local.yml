@@ -20,6 +20,3 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
     instance:
       prefer-ip-address: true
-application:
-  config:
-    reservation-url: http://localhost:8099/api/v1/reservations

@@ -20,7 +20,4 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
     instance:
       prefer-ip-address: true
-application:
-  config:
-    bloc-url: http://localhost:8099/api/v1/bloc
-    universite-url: http://localhost:8099/api/v1/universite
+
