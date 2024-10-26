@@ -2,6 +2,7 @@ package tn.esprit.tpfoyer.RestController;
 
 
 import lombok.AllArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +22,7 @@ public class ReservationRestController {
 
 
     @PostMapping("/create")
-    public ResponseEntity<?> createReservation(@RequestParam Long idEtudiant, @RequestParam Long idChambre, @RequestParam Date anneeUniversitaire) {
+    public ResponseEntity<?> createReservation(@RequestParam Long idEtudiant, @RequestParam Long idChambre, @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date anneeUniversitaire) {
         try {
             Reservation reservation = reservationService.createReservation(idEtudiant, idChambre, anneeUniversitaire);
             return ResponseEntity.status(HttpStatus.CREATED).body(reservation);
@@ -49,7 +50,7 @@ public class ReservationRestController {
     }
 
     @GetMapping("/retrieve-by-chambre-year/{idChambre}")
-    public ResponseEntity<List<Reservation>> getReservationsByChambreAndAnnee(@PathVariable Long idChambre, @RequestParam Date anneeUniversitaire) {
+    public ResponseEntity<List<Reservation>> getReservationsByChambreAndAnnee(@PathVariable Long idChambre, @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date anneeUniversitaire) {
         List<Reservation> reservations = reservationService.getReservationsByChambreAndAnnee(idChambre, anneeUniversitaire);
         return ResponseEntity.ok(reservations);
     }
