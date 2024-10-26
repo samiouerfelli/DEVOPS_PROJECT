@@ -43,22 +43,24 @@ pipeline {
 
 
 
-        stage('SonarQube Analysis') {
-            steps {
-                script {
-                    withSonarQubeEnv('sonar') {
-                        sh '''
-                            $SCANNER_HOME/bin/sonar-scanner \
-                            -Dsonar.projectName=universite-service \
-                            -Dsonar.projectKey=universite-service \
-                            -Dsonar.java.binaries=.
-                            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-
-                        '''
+            stage('SonarQube Analysis') {
+                steps {
+                    script {
+                        withSonarQubeEnv('sonar') {
+                            sh '''
+                                $SCANNER_HOME/bin/sonar-scanner \
+                                -Dsonar.projectName=universite-service \
+                                -Dsonar.projectKey=universite-service \
+                                -Dsonar.java.binaries=. \
+                                -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                            '''
+                        }
                     }
                 }
             }
-        }
+
+
+
 
         stage('Quality Gate') {
             steps {
