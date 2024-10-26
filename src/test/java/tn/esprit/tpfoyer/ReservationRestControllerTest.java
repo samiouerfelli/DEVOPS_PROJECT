@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ReservationRestController.class)
- class ReservationRestControllerTest {
+class ReservationRestControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -49,9 +49,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 .andExpect(jsonPath("$.idReservation").value("1"));
     }
 
-
     @Test
-     void testCreateReservationThrowsException() throws Exception {
+    void testCreateReservationThrowsException() throws Exception {
         Mockito.when(reservationService.createReservation(anyLong(), anyLong(), any(Date.class)))
                 .thenThrow(new ReservationException("Etudiant not found with ID: 1"));
 
@@ -65,14 +64,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     }
 
     @Test
-     void testCancelReservation() throws Exception {
+    void testCancelReservation() throws Exception {
         mockMvc.perform(put("/api/v1/reservations/cancel/1"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Reservation has been canceled."));
     }
 
     @Test
-     void testGetReservationById() throws Exception {
+    void testGetReservationById() throws Exception {
         Reservation reservation = new Reservation();
         reservation.setIdReservation("1");
 
@@ -84,7 +83,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     }
 
     @Test
-     void testGetReservationsByEtudiant() throws Exception {
+    void testGetReservationsByEtudiant() throws Exception {
         Reservation reservation = new Reservation();
         reservation.setIdReservation("1");
 
@@ -97,7 +96,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     }
 
     @Test
-     void testGetReservationsByChambreAndAnnee() throws Exception {
+    void testGetReservationsByChambreAndAnnee() throws Exception {
         Reservation reservation = new Reservation();
         reservation.setIdReservation("1");
 
