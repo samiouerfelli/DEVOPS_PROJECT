@@ -1,10 +1,10 @@
-package tn.esprit.tpfoyer.Services;
+package tn.esprit.tpfoyer.services;
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
-import tn.esprit.tpfoyer.Entities.Etudiant;
-import tn.esprit.tpfoyer.Entities.EtudiantDTO;
-import tn.esprit.tpfoyer.Repository.EtudiantRepository;
+import tn.esprit.tpfoyer.entities.Etudiant;
+import tn.esprit.tpfoyer.entities.EtudiantDTO;
+import tn.esprit.tpfoyer.repository.EtudiantRepository;
 
 import java.util.List;
 
@@ -15,7 +15,10 @@ public class EtudiantServiceImpl {
 
     EtudiantRepository etudiantRepository;
 
-    private EtudiantDTO convertToDto(Etudiant etudiant) {
+    private static final String MESSAGE = "Etudiant not found";
+
+
+    EtudiantDTO convertToDto(Etudiant etudiant) {
         EtudiantDTO etudiantDTO = new EtudiantDTO();
         etudiantDTO.setIdEtudiant(etudiant.getIdEtudiant());
         etudiantDTO.setNomEtudiant(etudiant.getNomEtudiant());
@@ -37,7 +40,7 @@ public class EtudiantServiceImpl {
 
     public Etudiant getEtudiantById(Long idEtudiant) {
         return etudiantRepository.findById(idEtudiant)
-                .orElseThrow(() -> new RuntimeException("Etudiant not found"));
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
     }
 
     public List<Etudiant> getAllEtudiants() {
@@ -46,7 +49,7 @@ public class EtudiantServiceImpl {
 
     public Etudiant updateEtudiant(Long idEtudiant, Etudiant updatedEtudiant) {
         Etudiant etudiant = etudiantRepository.findById(idEtudiant)
-                .orElseThrow(() -> new RuntimeException("Etudiant not found"));
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
 
         etudiant.setNomEtudiant(updatedEtudiant.getNomEtudiant());
         etudiant.setPrenomEtudiant(updatedEtudiant.getPrenomEtudiant());
@@ -59,14 +62,14 @@ public class EtudiantServiceImpl {
 
     public void deleteEtudiant(Long idEtudiant) {
         Etudiant etudiant = etudiantRepository.findById(idEtudiant)
-                .orElseThrow(() -> new RuntimeException("Etudiant not found"));
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
 
         etudiantRepository.delete(etudiant);
     }
 
     public void updateEtudiantReservations(Long idEtudiant, List<String> idReservations) {
         Etudiant etudiant = etudiantRepository.findById(idEtudiant)
-                .orElseThrow(() -> new RuntimeException("Etudiant not found with ID: " + idEtudiant));
+                .orElseThrow(() -> new RuntimeException(MESSAGE + " with ID: " + idEtudiant));
 
         etudiant.setIdReservations(idReservations);
         etudiantRepository.save(etudiant);

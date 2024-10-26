@@ -4,16 +4,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import tn.esprit.tpfoyer.RestController.EtudiantRestController;
-import tn.esprit.tpfoyer.Services.EtudiantServiceImpl;
-import tn.esprit.tpfoyer.Entities.Etudiant;
+import tn.esprit.tpfoyer.restcontroller.EtudiantRestController;
+import tn.esprit.tpfoyer.services.EtudiantServiceImpl;
+import tn.esprit.tpfoyer.entities.Etudiant;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(EtudiantRestController.class)
 @ExtendWith(MockitoExtension.class)
-public class EtudiantRestControllerTest {
+ class EtudiantRestControllerTest {
 
     private MockMvc mockMvc;
 
@@ -35,14 +34,14 @@ public class EtudiantRestControllerTest {
     private EtudiantRestController etudiantRestController;
 
     @BeforeEach
-    public void setUp() {
+     void setUp() {
         this.mockMvc = MockMvcBuilders.standaloneSetup(etudiantRestController).build();
     }
 
     ///////////// Etudiant //////////////////
 
     @Test
-    public void testAddEtudiant() throws Exception {
+     void testAddEtudiant() throws Exception {
         Etudiant etudiant = new Etudiant();
         etudiant.setIdEtudiant(1L);
         etudiant.setNomEtudiant("Doe");
@@ -62,7 +61,7 @@ public class EtudiantRestControllerTest {
     }
 
     @Test
-    public void testGetEtudiantById() throws Exception {
+     void testGetEtudiantById() throws Exception {
         Etudiant etudiant = new Etudiant();
         etudiant.setIdEtudiant(1L);
         etudiant.setNomEtudiant("Doe");
@@ -78,7 +77,7 @@ public class EtudiantRestControllerTest {
     }
 
     @Test
-    public void testGetAllEtudiants() throws Exception {
+     void testGetAllEtudiants() throws Exception {
         List<Etudiant> etudiants = new ArrayList<>();
         Etudiant etudiant = new Etudiant();
         etudiant.setIdEtudiant(1L);
@@ -96,7 +95,7 @@ public class EtudiantRestControllerTest {
     }
 
     @Test
-    public void testUpdateEtudiant() throws Exception {
+     void testUpdateEtudiant() throws Exception {
         Etudiant updatedEtudiant = new Etudiant();
         updatedEtudiant.setIdEtudiant(1L);
         updatedEtudiant.setNomEtudiant("Doe Updated");
@@ -114,7 +113,7 @@ public class EtudiantRestControllerTest {
     }
 
     @Test
-    public void testDeleteEtudiant() throws Exception {
+     void testDeleteEtudiant() throws Exception {
         mockMvc.perform(delete("/api/v1/etudiants/delete-etudiant/1"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Etudiant with ID 1 has been deleted successfully."));
@@ -123,7 +122,7 @@ public class EtudiantRestControllerTest {
     }
 
     @Test
-    public void testUpdateEtudiantReservations() throws Exception {
+     void testUpdateEtudiantReservations() throws Exception {
         List<String> reservations = List.of("R1", "R2");
 
         mockMvc.perform(put("/api/v1/etudiants/1/update-reservations")

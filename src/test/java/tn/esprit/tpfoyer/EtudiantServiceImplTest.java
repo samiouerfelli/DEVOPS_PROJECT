@@ -5,9 +5,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import tn.esprit.tpfoyer.Entities.Etudiant;
-import tn.esprit.tpfoyer.Repository.EtudiantRepository;
-import tn.esprit.tpfoyer.Services.EtudiantServiceImpl;
+import tn.esprit.tpfoyer.entities.Etudiant;
+import tn.esprit.tpfoyer.repository.EtudiantRepository;
+import tn.esprit.tpfoyer.services.EtudiantServiceImpl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-public class EtudiantServiceImplTest {
+ class EtudiantServiceImplTest {
 
     @Mock
     private EtudiantRepository etudiantRepository;
@@ -34,7 +34,7 @@ public class EtudiantServiceImplTest {
     ///////////// Etudiant //////////////////
 
     @Test
-    public void testAddEtudiant() {
+     void testAddEtudiant() {
         Etudiant etudiant = new Etudiant();
         etudiant.setIdEtudiant(1L);
 
@@ -47,7 +47,7 @@ public class EtudiantServiceImplTest {
     }
 
     @Test
-    public void testGetEtudiantById_Found() {
+     void testGetEtudiantById_Found() {
         Etudiant etudiant = new Etudiant();
         etudiant.setIdEtudiant(1L);
 
@@ -60,7 +60,7 @@ public class EtudiantServiceImplTest {
     }
 
     @Test
-    public void testGetEtudiantById_NotFound() {
+     void testGetEtudiantById_NotFound() {
         when(etudiantRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThrows(RuntimeException.class, () -> etudiantService.getEtudiantById(1L));
@@ -68,7 +68,7 @@ public class EtudiantServiceImplTest {
     }
 
     @Test
-    public void testGetAllEtudiants() {
+     void testGetAllEtudiants() {
         List<Etudiant> etudiants = new ArrayList<>();
         Etudiant etudiant = new Etudiant();
         etudiant.setIdEtudiant(1L);
@@ -84,7 +84,7 @@ public class EtudiantServiceImplTest {
     }
 
     @Test
-    public void testUpdateEtudiant_Found() {
+     void testUpdateEtudiant_Found() {
         Etudiant existingEtudiant = new Etudiant();
         existingEtudiant.setIdEtudiant(1L);
         existingEtudiant.setNomEtudiant("Old Name");
@@ -103,7 +103,7 @@ public class EtudiantServiceImplTest {
     }
 
     @Test
-    public void testUpdateEtudiant_NotFound() {
+     void testUpdateEtudiant_NotFound() {
         Etudiant updatedEtudiant = new Etudiant();
         updatedEtudiant.setNomEtudiant("New Name");
 
@@ -115,7 +115,7 @@ public class EtudiantServiceImplTest {
     }
 
     @Test
-    public void testDeleteEtudiant_Found() {
+     void testDeleteEtudiant_Found() {
         Etudiant etudiant = new Etudiant();
         etudiant.setIdEtudiant(1L);
 
@@ -129,7 +129,7 @@ public class EtudiantServiceImplTest {
     }
 
     @Test
-    public void testDeleteEtudiant_NotFound() {
+     void testDeleteEtudiant_NotFound() {
         when(etudiantRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThrows(RuntimeException.class, () -> etudiantService.deleteEtudiant(1L));
@@ -138,7 +138,7 @@ public class EtudiantServiceImplTest {
     }
 
     @Test
-    public void testUpdateEtudiantReservations_Found() {
+     void testUpdateEtudiantReservations_Found() {
         Etudiant etudiant = new Etudiant();
         etudiant.setIdEtudiant(1L);
 
@@ -156,7 +156,7 @@ public class EtudiantServiceImplTest {
     }
 
     @Test
-    public void testUpdateEtudiantReservations_NotFound() {
+     void testUpdateEtudiantReservations_NotFound() {
         List<String> reservations = List.of("R1", "R2");
 
         when(etudiantRepository.findById(1L)).thenReturn(Optional.empty());
