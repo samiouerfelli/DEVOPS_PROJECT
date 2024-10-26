@@ -34,6 +34,7 @@ public class ReservationRestController {
         }
     }
 
+
     @PutMapping("/cancel/{idReservation}")
     public ResponseEntity<String> cancelReservation(@PathVariable String idReservation) {
         reservationService.cancelReservation(idReservation);

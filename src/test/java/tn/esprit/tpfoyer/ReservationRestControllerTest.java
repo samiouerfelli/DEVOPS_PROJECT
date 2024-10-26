@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
     @Test
-     void testCreateReservation() throws Exception {
+    void testCreateReservation() throws Exception {
         Reservation reservation = new Reservation();
         reservation.setIdReservation("1");
 
@@ -48,6 +48,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.idReservation").value("1"));
     }
+
 
     @Test
      void testCreateReservationThrowsException() throws Exception {
