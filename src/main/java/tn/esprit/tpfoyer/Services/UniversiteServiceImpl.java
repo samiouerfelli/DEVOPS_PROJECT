@@ -19,7 +19,7 @@ public class UniversiteServiceImpl  {
     UniversiteRepository universiteRepository;
     FoyerClient foyerClient;
 
-    private UniversiteDTO convertToDto(Universite universite) {
+    public UniversiteDTO convertToDto(Universite universite) {
         UniversiteDTO universiteDTO = new UniversiteDTO();
         universiteDTO.setIdUniversite(universite.getIdUniversite());
         universiteDTO.setNomUniversite(universite.getNomUniversite());
@@ -109,21 +109,6 @@ public class UniversiteServiceImpl  {
         universite.setIdFoyer(null);
         universiteRepository.save(universite);
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
