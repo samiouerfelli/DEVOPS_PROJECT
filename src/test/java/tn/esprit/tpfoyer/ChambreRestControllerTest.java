@@ -48,7 +48,7 @@ public class ChambreRestControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.idChambre").value(1L))
                 .andExpect(jsonPath("$.numeroChambre").value(101L))
-                .andExpect(jsonPath("$.typeC").value("SINGLE"))
+                .andExpect(jsonPath("$.typeC").value("SIMPLE"))
                 .andExpect(jsonPath("$.isReserved").value(false));
 
         verify(chambreService, times(1)).addChambreAndAssignToBloc(any(Chambre.class), eq(1L));
@@ -90,7 +90,7 @@ public class ChambreRestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].idChambre").value(1L))
                 .andExpect(jsonPath("$[0].numeroChambre").value(101L))
-                .andExpect(jsonPath("$[0].typeChambre").value("SINGLE"))
+                .andExpect(jsonPath("$[0].typeChambre").value("SIMPLE"))
                 .andExpect(jsonPath("$[0].isReserved").value(false));
 
         verify(chambreService, times(1)).getChambresByBlocId(1L);
@@ -122,7 +122,7 @@ public class ChambreRestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.idChambre").value(1L))
                 .andExpect(jsonPath("$.numeroChambre").value(101L))
-                .andExpect(jsonPath("$.typeC").value("SINGLE"))
+                .andExpect(jsonPath("$.typeC").value("SIMPLE"))
                 .andExpect(jsonPath("$.isReserved").value(false));
 
         verify(chambreService, times(1)).retrieveChambre(1L);
