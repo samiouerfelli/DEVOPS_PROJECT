@@ -1,15 +1,15 @@
-package tn.esprit.tpfoyer.Services;
+package tn.esprit.tpfoyer.services;
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
-import tn.esprit.tpfoyer.Entities.ChambreDTO;
-import tn.esprit.tpfoyer.Entities.EtudiantDTO;
-import tn.esprit.tpfoyer.Entities.Reservation;
-import tn.esprit.tpfoyer.Entities.ReservationDTO;
-import tn.esprit.tpfoyer.Exception.ReservationException;
-import tn.esprit.tpfoyer.FeignClient.ChambreClient;
-import tn.esprit.tpfoyer.FeignClient.EtudiantClient;
-import tn.esprit.tpfoyer.Repository.ReservationRepository;
+import tn.esprit.tpfoyer.entities.ChambreDTO;
+import tn.esprit.tpfoyer.entities.EtudiantDTO;
+import tn.esprit.tpfoyer.entities.Reservation;
+import tn.esprit.tpfoyer.entities.ReservationDTO;
+import tn.esprit.tpfoyer.exception.ReservationException;
+import tn.esprit.tpfoyer.feignclient.ChambreClient;
+import tn.esprit.tpfoyer.feignclient.EtudiantClient;
+import tn.esprit.tpfoyer.repository.ReservationRepository;
 
 import java.util.Date;
 import java.util.List;

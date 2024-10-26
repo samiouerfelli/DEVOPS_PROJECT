@@ -1,4 +1,4 @@
-package tn.esprit.tpfoyer.RestController;
+package tn.esprit.tpfoyer.restcontroller;
 
 
 import lombok.AllArgsConstructor;
@@ -6,9 +6,9 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import tn.esprit.tpfoyer.Entities.Reservation;
-import tn.esprit.tpfoyer.Exception.ReservationException;
-import tn.esprit.tpfoyer.Services.ReservationServiceImpl;
+import tn.esprit.tpfoyer.entities.Reservation;
+import tn.esprit.tpfoyer.exception.ReservationException;
+import tn.esprit.tpfoyer.services.ReservationServiceImpl;
 
 import java.util.Date;
 import java.util.List;
@@ -22,12 +22,15 @@ public class ReservationRestController {
 
 
     @PostMapping("/create")
-    public ResponseEntity<?> createReservation(@RequestParam Long idEtudiant, @RequestParam Long idChambre, @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date anneeUniversitaire) {
+    public ResponseEntity<Reservation> createReservation(
+            @RequestParam Long idEtudiant,
+            @RequestParam Long idChambre,
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date anneeUniversitaire) {
         try {
             Reservation reservation = reservationService.createReservation(idEtudiant, idChambre, anneeUniversitaire);
             return ResponseEntity.status(HttpStatus.CREATED).body(reservation);
         } catch (ReservationException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
     }
 

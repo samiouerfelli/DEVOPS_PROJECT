@@ -5,14 +5,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import tn.esprit.tpfoyer.Entities.ChambreDTO;
-import tn.esprit.tpfoyer.Entities.EtudiantDTO;
-import tn.esprit.tpfoyer.Entities.Reservation;
-import tn.esprit.tpfoyer.Exception.ReservationException;
-import tn.esprit.tpfoyer.FeignClient.ChambreClient;
-import tn.esprit.tpfoyer.FeignClient.EtudiantClient;
-import tn.esprit.tpfoyer.Repository.ReservationRepository;
-import tn.esprit.tpfoyer.Services.ReservationServiceImpl;
+import tn.esprit.tpfoyer.entities.ChambreDTO;
+import tn.esprit.tpfoyer.entities.EtudiantDTO;
+import tn.esprit.tpfoyer.entities.Reservation;
+import tn.esprit.tpfoyer.feignclient.ChambreClient;
+import tn.esprit.tpfoyer.feignclient.EtudiantClient;
+import tn.esprit.tpfoyer.repository.ReservationRepository;
+import tn.esprit.tpfoyer.services.ReservationServiceImpl;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,7 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
-public class ReservationServiceImplTest {
+ class ReservationServiceImplTest {
 
     @InjectMocks
     private ReservationServiceImpl reservationService;
@@ -40,12 +39,12 @@ public class ReservationServiceImplTest {
     private ChambreClient chambreClient;
 
     @BeforeEach
-    public void setup() {
+     void setup() {
         MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    public void testCreateReservation() {
+     void testCreateReservation() {
         EtudiantDTO etudiant = new EtudiantDTO();
         etudiant.setIdReservations(new ArrayList<>());
 
@@ -70,7 +69,7 @@ public class ReservationServiceImplTest {
     }
 
     @Test
-    public void testCancelReservation() {
+     void testCancelReservation() {
         Reservation reservation = new Reservation();
         reservation.setIdReservation("1");
         reservation.setIdEtudiant(1L);
@@ -96,7 +95,7 @@ public class ReservationServiceImplTest {
     }
 
     @Test
-    public void testGetReservationById() {
+     void testGetReservationById() {
         Reservation reservation = new Reservation();
         reservation.setIdReservation("1");
 
@@ -109,7 +108,7 @@ public class ReservationServiceImplTest {
     }
 
     @Test
-    public void testGetReservationsByEtudiant() {
+     void testGetReservationsByEtudiant() {
         Reservation reservation = new Reservation();
         reservation.setIdReservation("1");
 
@@ -122,7 +121,7 @@ public class ReservationServiceImplTest {
     }
 
     @Test
-    public void testGetReservationsByChambreAndAnnee() {
+     void testGetReservationsByChambreAndAnnee() {
         Reservation reservation = new Reservation();
         reservation.setIdReservation("1");
 

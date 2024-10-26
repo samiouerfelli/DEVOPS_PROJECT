@@ -1,8 +1,8 @@
-package tn.esprit.tpfoyer.FeignClient;
+package tn.esprit.tpfoyer.feignclient;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
-import tn.esprit.tpfoyer.Entities.ChambreDTO;
+import tn.esprit.tpfoyer.entities.ChambreDTO;
 
 import java.util.List;
 

@@ -7,10 +7,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import tn.esprit.tpfoyer.Entities.Reservation;
-import tn.esprit.tpfoyer.Exception.ReservationException;
-import tn.esprit.tpfoyer.RestController.ReservationRestController;
-import tn.esprit.tpfoyer.Services.ReservationServiceImpl;
+import tn.esprit.tpfoyer.entities.Reservation;
+import tn.esprit.tpfoyer.exception.ReservationException;
+import tn.esprit.tpfoyer.restcontroller.ReservationRestController;
+import tn.esprit.tpfoyer.services.ReservationServiceImpl;
 
 import java.text.SimpleDateFormat;
 import java.util.Collections;
@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ReservationRestController.class)
-public class ReservationRestControllerTest {
+ class ReservationRestControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -33,7 +33,7 @@ public class ReservationRestControllerTest {
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
     @Test
-    public void testCreateReservation() throws Exception {
+     void testCreateReservation() throws Exception {
         Reservation reservation = new Reservation();
         reservation.setIdReservation("1");
 
@@ -50,7 +50,7 @@ public class ReservationRestControllerTest {
     }
 
     @Test
-    public void testCreateReservationThrowsException() throws Exception {
+     void testCreateReservationThrowsException() throws Exception {
         Mockito.when(reservationService.createReservation(anyLong(), anyLong(), any(Date.class)))
                 .thenThrow(new ReservationException("Etudiant not found with ID: 1"));
 
@@ -64,14 +64,14 @@ public class ReservationRestControllerTest {
     }
 
     @Test
-    public void testCancelReservation() throws Exception {
+     void testCancelReservation() throws Exception {
         mockMvc.perform(put("/api/v1/reservations/cancel/1"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Reservation has been canceled."));
     }
 
     @Test
-    public void testGetReservationById() throws Exception {
+     void testGetReservationById() throws Exception {
         Reservation reservation = new Reservation();
         reservation.setIdReservation("1");
 
@@ -83,7 +83,7 @@ public class ReservationRestControllerTest {
     }
 
     @Test
-    public void testGetReservationsByEtudiant() throws Exception {
+     void testGetReservationsByEtudiant() throws Exception {
         Reservation reservation = new Reservation();
         reservation.setIdReservation("1");
 
@@ -96,7 +96,7 @@ public class ReservationRestControllerTest {
     }
 
     @Test
-    public void testGetReservationsByChambreAndAnnee() throws Exception {
+     void testGetReservationsByChambreAndAnnee() throws Exception {
         Reservation reservation = new Reservation();
         reservation.setIdReservation("1");
 
