@@ -1,6 +1,7 @@
 package tn.esprit.tpfoyer.services;
 
 import lombok.AllArgsConstructor;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import tn.esprit.tpfoyer.entities.BlocDTO;
@@ -19,7 +20,8 @@ public class ChambreServiceImpl {
     ChambreRepository chambreRepository;
     private final BlocClient blocClient;
 
-    String message = "Chambre not found";
+    private static final String MESSAGE = "Chambre not found";
+
 
 
     private ChambreDTO convertToDto(Chambre chambre) {
@@ -55,7 +57,7 @@ public class ChambreServiceImpl {
 
     public void deleteChambreAndRemoveFromBloc(Long idChambre) {
         Chambre chambre = chambreRepository.findById(idChambre)
-                .orElseThrow(() -> new RuntimeException(message));
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
 
         Long idBloc = chambre.getIdBloc();
 
@@ -77,7 +79,7 @@ public class ChambreServiceImpl {
 
     public void updateChambreAvailability(Long idChambre, boolean isReserved) {
         Chambre chambre = chambreRepository.findById(idChambre)
-                .orElseThrow(() -> new RuntimeException(message));
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
 
         chambre.setIsReserved(isReserved);
 
@@ -86,12 +88,12 @@ public class ChambreServiceImpl {
 
     public Chambre retrieveChambre(Long idChambre) {
         return chambreRepository.findById(idChambre)
-                .orElseThrow(() -> new RuntimeException(message));
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
     }
 
     public void updateChambreReservations(Long idChambre, List<String> idReservations) {
         Chambre chambre = chambreRepository.findById(idChambre)
-                .orElseThrow(() -> new RuntimeException(message + " with ID: " + idChambre));
+                .orElseThrow(() -> new RuntimeException(MESSAGE + " with ID: " + idChambre));
 
         chambre.setIdReservations(idReservations);
         chambreRepository.save(chambre);
