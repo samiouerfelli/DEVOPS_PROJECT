@@ -1,9 +1,10 @@
-package tn.esprit.tpfoyer.blocservice;
+package tn.esprit.tpfoyer;
 
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -26,7 +27,7 @@ public class Bloc {
     Long idFoyer ;
 
     @ElementCollection
-    List<Long> idChambres;
+    List<Long> idChambres = new ArrayList<>();
 
 
 
