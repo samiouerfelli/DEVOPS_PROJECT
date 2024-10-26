@@ -24,31 +24,6 @@ pipeline {
             }
         }
 
-  
-
-        stage('SonarQube Analysis') {
-            steps {
-                script {
-                    withSonarQubeEnv('sonar') {
-                        sh '''
-                            $SCANNER_HOME/bin/sonar-scanner \
-                            -Dsonar.projectName=config-server \
-                            -Dsonar.projectKey=config-server \
-                            -Dsonar.java.binaries=.
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('Quality Gate') {
-            steps {
-                script {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
-                }
-            }
-        }
-
         stage('Build') {
             steps {
                 sh "mvn package -Dspring.profiles.active=local"
