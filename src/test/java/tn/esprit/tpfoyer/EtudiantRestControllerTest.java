@@ -13,124 +13,162 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import tn.esprit.tpfoyer.restcontroller.EtudiantRestController;
 import tn.esprit.tpfoyer.services.EtudiantServiceImpl;
 import tn.esprit.tpfoyer.entities.Etudiant;
+import tn.esprit.tpfoyer.exception.EtudiantNotFoundException;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(EtudiantRestController.class)
 @ExtendWith(MockitoExtension.class)
- class EtudiantRestControllerTest {
+class EtudiantRestControllerTest {
 
-    private MockMvc mockMvc;
+   private MockMvc mockMvc;
 
-    @MockBean
-    private EtudiantServiceImpl etudiantService;
+   @MockBean
+   private EtudiantServiceImpl etudiantService;
 
-    @InjectMocks
-    private EtudiantRestController etudiantRestController;
+   @InjectMocks
+   private EtudiantRestController etudiantRestController;
 
-    @BeforeEach
-     void setUp() {
-        this.mockMvc = MockMvcBuilders.standaloneSetup(etudiantRestController).build();
-    }
+   @BeforeEach
+   void setUp() {
+      this.mockMvc = MockMvcBuilders.standaloneSetup(etudiantRestController).build();
+   }
 
-    ///////////// Etudiant //////////////////
+   ///////////// Etudiant Tests //////////////////
 
-    @Test
-     void testAddEtudiant() throws Exception {
-        Etudiant etudiant = new Etudiant();
-        etudiant.setIdEtudiant(1L);
-        etudiant.setNomEtudiant("Doe");
-        etudiant.setPrenomEtudiant("John");
+   @Test
+   void testAddEtudiant() throws Exception {
+      Etudiant etudiant = new Etudiant();
+      etudiant.setIdEtudiant(1L);
+      etudiant.setNomEtudiant("Doe");
+      etudiant.setPrenomEtudiant("John");
 
-        when(etudiantService.addEtudiant(any(Etudiant.class))).thenReturn(etudiant);
+      when(etudiantService.addEtudiant(any(Etudiant.class))).thenReturn(etudiant);
 
-        mockMvc.perform(post("/api/v1/etudiants/add-etudiant")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nomEtudiant\":\"Doe\",\"prenomEtudiant\":\"John\"}"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.idEtudiant").value(1L))
-                .andExpect(jsonPath("$.nomEtudiant").value("Doe"))
-                .andExpect(jsonPath("$.prenomEtudiant").value("John"));
+      mockMvc.perform(post("/api/v1/etudiants/add-etudiant")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content("{\"nomEtudiant\":\"Doe\",\"prenomEtudiant\":\"John\"}"))
+              .andExpect(status().isCreated())
+              .andExpect(jsonPath("$.idEtudiant").value(1L))
+              .andExpect(jsonPath("$.nomEtudiant").value("Doe"))
+              .andExpect(jsonPath("$.prenomEtudiant").value("John"));
 
-        verify(etudiantService, times(1)).addEtudiant(any(Etudiant.class));
-    }
+      verify(etudiantService, times(1)).addEtudiant(any(Etudiant.class));
+   }
 
-    @Test
-     void testGetEtudiantById() throws Exception {
-        Etudiant etudiant = new Etudiant();
-        etudiant.setIdEtudiant(1L);
-        etudiant.setNomEtudiant("Doe");
+   @Test
+   void testGetEtudiantById() throws Exception {
+      Etudiant etudiant = new Etudiant();
+      etudiant.setIdEtudiant(1L);
+      etudiant.setNomEtudiant("Doe");
 
-        when(etudiantService.getEtudiantById(1L)).thenReturn(etudiant);
+      when(etudiantService.getEtudiantById(1L)).thenReturn(etudiant);
 
-        mockMvc.perform(get("/api/v1/etudiants/retrieve-etudiant/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.idEtudiant").value(1L))
-                .andExpect(jsonPath("$.nomEtudiant").value("Doe"));
+      mockMvc.perform(get("/api/v1/etudiants/retrieve-etudiant/1"))
+              .andExpect(status().isOk())
+              .andExpect(jsonPath("$.idEtudiant").value(1L))
+              .andExpect(jsonPath("$.nomEtudiant").value("Doe"));
 
-        verify(etudiantService, times(1)).getEtudiantById(1L);
-    }
+      verify(etudiantService, times(1)).getEtudiantById(1L);
+   }
 
-    @Test
-     void testGetAllEtudiants() throws Exception {
-        List<Etudiant> etudiants = new ArrayList<>();
-        Etudiant etudiant = new Etudiant();
-        etudiant.setIdEtudiant(1L);
-        etudiant.setNomEtudiant("Doe");
-        etudiants.add(etudiant);
+   @Test
+   void testGetEtudiantById_NotFound() throws Exception {
+      when(etudiantService.getEtudiantById(1L)).thenThrow(new EtudiantNotFoundException("Etudiant not found"));
 
-        when(etudiantService.getAllEtudiants()).thenReturn(etudiants);
+      mockMvc.perform(get("/api/v1/etudiants/retrieve-etudiant/1"))
+              .andExpect(status().isNotFound())
+              .andExpect(content().string("Etudiant not found"));
 
-        mockMvc.perform(get("/api/v1/etudiants/retrieve-all-etudiants"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].idEtudiant").value(1L))
-                .andExpect(jsonPath("$[0].nomEtudiant").value("Doe"));
+      verify(etudiantService, times(1)).getEtudiantById(1L);
+   }
 
-        verify(etudiantService, times(1)).getAllEtudiants();
-    }
+   @Test
+   void testGetAllEtudiants() throws Exception {
+      List<Etudiant> etudiants = new ArrayList<>();
+      Etudiant etudiant = new Etudiant();
+      etudiant.setIdEtudiant(1L);
+      etudiant.setNomEtudiant("Doe");
+      etudiants.add(etudiant);
 
-    @Test
-     void testUpdateEtudiant() throws Exception {
-        Etudiant updatedEtudiant = new Etudiant();
-        updatedEtudiant.setIdEtudiant(1L);
-        updatedEtudiant.setNomEtudiant("Doe Updated");
+      when(etudiantService.getAllEtudiants()).thenReturn(etudiants);
 
-        when(etudiantService.updateEtudiant(eq(1L), any(Etudiant.class))).thenReturn(updatedEtudiant);
+      mockMvc.perform(get("/api/v1/etudiants/retrieve-all-etudiants"))
+              .andExpect(status().isOk())
+              .andExpect(jsonPath("$[0].idEtudiant").value(1L))
+              .andExpect(jsonPath("$[0].nomEtudiant").value("Doe"));
 
-        mockMvc.perform(put("/api/v1/etudiants/update-etudiant/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nomEtudiant\":\"Doe Updated\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.idEtudiant").value(1L))
-                .andExpect(jsonPath("$.nomEtudiant").value("Doe Updated"));
+      verify(etudiantService, times(1)).getAllEtudiants();
+   }
 
-        verify(etudiantService, times(1)).updateEtudiant(eq(1L), any(Etudiant.class));
-    }
+   @Test
+   void testUpdateEtudiant() throws Exception {
+      Etudiant updatedEtudiant = new Etudiant();
+      updatedEtudiant.setIdEtudiant(1L);
+      updatedEtudiant.setNomEtudiant("Doe Updated");
 
-    @Test
-     void testDeleteEtudiant() throws Exception {
-        mockMvc.perform(delete("/api/v1/etudiants/delete-etudiant/1"))
-                .andExpect(status().isOk())
-                .andExpect(content().string("Etudiant with ID 1 has been deleted successfully."));
+      when(etudiantService.updateEtudiant(eq(1L), any(Etudiant.class))).thenReturn(updatedEtudiant);
 
-        verify(etudiantService, times(1)).deleteEtudiant(1L);
-    }
+      mockMvc.perform(put("/api/v1/etudiants/update-etudiant/1")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content("{\"nomEtudiant\":\"Doe Updated\"}"))
+              .andExpect(status().isOk())
+              .andExpect(jsonPath("$.idEtudiant").value(1L))
+              .andExpect(jsonPath("$.nomEtudiant").value("Doe Updated"));
 
-    @Test
-     void testUpdateEtudiantReservations() throws Exception {
-        List<String> reservations = List.of("R1", "R2");
+      verify(etudiantService, times(1)).updateEtudiant(eq(1L), any(Etudiant.class));
+   }
 
-        mockMvc.perform(put("/api/v1/etudiants/1/update-reservations")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("[\"R1\", \"R2\"]"))
-                .andExpect(status().isOk())
-                .andExpect(content().string("Reservations updated successfully for Etudiant with ID: 1"));
+   @Test
+   void testUpdateEtudiant_NotFound() throws Exception {
+      when(etudiantService.updateEtudiant(eq(1L), any(Etudiant.class)))
+              .thenThrow(new EtudiantNotFoundException("Etudiant not found"));
 
-        verify(etudiantService, times(1)).updateEtudiantReservations(1L, reservations);
-    }
+      mockMvc.perform(put("/api/v1/etudiants/update-etudiant/1")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content("{\"nomEtudiant\":\"Doe Updated\"}"))
+              .andExpect(status().isNotFound())
+              .andExpect(content().string("Etudiant not found"));
+
+      verify(etudiantService, times(1)).updateEtudiant(eq(1L), any(Etudiant.class));
+   }
+
+   @Test
+   void testDeleteEtudiant() throws Exception {
+      mockMvc.perform(delete("/api/v1/etudiants/delete-etudiant/1"))
+              .andExpect(status().isOk())
+              .andExpect(content().string("Etudiant with ID 1 has been deleted successfully."));
+
+      verify(etudiantService, times(1)).deleteEtudiant(1L);
+   }
+
+   @Test
+   void testDeleteEtudiant_NotFound() throws Exception {
+      doThrow(new EtudiantNotFoundException("Etudiant not found")).when(etudiantService).deleteEtudiant(1L);
+
+      mockMvc.perform(delete("/api/v1/etudiants/delete-etudiant/1"))
+              .andExpect(status().isNotFound())
+              .andExpect(content().string("Etudiant not found"));
+
+      verify(etudiantService, times(1)).deleteEtudiant(1L);
+   }
+
+   @Test
+   void testUpdateEtudiantReservations() throws Exception {
+      List<String> reservations = List.of("R1", "R2");
+
+      mockMvc.perform(put("/api/v1/etudiants/1/update-reservations")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content("[\"R1\", \"R2\"]"))
+              .andExpect(status().isOk())
+              .andExpect(content().string("Reservations updated successfully for Etudiant with ID: 1"));
+
+      verify(etudiantService, times(1)).updateEtudiantReservations(1L, reservations);
+   }
 }
