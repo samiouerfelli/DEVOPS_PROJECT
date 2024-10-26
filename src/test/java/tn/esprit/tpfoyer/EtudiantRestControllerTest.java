@@ -41,19 +41,16 @@ class EtudiantRestControllerTest {
    void setUp() {
       this.mockMvc = MockMvcBuilders
               .standaloneSetup(etudiantRestController)
-              .setControllerAdvice(new GlobalExceptionHandler())  // Ensure GlobalExceptionHandler is recognized
+              .setControllerAdvice(new GlobalExceptionHandler())
               .build();
    }
-
-   ///////////// Etudiant Tests //////////////////
 
    @Test
    void testAddEtudiant() throws Exception {
       Etudiant etudiant = new Etudiant();
       etudiant.setIdEtudiant(1L);
-      etudiant.setNomEtudiant("Doe");
+      etudiant.setNomEtudiant("Doe ");
       etudiant.setPrenomEtudiant("John");
-
       when(etudiantService.addEtudiant(any(Etudiant.class))).thenReturn(etudiant);
 
       mockMvc.perform(post("/api/v1/etudiants/add-etudiant")
@@ -71,8 +68,8 @@ class EtudiantRestControllerTest {
    void testGetEtudiantById() throws Exception {
       Etudiant etudiant = new Etudiant();
       etudiant.setIdEtudiant(1L);
-      etudiant.setNomEtudiant("Doe");
-
+      etudiant.setNomEtudiant("Doe ");
+      etudiant.setPrenomEtudiant("John");
       when(etudiantService.getEtudiantById(1L)).thenReturn(etudiant);
 
       mockMvc.perform(get("/api/v1/etudiants/retrieve-etudiant/1"))
@@ -85,7 +82,8 @@ class EtudiantRestControllerTest {
 
    @Test
    void testGetEtudiantById_NotFound() throws Exception {
-      when(etudiantService.getEtudiantById(1L)).thenThrow(new EtudiantNotFoundException("Etudiant not found with ID: 1"));
+      when(etudiantService.getEtudiantById(1L))
+              .thenThrow(new EtudiantNotFoundException("Etudiant not found with ID: 1"));
 
       mockMvc.perform(get("/api/v1/etudiants/retrieve-etudiant/1"))
               .andExpect(status().isNotFound())
@@ -96,11 +94,14 @@ class EtudiantRestControllerTest {
 
    @Test
    void testGetAllEtudiants() throws Exception {
-      List<Etudiant> etudiants = new ArrayList<>();
+
       Etudiant etudiant = new Etudiant();
       etudiant.setIdEtudiant(1L);
-      etudiant.setNomEtudiant("Doe");
-      etudiants.add(etudiant);
+      etudiant.setNomEtudiant("Doe ");
+      etudiant.setPrenomEtudiant("John");
+
+
+      List<Etudiant> etudiants = List.of(etudiant);
 
       when(etudiantService.getAllEtudiants()).thenReturn(etudiants);
 
@@ -117,6 +118,7 @@ class EtudiantRestControllerTest {
       Etudiant updatedEtudiant = new Etudiant();
       updatedEtudiant.setIdEtudiant(1L);
       updatedEtudiant.setNomEtudiant("Doe Updated");
+      updatedEtudiant.setPrenomEtudiant("John");
 
       when(etudiantService.updateEtudiant(eq(1L), any(Etudiant.class))).thenReturn(updatedEtudiant);
 
@@ -155,7 +157,8 @@ class EtudiantRestControllerTest {
 
    @Test
    void testDeleteEtudiant_NotFound() throws Exception {
-      doThrow(new EtudiantNotFoundException("Etudiant not found with ID: 1")).when(etudiantService).deleteEtudiant(1L);
+      doThrow(new EtudiantNotFoundException("Etudiant not found with ID: 1"))
+              .when(etudiantService).deleteEtudiant(1L);
 
       mockMvc.perform(delete("/api/v1/etudiants/delete-etudiant/1"))
               .andExpect(status().isNotFound())
