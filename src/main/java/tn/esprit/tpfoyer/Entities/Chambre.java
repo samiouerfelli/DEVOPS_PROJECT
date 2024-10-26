@@ -1,4 +1,4 @@
-package tn.esprit.tpfoyer;
+package tn.esprit.tpfoyer.Entities;
 
 import jakarta.persistence.*;
 import lombok.*;
