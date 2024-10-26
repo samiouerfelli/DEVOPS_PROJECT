@@ -1,17 +1,16 @@
 package tn.esprit.tpfoyer;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import tn.esprit.tpfoyer.Entities.Chambre;
-import tn.esprit.tpfoyer.Entities.ChambreDTO;
-import tn.esprit.tpfoyer.Entities.TypeChambre;
-import tn.esprit.tpfoyer.RestController.ChambreRestController;
-import tn.esprit.tpfoyer.Services.ChambreServiceImpl;
+import tn.esprit.tpfoyer.entities.Chambre;
+import tn.esprit.tpfoyer.entities.ChambreDTO;
+import tn.esprit.tpfoyer.entities.TypeChambre;
+import tn.esprit.tpfoyer.restcontroller.ChambreRestController;
+import tn.esprit.tpfoyer.services.ChambreServiceImpl;
 
 import java.util.List;
 
@@ -22,17 +21,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ChambreRestController.class)
-public class ChambreRestControllerTest {
+ class ChambreRestControllerTest {
 
     @Autowired
-    private MockMvc mockMvc;
+     MockMvc mockMvc;
 
     @MockBean
-    private ChambreServiceImpl chambreService;
+     ChambreServiceImpl chambreService;
 
     // Test for adding a chambre and assigning it to a bloc
     @Test
-    public void testAddChambreAndAssignToBloc() throws Exception {
+     void testAddChambreAndAssignToBloc() throws Exception {
         Chambre newChambre = new Chambre();
         newChambre.setIdChambre(1L);
         newChambre.setNumeroChambre(101L);
@@ -56,7 +55,7 @@ public class ChambreRestControllerTest {
 
     // Test for deleting all chambres associated with a bloc ID
     @Test
-    public void testDeleteChambresByBlocId() throws Exception {
+     void testDeleteChambresByBlocId() throws Exception {
         mockMvc.perform(delete("/api/v1/chambres/delete-by-bloc/1"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("All Chambres associated with Bloc ID 1 have been deleted successfully."));
@@ -66,7 +65,7 @@ public class ChambreRestControllerTest {
 
     // Test for deleting a chambre and removing it from a bloc
     @Test
-    public void testDeleteChambreAndRemoveFromBloc() throws Exception {
+     void testDeleteChambreAndRemoveFromBloc() throws Exception {
         mockMvc.perform(delete("/api/v1/chambres/delete-chambre/1"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Chambre with ID 1 has been deleted successfully, and it was removed from the associated Bloc."));
@@ -76,7 +75,7 @@ public class ChambreRestControllerTest {
 
     // Test for retrieving chambres by bloc ID
     @Test
-    public void testGetChambresByBlocId() throws Exception {
+     void testGetChambresByBlocId() throws Exception {
         ChambreDTO chambreDTO = new ChambreDTO();
         chambreDTO.setIdChambre(1L);
         chambreDTO.setNumeroChambre(101L);
@@ -98,7 +97,7 @@ public class ChambreRestControllerTest {
 
     // Test for updating chambre availability
     @Test
-    public void testUpdateChambreAvailability() throws Exception {
+     void testUpdateChambreAvailability() throws Exception {
         mockMvc.perform(put("/api/v1/chambres/update-availability/1")
                         .param("isReserved", "true"))
                 .andExpect(status().isOk());
@@ -108,7 +107,7 @@ public class ChambreRestControllerTest {
 
     // Test for retrieving a chambre by ID
     @Test
-    public void testGetChambreById() throws Exception {
+     void testGetChambreById() throws Exception {
         Chambre chambre = new Chambre();
         chambre.setIdChambre(1L);
         chambre.setNumeroChambre(101L);
@@ -130,7 +129,7 @@ public class ChambreRestControllerTest {
 
     // Test for updating chambre reservations
     @Test
-    public void testUpdateChambreReservations() throws Exception {
+     void testUpdateChambreReservations() throws Exception {
         mockMvc.perform(put("/api/v1/chambres/1/update-reservations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("[\"Reservation1\", \"Reservation2\"]"))

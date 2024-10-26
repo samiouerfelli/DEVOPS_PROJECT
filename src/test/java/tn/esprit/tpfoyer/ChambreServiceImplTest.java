@@ -5,12 +5,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import tn.esprit.tpfoyer.Entities.BlocDTO;
-import tn.esprit.tpfoyer.Entities.Chambre;
-import tn.esprit.tpfoyer.Entities.ChambreDTO;
-import tn.esprit.tpfoyer.FeignClient.BlocClient;
-import tn.esprit.tpfoyer.Repository.ChambreRepository;
-import tn.esprit.tpfoyer.Services.ChambreServiceImpl;
+import tn.esprit.tpfoyer.entities.BlocDTO;
+import tn.esprit.tpfoyer.entities.Chambre;
+import tn.esprit.tpfoyer.entities.ChambreDTO;
+import tn.esprit.tpfoyer.feignclient.BlocClient;
+import tn.esprit.tpfoyer.repository.ChambreRepository;
+import tn.esprit.tpfoyer.services.ChambreServiceImpl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,26 +21,26 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-public class ChambreServiceImplTest {
+ class ChambreServiceImplTest {
 
     @InjectMocks
-    private ChambreServiceImpl chambreService;
+     ChambreServiceImpl chambreService;
 
     @Mock
-    private ChambreRepository chambreRepository;
+     ChambreRepository chambreRepository;
 
     @Mock
-    private BlocClient blocClient;
+     BlocClient blocClient;
 
     @BeforeEach
-    public void setUp() {
+     void setUp() {
         MockitoAnnotations.openMocks(this);
     }
 
     ////////////////////// Blocs ////////////////////////
 
     @Test
-    public void testAddChambreAndAssignToBloc_Success() {
+     void testAddChambreAndAssignToBloc_Success() {
         Chambre chambre = new Chambre();
         chambre.setIdChambre(1L);
 
@@ -59,7 +59,7 @@ public class ChambreServiceImplTest {
     }
 
     @Test
-    public void testAddChambreAndAssignToBloc_BlocNotFound() {
+     void testAddChambreAndAssignToBloc_BlocNotFound() {
         Chambre chambre = new Chambre();
 
         when(blocClient.retrieveBloc(1L)).thenReturn(null);
@@ -69,7 +69,7 @@ public class ChambreServiceImplTest {
     }
 
     @Test
-    public void testDeleteChambresByBlocId() {
+     void testDeleteChambresByBlocId() {
         List<Chambre> chambres = new ArrayList<>();
         chambres.add(new Chambre());
 
@@ -81,7 +81,7 @@ public class ChambreServiceImplTest {
     }
 
     @Test
-    public void testDeleteChambreAndRemoveFromBloc_Success() {
+     void testDeleteChambreAndRemoveFromBloc_Success() {
         Chambre chambre = new Chambre();
         chambre.setIdChambre(1L);
         chambre.setIdBloc(1L);
@@ -95,7 +95,7 @@ public class ChambreServiceImplTest {
     }
 
     @Test
-    public void testDeleteChambreAndRemoveFromBloc_ChambreNotFound() {
+     void testDeleteChambreAndRemoveFromBloc_ChambreNotFound() {
         when(chambreRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThrows(RuntimeException.class, () -> chambreService.deleteChambreAndRemoveFromBloc(1L));
@@ -103,7 +103,7 @@ public class ChambreServiceImplTest {
     }
 
     @Test
-    public void testGetChambresByBlocId() {
+     void testGetChambresByBlocId() {
         List<Chambre> chambres = new ArrayList<>();
         Chambre chambre = new Chambre();
         chambre.setIdChambre(1L);
@@ -122,7 +122,7 @@ public class ChambreServiceImplTest {
     //////////////////// Reservation ////////////////////////
 
     @Test
-    public void testUpdateChambreAvailability() {
+     void testUpdateChambreAvailability() {
         Chambre chambre = new Chambre();
         chambre.setIdChambre(1L);
 
@@ -135,7 +135,7 @@ public class ChambreServiceImplTest {
     }
 
     @Test
-    public void testRetrieveChambre_Success() {
+     void testRetrieveChambre_Success() {
         Chambre chambre = new Chambre();
         chambre.setIdChambre(1L);
 
@@ -148,14 +148,14 @@ public class ChambreServiceImplTest {
     }
 
     @Test
-    public void testRetrieveChambre_ChambreNotFound() {
+     void testRetrieveChambre_ChambreNotFound() {
         when(chambreRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThrows(RuntimeException.class, () -> chambreService.retrieveChambre(1L));
     }
 
     @Test
-    public void testUpdateChambreReservations() {
+     void testUpdateChambreReservations() {
         Chambre chambre = new Chambre();
         chambre.setIdChambre(1L);
 

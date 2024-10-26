@@ -1,12 +1,12 @@
-package tn.esprit.tpfoyer.RestController;
+package tn.esprit.tpfoyer.restcontroller;
 
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import tn.esprit.tpfoyer.Services.ChambreServiceImpl;
-import tn.esprit.tpfoyer.Entities.Chambre;
-import tn.esprit.tpfoyer.Entities.ChambreDTO;
+import tn.esprit.tpfoyer.services.ChambreServiceImpl;
+import tn.esprit.tpfoyer.entities.Chambre;
+import tn.esprit.tpfoyer.entities.ChambreDTO;
 
 import java.util.List;
 

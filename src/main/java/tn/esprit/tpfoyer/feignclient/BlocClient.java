@@ -1,8 +1,8 @@
-package tn.esprit.tpfoyer.FeignClient;
+package tn.esprit.tpfoyer.feignclient;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
-import tn.esprit.tpfoyer.Entities.BlocDTO;
+import tn.esprit.tpfoyer.entities.BlocDTO;
 
 @FeignClient(name = "bloc-service")
 public interface BlocClient {

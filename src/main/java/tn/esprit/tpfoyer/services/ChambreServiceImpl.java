@@ -1,13 +1,13 @@
-package tn.esprit.tpfoyer.Services;
+package tn.esprit.tpfoyer.services;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import tn.esprit.tpfoyer.Entities.BlocDTO;
-import tn.esprit.tpfoyer.Entities.Chambre;
-import tn.esprit.tpfoyer.Entities.ChambreDTO;
-import tn.esprit.tpfoyer.FeignClient.BlocClient;
-import tn.esprit.tpfoyer.Repository.ChambreRepository;
+import tn.esprit.tpfoyer.entities.BlocDTO;
+import tn.esprit.tpfoyer.entities.Chambre;
+import tn.esprit.tpfoyer.entities.ChambreDTO;
+import tn.esprit.tpfoyer.feignclient.BlocClient;
+import tn.esprit.tpfoyer.repository.ChambreRepository;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,6 +18,8 @@ import java.util.stream.Collectors;
 public class ChambreServiceImpl {
     ChambreRepository chambreRepository;
     private final BlocClient blocClient;
+
+    String message = "Chambre not found";
 
 
     private ChambreDTO convertToDto(Chambre chambre) {
@@ -53,7 +55,7 @@ public class ChambreServiceImpl {
 
     public void deleteChambreAndRemoveFromBloc(Long idChambre) {
         Chambre chambre = chambreRepository.findById(idChambre)
-                .orElseThrow(() -> new RuntimeException("Chambre not found"));
+                .orElseThrow(() -> new RuntimeException(message));
 
         Long idBloc = chambre.getIdBloc();
 
@@ -75,7 +77,7 @@ public class ChambreServiceImpl {
 
     public void updateChambreAvailability(Long idChambre, boolean isReserved) {
         Chambre chambre = chambreRepository.findById(idChambre)
-                .orElseThrow(() -> new RuntimeException("Chambre not found"));
+                .orElseThrow(() -> new RuntimeException(message));
 
         chambre.setIsReserved(isReserved);
 
@@ -84,12 +86,12 @@ public class ChambreServiceImpl {
 
     public Chambre retrieveChambre(Long idChambre) {
         return chambreRepository.findById(idChambre)
-                .orElseThrow(() -> new RuntimeException("Chambre not found"));
+                .orElseThrow(() -> new RuntimeException(message));
     }
 
     public void updateChambreReservations(Long idChambre, List<String> idReservations) {
         Chambre chambre = chambreRepository.findById(idChambre)
-                .orElseThrow(() -> new RuntimeException("Chambre not found with ID: " + idChambre));
+                .orElseThrow(() -> new RuntimeException(message + " with ID: " + idChambre));
 
         chambre.setIdReservations(idReservations);
         chambreRepository.save(chambre);
