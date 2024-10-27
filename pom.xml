@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>tn.esprit.tpfoyer</groupId>
 	<artifactId>chambre-service</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0</version>
 	<name>chambre-service</name>
 	<description>chambre-service</description>
 	<url/>
@@ -125,6 +125,14 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>versions-maven-plugin</artifactId>
+				<version>2.8.1</version>
+				<configuration>
+					<generateBackupPoms>false</generateBackupPoms>
+				</configuration>
 			</plugin>
 
 
