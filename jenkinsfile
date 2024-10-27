@@ -12,11 +12,53 @@ pipeline {
 
     stages {
        
-        stage('Clean') {
+        stage('Determine Version Increment') {
             steps {
-                sh "mvn clean"
+                script {
+                    def currentVersion = sh(script: "mvn help:evaluate -Dexpression=project.version -q -DforceStdout", returnStdout: true).trim()
+
+                    def commitMessage = sh(script: "git log -1 --pretty=%B", returnStdout: true).trim()
+                    echo "Commit Message: ${commitMessage}"
+
+                    def (major, minor, patch) = currentVersion.tokenize('.').collect { it as int }
+
+                    if (commitMessage.contains("[major]")) {
+                        major += 1
+                        minor = 0
+                        patch = 0
+                    } else if (commitMessage.contains("[minor]")) {
+                        minor += 1
+                        patch = 0
+                    } else {
+                        patch += 1
+                    }
+
+                    def newVersion = "${major}.${minor}.${patch}"
+                    echo "New Version: ${newVersion}"
+
+                    sh "mvn versions:set -DnewVersion=${newVersion}"
+
+                    env.NEW_VERSION = newVersion
+                }
             }
         }
+
+        stage('Clean') {
+            steps {
+                sh "mvn clean install"
+            }
+        }
+
+        stage('Push Updated POM') {
+                    steps {
+                        script {
+                            sh 'git add pom.xml'
+                            sh "git commit -m 'Auto-update version to ${env.NEW_VERSION}'"
+                            sh 'git push origin config-server'
+                        }
+                    }
+                }
+
 
         stage('Compile') {
             steps {
