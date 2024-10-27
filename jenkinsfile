@@ -54,7 +54,7 @@ pipeline {
                         script {
                             sh 'git add pom.xml'
                             sh "git commit -m 'Auto-update version to ${env.NEW_VERSION}'"
-                            sh 'git push origin etudiant-service'
+                            sh 'git push origin foyer-service'
                         }
                     }
                 }
