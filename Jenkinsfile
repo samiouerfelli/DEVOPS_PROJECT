@@ -17,6 +17,9 @@ pipeline {
         NEXUS_CREDENTIAL_ID = "nexus-credentials"
         KUBECONFIG = credentials('kubeconfig-credentials-id')
         APP_NAMESPACE = "myapp"
+        GRAFANA_URL = 'http://localhost:3000'
+        PROMETHEUS_URL = 'http://localhost:9090'
+        GRAFANA_CREDS = credentials('grafana-admin-credentials')
     }
 
     stages {
@@ -164,48 +167,116 @@ pipeline {
             }
         }
 
-        stage('Configure Monitoring') {
+        stage('Configure Prometheus Scraping') {
             steps {
                 script {
-                    // Add Spring Boot Actuator endpoints to your application
+                    // Create a temporary prometheus config file
+                    writeFile file: 'prometheus-additional.yml', text: """
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'spring-boot'
+    kubernetes_sd_configs:
+      - role: endpoints
+        api_server: 'https://kubernetes.default.svc'
+        tls_config:
+          insecure_skip_verify: true
+        namespaces:
+          names:
+            - myapp
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_service_label_app]
+        regex: myapp
+        action: keep
+      - source_labels: [__meta_kubernetes_endpoint_port_name]
+        regex: metrics
+        action: keep
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: kubernetes_namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: kubernetes_pod_name
+"""
+                    
+                    // Apply RBAC for Prometheus
                     sh '''
-                        # Apply ServiceMonitor configuration
-                        kubectl --kubeconfig=$KUBECONFIG apply -f service-monitor.yaml
-                        
-                        # Apply Prometheus RBAC
                         kubectl --kubeconfig=$KUBECONFIG apply -f prometheus-rbac.yaml
                         
-                        # Wait for metrics to be available
-                        sleep 30
+                        # Create service account and token for Prometheus
+                        cat <<EOF | kubectl --kubeconfig=$KUBECONFIG apply -f -
+                        apiVersion: v1
+                        kind: ServiceAccount
+                        metadata:
+                          name: prometheus
+                          namespace: myapp
+                        ---
+                        apiVersion: v1
+                        kind: Secret
+                        metadata:
+                          name: prometheus-token
+                          namespace: myapp
+                          annotations:
+                            kubernetes.io/service-account.name: prometheus
+                        type: kubernetes.io/service-account-token
+                        EOF
+                        
+                        # Wait for token to be created
+                        sleep 5
+                        
+                        # Get the token
+                        PROMETHEUS_TOKEN=$(kubectl --kubeconfig=$KUBECONFIG get secret prometheus-token -n myapp -o jsonpath='{.data.token}' | base64 --decode)
+                        
+                        # Update Prometheus configuration
+                        # Note: You'll need to ensure the prometheus container has the config mounted
+                        docker cp prometheus-additional.yml prometheus:/etc/prometheus/prometheus.yml
+                        docker exec prometheus kill -HUP 1
                     '''
                 }
             }
         }
-
+        
         stage('Configure Grafana Dashboard') {
             steps {
                 script {
-                    // Using the Grafana API to create the dashboard
-                    sh '''
+                    // Configure Prometheus as a data source in Grafana
+                    sh """
+                        # Add Prometheus data source
                         curl -X POST \
-                            -H "Content-Type: application/json" \
-                            -d @grafana-dashboard.json \
-                            http://admin:admin@localhost:3000/api/dashboards/db
-                    '''
+                            -H 'Content-Type: application/json' \
+                            -u '${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}' \
+                            ${GRAFANA_URL}/api/datasources \
+                            -d '{
+                                "name": "Prometheus",
+                                "type": "prometheus",
+                                "url": "http://prometheus:9090",
+                                "access": "proxy",
+                                "basicAuth": false
+                            }'
+                            
+                        # Create dashboard
+                        curl -X POST \
+                            -H 'Content-Type: application/json' \
+                            -u '${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}' \
+                            ${GRAFANA_URL}/api/dashboards/db \
+                            -d @grafana-dashboard.json
+                    """
                 }
             }
         }
-
+        
         stage('Verify Monitoring Setup') {
             steps {
                 script {
-                    sh '''
-                        # Verify ServiceMonitor
-                        kubectl --kubeconfig=$KUBECONFIG get servicemonitor -n myapp
+                    sh """
+                        # Check if Prometheus can scrape the targets
+                        curl -s ${PROMETHEUS_URL}/api/v1/targets | grep myapp
                         
-                        # Check Prometheus targets
-                        curl -s http://localhost:9090/api/v1/targets | grep myapp
-                    '''
+                        # Verify Grafana datasource
+                        curl -s -u '${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}' \
+                            ${GRAFANA_URL}/api/datasources/name/Prometheus
+                    """
                 }
             }
         }
@@ -213,11 +284,15 @@ pipeline {
     
 
     post {
-        success {
-            echo 'Deployment completed successfully!'
+        always {
+            // Clean up temporary files
+            sh 'rm -f prometheus-additional.yml'
         }
         failure {
-            echo 'Deployment failed!'
+            echo 'Monitoring setup failed! Check the logs for details.'
+        }
+        success {
+            echo 'Monitoring setup completed successfully!'
         }
     }
 }
