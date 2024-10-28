@@ -178,29 +178,22 @@ pipeline {
        stage('Setup Prometheus DataSource in Grafana') {
             steps {
                 script {
-                    // Define the revised DataSource configuration as JSON
-                    def dataSourceJson = '''
-                    {
-                        "name": "Prometheus",
-                        "type": "prometheus",
-                        "url": "http://localhost:9090", // Prometheus server URL
-                        "access": "proxy",
-                        "isDefault": true,
-                        "basicAuth": false,
-                        "jsonData": {
-                            "httpMethod": "GET",
-                            "timeInterval": "5s"
-                        }
-                    }
+                    // Use curl command to create the DataSource
+                    sh '''
+                    curl -X POST "${GRAFANA_URL}/api/datasources" \
+                        -H "Content-Type: application/json" \
+                        -u grafana-admin-credentials:your-password \
+                        -d '{
+                            "name": "Prometheus",
+                            "type": "prometheus",
+                            "url": "http://localhost:9090",
+                            "access": "proxy",
+                            "isDefault": true,
+                            "jsonData": {
+                                "httpMethod": "GET"
+                            }
+                        }'
                     '''
-                    // Send a POST request to create the DataSource
-                    httpRequest(
-                        httpMode: 'POST',
-                        url: "${GRAFANA_URL}/api/datasources",
-                        requestBody: dataSourceJson,
-                        authentication: 'grafana-admin-credentials',
-                        contentType: 'APPLICATION_JSON'
-                    )
                 }
             }
         }
@@ -208,66 +201,56 @@ pipeline {
         stage('Create Dashboard in Grafana') {
             steps {
                 script {
-                    // Define the Dashboard configuration as JSON
-                    def dashboardJson = '''
-                    {
-                        "dashboard": {
-                            "id": null,
-                            "uid": "simple-dashboard",
-                            "title": "Simple Dashboard",
-                            "panels": [
-                                {
-                                    "title": "CPU Usage",
-                                    "type": "stat",
-                                    "datasource": "Prometheus",
-                                    "targets": [
-                                        {
-                                            "expr": "sum(rate(container_cpu_usage_seconds_total[5m]))",
-                                            "legendFormat": "{{pod}}",
-                                            "refId": "A"
-                                        }
-                                    ],
-                                    "fieldConfig": {
-                                        "defaults": {
-                                            "color": { "mode": "thresholds" },
-                                            "thresholds": {
-                                                "mode": "absolute",
-                                                "steps": [
-                                                    { "color": "green", "value": null },
-                                                    { "color": "red", "value": 80 }
-                                                ]
+                    // Use curl command to create the Dashboard
+                    sh '''
+                    curl -X POST "${GRAFANA_URL}/api/dashboards/db" \
+                        -H "Content-Type: application/json" \
+                        -u grafana-admin-credentials:your-password \
+                        -d '{
+                            "dashboard": {
+                                "uid": "simple-dashboard",
+                                "title": "Simple Dashboard",
+                                "panels": [
+                                    {
+                                        "title": "CPU Usage",
+                                        "type": "stat",
+                                        "datasource": "Prometheus",
+                                        "targets": [
+                                            {
+                                                "expr": "sum(rate(container_cpu_usage_seconds_total[5m]))",
+                                                "refId": "A"
                                             }
-                                        }
+                                        ],
+                                        "fieldConfig": {
+                                            "defaults": {
+                                                "thresholds": {
+                                                    "mode": "absolute",
+                                                    "steps": [
+                                                        { "color": "green", "value": null },
+                                                        { "color": "red", "value": 80 }
+                                                    ]
+                                                }
+                                            }
+                                        },
+                                        "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
                                     },
-                                    "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
-                                },
-                                {
-                                    "title": "Memory Usage",
-                                    "type": "timeseries",
-                                    "datasource": "Prometheus",
-                                    "targets": [
-                                        {
-                                            "expr": "sum(container_memory_usage_bytes)",
-                                            "legendFormat": "{{pod}}",
-                                            "refId": "B"
-                                        }
-                                    ],
-                                    "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 }
-                                }
-                            ]
-                        },
-                        "overwrite": true
-                    }
+                                    {
+                                        "title": "Memory Usage",
+                                        "type": "timeseries",
+                                        "datasource": "Prometheus",
+                                        "targets": [
+                                            {
+                                                "expr": "sum(container_memory_usage_bytes)",
+                                                "refId": "B"
+                                            }
+                                        ],
+                                        "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 }
+                                    }
+                                ]
+                            },
+                            "overwrite": true
+                        }'
                     '''
-                    
-                    // Send a POST request to create the Dashboard
-                    httpRequest(
-                        httpMode: 'POST',
-                        url: "${GRAFANA_URL}/api/dashboards/db",
-                        requestBody: dashboardJson,
-                        authentication: 'grafana-admin-credentials',
-                        contentType: 'APPLICATION_JSON'
-                    )
                 }
             }
         }
