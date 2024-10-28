@@ -79,6 +79,10 @@ spec:
     metadata:
       labels:
         app: myapp
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: "/actuator/prometheus"
     spec:
       containers:
         - name: myapp
@@ -86,6 +90,9 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8089
+              name: http
+            - containerPort: 8081
+              name: metrics
           env:
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:mysql://mysql-db:3306/tpfoyer?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false"
@@ -95,12 +102,20 @@ spec:
               value: ""
             - name: SPRING_JPA_HIBERNATE_DDL_AUTO
               value: "update"
+            - name: MANAGEMENT_SERVER_PORT
+              value: "8081"
+            - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
+              value: "prometheus,health,info,metrics"
+            - name: MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS
+              value: "always"
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: myapp-service
   namespace: myapp
+  labels:
+    app: myapp
 spec:
   selector:
     app: myapp
@@ -109,4 +124,9 @@ spec:
       port: 8089
       targetPort: 8089
       nodePort: 30007
+      name: http
+    - protocol: TCP
+      port: 8081
+      targetPort: 8081
+      name: metrics
   type: NodePort

@@ -1,0 +1,16 @@
+# service-monitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: spring-app-monitor
+  namespace: myapp
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: myapp
+  endpoints:
+  - port: http
+    path: /actuator/prometheus
+    interval: 15s

@@ -163,7 +163,54 @@ pipeline {
                 }
             }
         }
+
+        stage('Configure Monitoring') {
+            steps {
+                script {
+                    // Add Spring Boot Actuator endpoints to your application
+                    sh '''
+                        # Apply ServiceMonitor configuration
+                        kubectl --kubeconfig=$KUBECONFIG apply -f service-monitor.yaml
+                        
+                        # Apply Prometheus RBAC
+                        kubectl --kubeconfig=$KUBECONFIG apply -f prometheus-rbac.yaml
+                        
+                        # Wait for metrics to be available
+                        sleep 30
+                    '''
+                }
+            }
+        }
+
+        stage('Configure Grafana Dashboard') {
+            steps {
+                script {
+                    // Using the Grafana API to create the dashboard
+                    sh '''
+                        curl -X POST \
+                            -H "Content-Type: application/json" \
+                            -d @grafana-dashboard.json \
+                            http://admin:admin@localhost:3000/api/dashboards/db
+                    '''
+                }
+            }
+        }
+
+        stage('Verify Monitoring Setup') {
+            steps {
+                script {
+                    sh '''
+                        # Verify ServiceMonitor
+                        kubectl --kubeconfig=$KUBECONFIG get servicemonitor -n myapp
+                        
+                        # Check Prometheus targets
+                        curl -s http://localhost:9090/api/v1/targets | grep myapp
+                    '''
+                }
+            }
+        }
     }
+    
 
     post {
         success {
