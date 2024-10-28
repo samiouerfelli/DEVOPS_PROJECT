@@ -175,20 +175,25 @@ pipeline {
             }
         }
         
-        stage('Setup Prometheus DataSource in Grafana') {
+       stage('Setup Prometheus DataSource in Grafana') {
             steps {
                 script {
-                    // Define the DataSource configuration as JSON
+                    // Define the revised DataSource configuration as JSON
                     def dataSourceJson = '''
                     {
                         "name": "Prometheus",
                         "type": "prometheus",
                         "url": "http://localhost:9090", // Prometheus server URL
                         "access": "proxy",
-                        "isDefault": true
+                        "isDefault": true,
+                        "basicAuth": false,
+                        "jsonData": {
+                            "httpMethod": "GET",
+                            "timeInterval": "5s"
+                        }
                     }
                     '''
-                    // Send a PUT request to create the DataSource
+                    // Send a POST request to create the DataSource
                     httpRequest(
                         httpMode: 'POST',
                         url: "${GRAFANA_URL}/api/datasources",
