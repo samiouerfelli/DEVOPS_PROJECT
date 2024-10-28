@@ -168,119 +168,118 @@ pipeline {
         }
 
         stage('Configure Prometheus Scraping') {
-            steps {
-                script {
-                    // Create Prometheus RBAC configuration
-                    writeFile file: 'prometheus-rbac.yaml', text: """
-                    apiVersion: rbac.authorization.k8s.io/v1
-                    kind: ClusterRole
-                    metadata:
-                    name: prometheus-server
-                    rules:
-                    - apiGroups: [""]
-                        resources:
-                        - nodes
-                        - nodes/proxy
-                        - nodes/metrics
-                        - services
-                        - endpoints
-                        - pods
-                        verbs: ["get", "list", "watch"]
-                    - apiGroups: ["extensions"]
-                        resources:
-                        - ingresses
-                        verbs: ["get", "list", "watch"]
-                    - nonResourceURLs: ["/metrics"]
-                        verbs: ["get"]
-                    ---
-                    apiVersion: rbac.authorization.k8s.io/v1
-                    kind: ClusterRoleBinding
-                    metadata:
-                    name: prometheus-server
-                    roleRef:
-                    apiGroup: rbac.authorization.k8s.io
-                    kind: ClusterRole
-                    name: prometheus-server
-                    subjects:
-                    - kind: ServiceAccount
-                        name: prometheus
-                        namespace: ${APP_NAMESPACE}
-                    """
+    steps {
+        script {
+            // Create Prometheus RBAC configuration with proper indentation
+            writeFile file: 'prometheus-rbac.yaml', text: '''---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-server
+rules:
+- apiGroups: [""]
+  resources:
+  - nodes
+  - nodes/proxy
+  - nodes/metrics
+  - services
+  - endpoints
+  - pods
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["extensions"]
+  resources:
+  - ingresses
+  verbs: ["get", "list", "watch"]
+- nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-server
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus-server
+subjects:
+- kind: ServiceAccount
+  name: prometheus
+  namespace: myapp
+'''
 
-                    // Create Prometheus config
-                    writeFile file: 'prometheus-additional.yml', text: """
-                    global:
-                    scrape_interval: 15s
-                    scrape_timeout: 10s
-                    evaluation_interval: 15s
+            // Create Prometheus config with proper indentation
+            writeFile file: 'prometheus-additional.yml', text: '''
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
 
-                    scrape_configs:
-                    - job_name: 'spring-boot'
-                        kubernetes_sd_configs:
-                        - role: endpoints
-                            api_server: 'https://kubernetes.default.svc'
-                            tls_config:
-                            insecure_skip_verify: true
-                            namespaces:
-                            names:
-                                - ${APP_NAMESPACE}
-                        relabel_configs:
-                        - source_labels: [__meta_kubernetes_service_label_app]
-                            regex: myapp
-                            action: keep
-                        - source_labels: [__meta_kubernetes_endpoint_port_name]
-                            regex: metrics
-                            action: keep
-                        - source_labels: [__meta_kubernetes_namespace]
-                            target_label: kubernetes_namespace
-                        - source_labels: [__meta_kubernetes_pod_name]
-                            target_label: kubernetes_pod_name
-                    """
-                                
-                        // Apply RBAC and create ServiceAccount
-                        sh """
-                            # Create namespace if it doesn't exist
-                            kubectl --kubeconfig=\$KUBECONFIG create namespace ${APP_NAMESPACE} --dry-run=client -o yaml | kubectl --kubeconfig=\$KUBECONFIG apply -f -
+scrape_configs:
+  - job_name: 'spring-boot'
+    kubernetes_sd_configs:
+      - role: endpoints
+        api_server: 'https://kubernetes.default.svc'
+        tls_config:
+          insecure_skip_verify: true
+        namespaces:
+          names:
+            - myapp
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_service_label_app]
+        regex: myapp
+        action: keep
+      - source_labels: [__meta_kubernetes_endpoint_port_name]
+        regex: metrics
+        action: keep
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: kubernetes_namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: kubernetes_pod_name
+'''
+                    
+            // Apply RBAC and create ServiceAccount
+            sh '''
+                # Create namespace if it doesn't exist
+                kubectl --kubeconfig=$KUBECONFIG create namespace myapp --dry-run=client -o yaml | kubectl --kubeconfig=$KUBECONFIG apply -f -
 
-                            # Apply RBAC configuration
-                            kubectl --kubeconfig=\$KUBECONFIG apply -f prometheus-rbac.yaml
-                            
-                            # Create service account and token for Prometheus
-                            cat <<EOF | kubectl --kubeconfig=\$KUBECONFIG apply -f -
-                            apiVersion: v1
-                            kind: ServiceAccount
-                            metadata:
-                            name: prometheus
-                            namespace: ${APP_NAMESPACE}
-                            ---
-                            apiVersion: v1
-                            kind: Secret
-                            metadata:
-                            name: prometheus-token
-                            namespace: ${APP_NAMESPACE}
-                            annotations:
-                                kubernetes.io/service-account.name: prometheus
-                            type: kubernetes.io/service-account-token
-                            EOF
-                            
-                            # Wait for token to be created
-                            sleep 5
-                            
-                            # Get the token
-                            PROMETHEUS_TOKEN=\$(kubectl --kubeconfig=\$KUBECONFIG get secret prometheus-token -n ${APP_NAMESPACE} -o jsonpath='{.data.token}' | base64 --decode)
-                            
-                            # Update Prometheus configuration
-                            # Ensure prometheus container exists before copying
-                            if docker ps | grep -q prometheus; then
-                                docker cp prometheus-additional.yml prometheus:/etc/prometheus/prometheus.yml
-                                docker exec prometheus kill -HUP 1
-                            else
-                                echo "Warning: Prometheus container not found"
-                            fi
-                        """
-                    }
-                }
-            }
+                # Apply RBAC configuration
+                kubectl --kubeconfig=$KUBECONFIG apply -f prometheus-rbac.yaml
+                
+                # Create service account and token for Prometheus
+                cat <<EOF | kubectl --kubeconfig=$KUBECONFIG apply -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: myapp
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: prometheus-token
+  namespace: myapp
+  annotations:
+    kubernetes.io/service-account.name: prometheus
+type: kubernetes.io/service-account-token
+EOF
+                
+                # Wait for token to be created
+                sleep 5
+                
+                # Get the token
+                PROMETHEUS_TOKEN=$(kubectl --kubeconfig=$KUBECONFIG get secret prometheus-token -n myapp -o jsonpath='{.data.token}' | base64 --decode)
+                
+                # Update Prometheus configuration
+                if docker ps | grep -q prometheus; then
+                    docker cp prometheus-additional.yml prometheus:/etc/prometheus/prometheus.yml
+                    docker exec prometheus kill -HUP 1
+                else
+                    echo "Warning: Prometheus container not found"
+                fi
+            '''
+        }
+    }
+}
         
         stage('Configure Grafana Dashboard') {
             steps {
