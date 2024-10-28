@@ -178,22 +178,26 @@ pipeline {
        stage('Setup Prometheus DataSource in Grafana') {
             steps {
                 script {
-                    // Use curl command to create the DataSource
-                    sh '''
-                    curl -X POST "${GRAFANA_URL}/api/datasources" \
+                    def response = sh(script: """
+                        curl -X POST "${GRAFANA_URL}/api/datasources" \
                         -H "Content-Type: application/json" \
-                        -u grafana-admin-credentials:your-password \
+                        -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
                         -d '{
                             "name": "Prometheus",
                             "type": "prometheus",
-                            "url": "http://localhost:9090",
+                            "url": "${PROMETHEUS_URL}",
                             "access": "proxy",
                             "isDefault": true,
                             "jsonData": {
-                                "httpMethod": "GET"
+                                "httpMethod": "GET",
+                                "timeInterval": "5s"
                             }
-                        }'
-                    '''
+                        }' -v
+                    """, returnStatus: true)
+                    
+                    if (response != 0) {
+                        echo "Warning: DataSource creation returned status ${response}. This might be OK if the datasource already exists."
+                    }
                 }
             }
         }
@@ -201,23 +205,28 @@ pipeline {
         stage('Create Dashboard in Grafana') {
             steps {
                 script {
-                    // Use curl command to create the Dashboard
-                    sh '''
-                    curl -X POST "${GRAFANA_URL}/api/dashboards/db" \
+                    def response = sh(script: """
+                        curl -X POST "${GRAFANA_URL}/api/dashboards/db" \
                         -H "Content-Type: application/json" \
-                        -u grafana-admin-credentials:your-password \
+                        -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
                         -d '{
                             "dashboard": {
+                                "id": null,
                                 "uid": "simple-dashboard",
-                                "title": "Simple Dashboard",
+                                "title": "Application Monitoring Dashboard",
+                                "tags": ["kubernetes", "prometheus"],
+                                "timezone": "browser",
+                                "schemaVersion": 16,
+                                "version": 1,
+                                "refresh": "5s",
                                 "panels": [
                                     {
                                         "title": "CPU Usage",
-                                        "type": "stat",
+                                        "type": "gauge",
                                         "datasource": "Prometheus",
                                         "targets": [
                                             {
-                                                "expr": "sum(rate(container_cpu_usage_seconds_total[5m]))",
+                                                "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"${APP_NAMESPACE}\"}[5m]))",
                                                 "refId": "A"
                                             }
                                         ],
@@ -227,9 +236,11 @@ pipeline {
                                                     "mode": "absolute",
                                                     "steps": [
                                                         { "color": "green", "value": null },
+                                                        { "color": "yellow", "value": 60 },
                                                         { "color": "red", "value": 80 }
                                                     ]
-                                                }
+                                                },
+                                                "unit": "percent"
                                             }
                                         },
                                         "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
@@ -240,17 +251,27 @@ pipeline {
                                         "datasource": "Prometheus",
                                         "targets": [
                                             {
-                                                "expr": "sum(container_memory_usage_bytes)",
-                                                "refId": "B"
+                                                "expr": "sum(container_memory_usage_bytes{namespace=\"${APP_NAMESPACE}\"})",
+                                                "refId": "A"
                                             }
                                         ],
+                                        "fieldConfig": {
+                                            "defaults": {
+                                                "unit": "bytes"
+                                            }
+                                        },
                                         "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 }
                                     }
                                 ]
                             },
-                            "overwrite": true
-                        }'
-                    '''
+                            "overwrite": true,
+                            "message": "Updated by Jenkins Pipeline"
+                        }' -v
+                    """, returnStatus: true)
+                    
+                    if (response != 0) {
+                        error "Failed to create dashboard"
+                    }
                 }
             }
         }
