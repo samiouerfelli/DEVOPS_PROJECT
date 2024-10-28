@@ -185,11 +185,15 @@ pipeline {
                     
                     // Setup Grafana DataSource and Dashboard
                     sh """
-                        curl -X POST -H 'Content-Type: application/json' \
-                        -u '${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}' ${GRAFANA_URL}/api/datasources -d @grafana-datasource.json
+                        # Update Grafana DataSource
+                        curl -X PUT -H 'Content-Type: application/json' \
+                        -u '${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}' ${GRAFANA_URL}/api/datasources \
+                        -d @grafana-datasource.json
 
-                        curl -X POST -H 'Content-Type: application/json' \
-                        -u '${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}' ${GRAFANA_URL}/api/dashboards/db -d @grafana-dashboard.json
+                        # Update Grafana Dashboard
+                        curl -X PUT -H 'Content-Type: application/json' \
+                        -u '${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}' ${GRAFANA_URL}/api/dashboards/db \
+                        -d @grafana-dashboard.json
                     """
                 }
             }
