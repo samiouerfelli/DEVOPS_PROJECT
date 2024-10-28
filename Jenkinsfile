@@ -175,106 +175,119 @@ pipeline {
             }
         }
         
-       stage('Setup Prometheus DataSource in Grafana') {
-            steps {
-                script {
-                    def response = sh(script: """
-                        curl -X POST "${GRAFANA_URL}/api/datasources" \
-                        -H "Content-Type: application/json" \
-                        -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
-                        -d '{
-                            "name": "Prometheus",
-                            "type": "prometheus",
-                            "url": "${PROMETHEUS_URL}",
-                            "access": "proxy",
-                            "isDefault": true,
-                            "jsonData": {
-                                "httpMethod": "GET",
-                                "timeInterval": "5s"
-                            }
-                        }' -v
-                    """, returnStatus: true)
-                    
-                    if (response != 0) {
-                        echo "Warning: DataSource creation returned status ${response}. This might be OK if the datasource already exists."
+      stage('Setup Prometheus DataSource in Grafana') {
+        steps {
+            script {
+                def datasourceJson = """
+                {
+                    "name": "Prometheus",
+                    "type": "prometheus",
+                    "url": "${PROMETHEUS_URL}",
+                    "access": "proxy",
+                    "isDefault": true,
+                    "jsonData": {
+                        "httpMethod": "GET",
+                        "timeInterval": "5s"
                     }
                 }
+                """
+                
+                def response = sh(script: """
+                    curl -X POST "${GRAFANA_URL}/api/datasources" \
+                        -H 'Content-Type: application/json' \
+                        -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
+                        -d '${datasourceJson.trim()}' \
+                        || true
+                """, returnStatus: true)
+                
+                echo "Datasource setup completed with status: ${response}"
             }
         }
-        
-        stage('Create Dashboard in Grafana') {
-            steps {
-                script {
-                    def response = sh(script: """
-                        curl -X POST "${GRAFANA_URL}/api/dashboards/db" \
-                        -H "Content-Type: application/json" \
-                        -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
-                        -d '{
-                            "dashboard": {
-                                "id": null,
-                                "uid": "simple-dashboard",
-                                "title": "Application Monitoring Dashboard",
-                                "tags": ["kubernetes", "prometheus"],
-                                "timezone": "browser",
-                                "schemaVersion": 16,
-                                "version": 1,
-                                "refresh": "5s",
-                                "panels": [
+    }
+
+    stage('Create Dashboard in Grafana') {
+        steps {
+            script {
+                def dashboardJson = """
+                {
+                    "dashboard": {
+                        "id": null,
+                        "uid": "simple-dashboard",
+                        "title": "Application Monitoring Dashboard",
+                        "tags": ["kubernetes", "prometheus"],
+                        "timezone": "browser",
+                        "schemaVersion": 16,
+                        "version": 1,
+                        "refresh": "5s",
+                        "panels": [
+                            {
+                                "title": "CPU Usage",
+                                "type": "gauge",
+                                "datasource": {
+                                    "type": "prometheus",
+                                    "uid": "Prometheus"
+                                },
+                                "targets": [
                                     {
-                                        "title": "CPU Usage",
-                                        "type": "gauge",
-                                        "datasource": "Prometheus",
-                                        "targets": [
-                                            {
-                                                "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"${APP_NAMESPACE}\"}[5m]))",
-                                                "refId": "A"
-                                            }
-                                        ],
-                                        "fieldConfig": {
-                                            "defaults": {
-                                                "thresholds": {
-                                                    "mode": "absolute",
-                                                    "steps": [
-                                                        { "color": "green", "value": null },
-                                                        { "color": "yellow", "value": 60 },
-                                                        { "color": "red", "value": 80 }
-                                                    ]
-                                                },
-                                                "unit": "percent"
-                                            }
-                                        },
-                                        "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
-                                    },
-                                    {
-                                        "title": "Memory Usage",
-                                        "type": "timeseries",
-                                        "datasource": "Prometheus",
-                                        "targets": [
-                                            {
-                                                "expr": "sum(container_memory_usage_bytes{namespace=\"${APP_NAMESPACE}\"})",
-                                                "refId": "A"
-                                            }
-                                        ],
-                                        "fieldConfig": {
-                                            "defaults": {
-                                                "unit": "bytes"
-                                            }
-                                        },
-                                        "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 }
+                                        "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\\"${APP_NAMESPACE}\\"}[5m]))",
+                                        "refId": "A"
                                     }
-                                ]
+                                ],
+                                "fieldConfig": {
+                                    "defaults": {
+                                        "thresholds": {
+                                            "mode": "absolute",
+                                            "steps": [
+                                                { "color": "green", "value": null },
+                                                { "color": "yellow", "value": 60 },
+                                                { "color": "red", "value": 80 }
+                                            ]
+                                        },
+                                        "unit": "percent"
+                                    }
+                                },
+                                "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
                             },
-                            "overwrite": true,
-                            "message": "Updated by Jenkins Pipeline"
-                        }' -v
-                    """, returnStatus: true)
-                    
-                    if (response != 0) {
-                        error "Failed to create dashboard"
-                    }
+                            {
+                                "title": "Memory Usage",
+                                "type": "timeseries",
+                                "datasource": {
+                                    "type": "prometheus",
+                                    "uid": "Prometheus"
+                                },
+                                "targets": [
+                                    {
+                                        "expr": "sum(container_memory_usage_bytes{namespace=\\"${APP_NAMESPACE}\\"})",
+                                        "refId": "A"
+                                    }
+                                ],
+                                "fieldConfig": {
+                                    "defaults": {
+                                        "unit": "bytes"
+                                    }
+                                },
+                                "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 }
+                            }
+                        ]
+                    },
+                    "overwrite": true,
+                    "message": "Updated by Jenkins Pipeline"
+                }
+                """
+                
+                def response = sh(script: """
+                    curl -X POST "${GRAFANA_URL}/api/dashboards/db" \
+                        -H 'Content-Type: application/json' \
+                        -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
+                        -d '${dashboardJson.trim()}'
+                """, returnStatus: true)
+                
+                if (response != 0) {
+                    error "Failed to create dashboard. Exit code: ${response}"
                 }
             }
         }
+    }
     }
     
     post {
