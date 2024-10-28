@@ -4,7 +4,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import tn.esprit.tpfoyer.control.FoyerRestController;
 import tn.esprit.tpfoyer.entity.Foyer;
 import tn.esprit.tpfoyer.service.IFoyerService;
@@ -12,11 +11,11 @@ import tn.esprit.tpfoyer.service.IFoyerService;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.*;
+import static org.mockito.MockitoAnnotations.openMocks;
 
 class FoyerRestControllerTest {
 
@@ -28,7 +27,7 @@ class FoyerRestControllerTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        openMocks(this);
     }
 
     // Tests for retrieve-all-foyers endpoint
