@@ -179,7 +179,8 @@ pipeline {
             steps {
                 script {
                     // Deploy Prometheus config
-                    sh 'kubectl --kubeconfig=$KUBECONFIG create configmap prometheus-config --from-file=prometheus-config.yml -n $APP_NAMESPACE'
+                    sh 'kubectl --kubeconfig=$KUBECONFIG apply -f prometheus-config.yml -n $APP_NAMESPACE'
+                    
                     sh 'docker restart prometheus'
                     
                     // Setup Grafana DataSource and Dashboard
