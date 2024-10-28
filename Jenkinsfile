@@ -221,35 +221,7 @@ pipeline {
                         "refresh": "5s",
                         "panels": [
                             {
-                                "title": "CPU Usage",
-                                "type": "gauge",
-                                "datasource": {
-                                    "type": "prometheus",
-                                    "uid": "Prometheus"
-                                },
-                                "targets": [
-                                    {
-                                        "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\\"${APP_NAMESPACE}\\"}[5m]))",
-                                        "refId": "A"
-                                    }
-                                ],
-                                "fieldConfig": {
-                                    "defaults": {
-                                        "thresholds": {
-                                            "mode": "absolute",
-                                            "steps": [
-                                                { "color": "green", "value": null },
-                                                { "color": "yellow", "value": 60 },
-                                                { "color": "red", "value": 80 }
-                                            ]
-                                        },
-                                        "unit": "percent"
-                                    }
-                                },
-                                "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
-                            },
-                            {
-                                "title": "Memory Usage",
+                                "title": "Container CPU Usage",
                                 "type": "timeseries",
                                 "datasource": {
                                     "type": "prometheus",
@@ -257,8 +229,25 @@ pipeline {
                                 },
                                 "targets": [
                                     {
-                                        "expr": "sum(container_memory_usage_bytes{namespace=\\"${APP_NAMESPACE}\\"})",
-                                        "refId": "A"
+                                        "expr": "sum(rate(container_cpu_usage_seconds_total[1m])) by (pod)",
+                                        "refId": "A",
+                                        "legendFormat": "{{pod}}"
+                                    }
+                                ],
+                                "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
+                            },
+                            {
+                                "title": "Container Memory Usage",
+                                "type": "timeseries",
+                                "datasource": {
+                                    "type": "prometheus",
+                                    "uid": "Prometheus"
+                                },
+                                "targets": [
+                                    {
+                                        "expr": "sum(container_memory_working_set_bytes) by (pod)",
+                                        "refId": "A",
+                                        "legendFormat": "{{pod}}"
                                     }
                                 ],
                                 "fieldConfig": {
@@ -267,6 +256,21 @@ pipeline {
                                     }
                                 },
                                 "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 }
+                            },
+                            {
+                                "title": "Available Metrics",
+                                "type": "stat",
+                                "datasource": {
+                                    "type": "prometheus",
+                                    "uid": "Prometheus"
+                                },
+                                "targets": [
+                                    {
+                                        "expr": "count(up)",
+                                        "refId": "A"
+                                    }
+                                ],
+                                "gridPos": { "x": 0, "y": 16, "w": 12, "h": 4 }
                             }
                         ]
                     },
@@ -274,7 +278,6 @@ pipeline {
                     "message": "Updated by Jenkins Pipeline"
                 }
                 """
-                
                 def response = sh(script: """
                     curl -X POST "${GRAFANA_URL}/api/dashboards/db" \
                         -H 'Content-Type: application/json' \
