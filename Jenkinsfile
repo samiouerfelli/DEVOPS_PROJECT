@@ -183,16 +183,23 @@ pipeline {
                     
                     sh 'docker restart prometheus'
                     
-                    // Setup Grafana DataSource and Dashboard
-                    sh """
-                        # Update Grafana DataSource (ensure correct name in JSON)
-                        curl -X PUT -H 'Content-Type: application/json' \
-                        -u '${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}' ${GRAFANA_URL}/api/datasources -d @grafana-datasource.json
+                    // Setup Grafana DataSource
+                    httpRequest(
+                        httpMode: 'PUT',
+                        url: "${GRAFANA_URL}/api/datasources",
+                        requestBody: readFile('grafana-datasource.json'),
+                        authentication: 'grafana-admin-credentials', // Assuming you've added Jenkins credentials
+                        contentType: 'APPLICATION_JSON'
+                    )
 
-                        # Update Grafana Dashboard using its UID
-                        curl -X PUT -H 'Content-Type: application/json' \
-                        -u '${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}' ${GRAFANA_URL}/api/dashboards/uid/be28z8o0x91c0c -d @grafana-dashboard.json
-                    """
+                    // Setup Grafana Dashboard
+                    httpRequest(
+                        httpMode: 'PUT',
+                        url: "${GRAFANA_URL}/api/dashboards/uid/be28z8o0x91c0c",
+                        requestBody: readFile('grafana-dashboard.json'),
+                        authentication: 'grafana-admin-credentials', // Assuming you've added Jenkins credentials
+                        contentType: 'APPLICATION_JSON'
+                    )
                 }
             }
         }
