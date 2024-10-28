@@ -185,15 +185,13 @@ pipeline {
                     
                     // Setup Grafana DataSource and Dashboard
                     sh """
-                        # Update Grafana DataSource
+                        # Update Grafana DataSource (ensure correct name in JSON)
                         curl -X PUT -H 'Content-Type: application/json' \
-                        -u '${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}' ${GRAFANA_URL}/api/datasources \
-                        -d @grafana-datasource.json
+                        -u '${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}' ${GRAFANA_URL}/api/datasources -d @grafana-datasource.json
 
-                        # Update Grafana Dashboard
+                        # Update Grafana Dashboard using its UID
                         curl -X PUT -H 'Content-Type: application/json' \
-                        -u '${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}' ${GRAFANA_URL}/api/dashboards/db \
-                        -d @grafana-dashboard.json
+                        -u '${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}' ${GRAFANA_URL}/api/dashboards/uid/be28z8o0x91c0c -d @grafana-dashboard.json
                     """
                 }
             }
