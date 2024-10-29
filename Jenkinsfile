@@ -133,12 +133,15 @@ pipeline {
 
                     echo 'Pushing Docker image to Nexus...'
                     withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
-                        sh "echo ${NEXUS_PASS} | docker login ${NEXUS_URL} -u ${NEXUS_USER} --password-stdin"
+                        sh '''
+                            echo "$NEXUS_PASS" | docker login ${NEXUS_URL} -u "$NEXUS_USER" --password-stdin
+                            docker push ${nexusImage}
+                        '''
                     }
-                    sh "docker push ${nexusImage}"
                 }
             }
         }
+
 
 
 
@@ -194,122 +197,137 @@ pipeline {
             }
         }
         
-      stage('Setup Prometheus DataSource in Grafana') {
-        steps {
-            script {
-                def datasourceJson = """
-                {
-                    "name": "Prometheus",
-                    "type": "prometheus",
-                    "url": "${PROMETHEUS_URL}",
-                    "access": "proxy",
-                    "isDefault": true,
-                    "jsonData": {
-                        "httpMethod": "GET",
-                        "timeInterval": "5s"
+        stage('Setup Prometheus DataSource in Grafana') {
+            steps {
+                script {
+                    def datasourceJson = """
+                    {
+                        "name": "Prometheus",
+                        "type": "prometheus",
+                        "url": "${PROMETHEUS_URL}",
+                        "access": "proxy",
+                        "isDefault": true,
+                        "jsonData": {
+                            "httpMethod": "GET",
+                            "timeInterval": "5s"
+                        }
+                    }
+                    """
+                    
+                    def response = sh(script: """
+                        curl -X POST "${GRAFANA_URL}/api/datasources" \
+                            -H 'Content-Type: application/json' \
+                            -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
+                            -d '${datasourceJson.trim()}' \
+                            || true
+                    """, returnStatus: true)
+                    
+                    echo "Datasource setup completed with status: ${response}"
+                }
+            }
+        }
+
+        stage('Create Dashboard in Grafana') {
+            steps {
+                script {
+                    def dashboardJson = """
+                    {
+                        "dashboard": {
+                            "id": null,
+                            "uid": "simple-dashboard",
+                            "title": "Application Monitoring Dashboard",
+                            "tags": ["kubernetes", "prometheus"],
+                            "timezone": "browser",
+                            "schemaVersion": 16,
+                            "version": 1,
+                            "refresh": "5s",
+                            "panels": [
+                                {
+                                    "title": "Container CPU Usage",
+                                    "type": "timeseries",
+                                    "datasource": {
+                                        "type": "prometheus",
+                                        "uid": "Prometheus"
+                                    },
+                                    "targets": [
+                                        {
+                                            "expr": "sum(rate(container_cpu_usage_seconds_total[1m])) by (pod)",
+                                            "refId": "A",
+                                            "legendFormat": "{{pod}}"
+                                        }
+                                    ],
+                                    "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
+                                },
+                                {
+                                    "title": "Container Memory Usage",
+                                    "type": "timeseries",
+                                    "datasource": {
+                                        "type": "prometheus",
+                                        "uid": "Prometheus"
+                                    },
+                                    "targets": [
+                                        {
+                                            "expr": "sum(container_memory_working_set_bytes) by (pod)",
+                                            "refId": "A",
+                                            "legendFormat": "{{pod}}"
+                                        }
+                                    ],
+                                    "fieldConfig": {
+                                        "defaults": {
+                                            "unit": "bytes"
+                                        }
+                                    },
+                                    "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 }
+                                },
+                                {
+                                    "title": "Available Metrics",
+                                    "type": "stat",
+                                    "datasource": {
+                                        "type": "prometheus",
+                                        "uid": "Prometheus"
+                                    },
+                                    "targets": [
+                                        {
+                                            "expr": "count(up)",
+                                            "refId": "A"
+                                        }
+                                    ],
+                                    "gridPos": { "x": 0, "y": 16, "w": 12, "h": 4 }
+                                }
+                            ]
+                        },
+                        "overwrite": true,
+                        "message": "Updated by Jenkins Pipeline"
+                    }
+                    """
+                    def response = sh(script: """
+                        curl -X POST "${GRAFANA_URL}/api/dashboards/db" \
+                            -H 'Content-Type: application/json' \
+                            -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
+                            -d '${dashboardJson.trim()}'
+                    """, returnStatus: true)
+                    
+                    if (response != 0) {
+                        error "Failed to create dashboard. Exit code: ${response}"
                     }
                 }
-                """
-                
-                def response = sh(script: """
-                    curl -X POST "${GRAFANA_URL}/api/datasources" \
-                        -H 'Content-Type: application/json' \
-                        -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
-                        -d '${datasourceJson.trim()}' \
-                        || true
-                """, returnStatus: true)
-                
-                echo "Datasource setup completed with status: ${response}"
             }
         }
-    }
 
-    stage('Create Dashboard in Grafana') {
-        steps {
-            script {
-                def dashboardJson = """
-                {
-                    "dashboard": {
-                        "id": null,
-                        "uid": "simple-dashboard",
-                        "title": "Application Monitoring Dashboard",
-                        "tags": ["kubernetes", "prometheus"],
-                        "timezone": "browser",
-                        "schemaVersion": 16,
-                        "version": 1,
-                        "refresh": "5s",
-                        "panels": [
-                            {
-                                "title": "Container CPU Usage",
-                                "type": "timeseries",
-                                "datasource": {
-                                    "type": "prometheus",
-                                    "uid": "Prometheus"
-                                },
-                                "targets": [
-                                    {
-                                        "expr": "sum(rate(container_cpu_usage_seconds_total[1m])) by (pod)",
-                                        "refId": "A",
-                                        "legendFormat": "{{pod}}"
-                                    }
-                                ],
-                                "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
-                            },
-                            {
-                                "title": "Container Memory Usage",
-                                "type": "timeseries",
-                                "datasource": {
-                                    "type": "prometheus",
-                                    "uid": "Prometheus"
-                                },
-                                "targets": [
-                                    {
-                                        "expr": "sum(container_memory_working_set_bytes) by (pod)",
-                                        "refId": "A",
-                                        "legendFormat": "{{pod}}"
-                                    }
-                                ],
-                                "fieldConfig": {
-                                    "defaults": {
-                                        "unit": "bytes"
-                                    }
-                                },
-                                "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 }
-                            },
-                            {
-                                "title": "Available Metrics",
-                                "type": "stat",
-                                "datasource": {
-                                    "type": "prometheus",
-                                    "uid": "Prometheus"
-                                },
-                                "targets": [
-                                    {
-                                        "expr": "count(up)",
-                                        "refId": "A"
-                                    }
-                                ],
-                                "gridPos": { "x": 0, "y": 16, "w": 12, "h": 4 }
-                            }
-                        ]
-                    },
-                    "overwrite": true,
-                    "message": "Updated by Jenkins Pipeline"
-                }
-                """
-                def response = sh(script: """
-                    curl -X POST "${GRAFANA_URL}/api/dashboards/db" \
-                        -H 'Content-Type: application/json' \
-                        -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
-                        -d '${dashboardJson.trim()}'
-                """, returnStatus: true)
-                
-                if (response != 0) {
-                    error "Failed to create dashboard. Exit code: ${response}"
-                }
+        stage('Send Notification') {
+            steps {
+                emailext (
+                    subject: "Jenkins Pipeline: ${currentBuild.currentResult}",
+                    body: """
+                        <p>The Jenkins pipeline for the project has ${currentBuild.currentResult}.</p>
+                        <p>You can view the pipeline logs <a href="${env.BUILD_URL}">here</a>.</p>
+                    """,
+                    to: "${env.DEFAULT_RECIPIENTS}",
+                    replyTo: "${env.REPLY_TO_LIST}",
+                    recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']]
+                )
             }
         }
-    }
     }
     
     post {
