@@ -11,8 +11,7 @@ pipeline {
         DOCKER_IMAGE = 'lookabj/myapp:latest'
         SONAR_PROJECT_KEY = 'devops_project'
         NEXUS_VERSION = "nexus3"
-        NEXUS_PROTOCOL = "http"
-        NEXUS_URL = "10.0.2.15:8081"
+        NEXUS_URL = "http://10.0.2.15:8081"
         NEXUS_REPOSITORY = "maven-releases"
         NEXUS_CREDENTIAL_ID = "nexus-credentials"
         KUBECONFIG = credentials('kubeconfig-credentials-id')
@@ -92,7 +91,6 @@ pipeline {
                         echo "*** File: ${artifactPath}, group: ${pom.groupId}, packaging: ${pom.packaging}, version ${pom.version}"
                         nexusArtifactUploader(
                             nexusVersion: NEXUS_VERSION,
-                            protocol: NEXUS_PROTOCOL,
                             nexusUrl: NEXUS_URL,
                             groupId: pom.groupId,
                             version: pom.version,
