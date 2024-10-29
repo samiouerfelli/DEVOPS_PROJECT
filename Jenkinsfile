@@ -130,14 +130,10 @@ pipeline {
             steps {
                 script {
                     def nexusImage = "${NEXUS_URL}/repository/${NEXUS_REPOSITORYY}/${DOCKER_IMAGE.split(':')[0]}:${BUILD_NUMBER}"
-                    echo 'Tagging Docker image for Nexus...'
-                    sh "docker tag ${DOCKER_IMAGE} ${nexusImage}"
-
                     echo 'Pushing Docker image to Nexus...'
                     withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
                         sh """
-                            echo "$NEXUS_PASS" | docker login -u "$NEXUS_USER" --password-stdin ${NEXUS_URL}/v2/
-                            docker push ${nexusImage}
+                            curl -X PUT -u "$NEXUS_USER:$NEXUS_PASS" -T ./target/*.jar "${nexusImage}"
                         """
                     }
                 }
