@@ -159,6 +159,20 @@ pipeline {
             }
         }
 
+        stage('Load Docker Image into Kind') {
+            steps {
+                script {
+                    def tarFile = "${DOCKER_IMAGE.split(':')[0].split('/')[-1]}-${BUILD_NUMBER}.tar"
+                    
+                    // Download the tar file from Nexus
+                    sh "curl -u 'username:password' -O http://10.0.2.15:8081/repository/docker-images-raw/com/example/docker/${tarFile}"
+
+                    // Load the image into the kind cluster
+                    sh "kind load image-archive ${tarFile} --name devops-cluster"
+                }
+            }
+        }
+
 
         stage('Push Docker Image to Docker Hub') {
             steps {
