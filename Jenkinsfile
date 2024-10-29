@@ -129,22 +129,30 @@ pipeline {
         stage('Push Docker Image to Nexus') {
             steps {
                 script {
-                    def nexusImage = "${NEXUS_URL}/repository/${NEXUS_REPOSITORYY}/${DOCKER_IMAGE.split(':')[0]}:${BUILD_NUMBER}"
+                    def imageName = DOCKER_IMAGE.split(':')[0]
+                    def imageTag = BUILD_NUMBER
+                    def imageTarName = "${imageName.replace('/', '-')}-${imageTag}.tar"
+                    
+                    // First save the Docker image as a tar file
+                    sh """
+                        docker save ${DOCKER_IMAGE} -o ${imageTarName}
+                    """
                     
                     withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
-                        // Direct curl command to push the image
+                        // Upload the tar file to Nexus
                         sh """
-                            curl -v -u "${NEXUS_USER}:${NEXUS_PASS}" \
-                            -X POST "${NEXUS_URL}/service/rest/v1/components?repository=${NEXUS_REPOSITORYY}" \
-                            -F "docker.asset=@${DOCKER_IMAGE}.tar" \
-                            -F "docker.asset.filename=${DOCKER_IMAGE}.tar"
+                            curl -v -u '${NEXUS_USER}:${NEXUS_PASS}' \
+                            -X POST '${NEXUS_URL}/service/rest/v1/components?repository=${NEXUS_REPOSITORYY}' \
+                            -F "docker.asset=@${imageTarName}" \
+                            -F "docker.asset.filename=${imageTarName}"
                         """
                     }
+                    
+                    // Clean up the tar file
+                    sh "rm ${imageTarName}"
                 }
             }
         }
-
-
 
 
         stage('Push Docker Image to Docker Hub') {
