@@ -126,18 +126,17 @@ pipeline {
             }
         }
 
-        stage('Upload Docker Image as Artifact') {
+        stage('Save and Upload Docker Image') {
             steps {
                 script {
-                    def imageName = "${DOCKER_IMAGE.split(':')[0].split('/')[-1]}" // Extracts only the image name
-                    def version = "${BUILD_NUMBER}" // Unique version for each build
+                    def imageName = "${DOCKER_IMAGE.split(':')[0].split('/')[-1]}"
+                    def version = "${BUILD_NUMBER}"
                     def tarFile = "${imageName}-${version}.tar"
 
-                    // Save Docker image as a tarball file
-                    echo 'Saving Docker image as tarball...'
+                    // Save Docker image as tar in Docker image format
                     sh "docker save -o ${tarFile} ${DOCKER_IMAGE}"
 
-                    // Upload tarball to Nexus as a raw artifact
+                    // Upload to Nexus
                     nexusArtifactUploader(
                         nexusVersion: 'nexus3',
                         protocol: 'http',
@@ -146,32 +145,27 @@ pipeline {
                         credentialsId: 'nexus-credentials',
                         groupId: 'com.example.docker',
                         version: version,
-                        artifacts: [
-                            [
-                                artifactId: imageName,
-                                classifier: '',
-                                file: tarFile,
-                                type: 'tar'
-                            ]
-                        ]
+                        artifacts: [[artifactId: imageName, file: tarFile, type: 'tar']]
                     )
                 }
             }
         }
 
+
         stage('Load Docker Image into Kind') {
             steps {
                 script {
-                    def tarFile = "${DOCKER_IMAGE.split(':')[0].split('/')[-1]}-${BUILD_NUMBER}.tar"
+                    def tarFile = "myapp-${BUILD_NUMBER}.tar"
                     
-                    // Download the tar file from Nexus
-                    sh "curl -u 'username:password' -O http://10.0.2.15:8081/repository/docker-images-raw/com/example/docker/${tarFile}"
+                    // Download the Docker image tarball from Nexus
+                    sh "curl -u username:password -O http://10.0.2.15:8081/repository/docker-images-raw/com/example/docker/${tarFile}"
 
-                    // Load the image into the kind cluster
+                    // Load the image tarball into Kind
                     sh "kind load image-archive ${tarFile} --name devops-cluster"
                 }
             }
         }
+
 
 
         stage('Push Docker Image to Docker Hub') {
