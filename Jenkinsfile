@@ -126,7 +126,7 @@ pipeline {
             }
         }
 
-        stage('Push Docker Image to Nexus Repository') {
+        stage('Tag and Push Docker Image to Nexus') {
             steps {
                 script {
                     // Save the image as a tar file
@@ -150,19 +150,18 @@ pipeline {
                     
                     // Use withCredentials to securely access Nexus credentials
                     withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
-                        // Prepare curl command with proper authentication and multipart form data
+                        // Prepare curl command with fixed formatting
                         def curlCmd = """
-                            curl -v -k -f \
-                                -u '${NEXUS_USER}:${NEXUS_PASS}' \
-                                -X POST '${uploadUrl}' \
-                                -H 'accept: application/json' \
-                                -H 'Content-Type: multipart/form-data' \
-                                -F "docker.asset=@${tarFileName};type=application/x-tar" \
-                                -F 'docker.asset.filename=${tarFileName}' \
-                                -F 'docker.contentType=application/vnd.docker.distribution.manifest.v2+json' \
-                                -F 'docker.repository=${componentName}' \
-                                -F 'docker.tag=${imageTag}' \
-                                -F 'docker.digest=sha256:${fileDigest}'
+                            curl -v -k -f \\
+                            -u '${NEXUS_USER}:${NEXUS_PASS}' \\
+                            -X POST '${uploadUrl}' \\
+                            -H 'accept: application/json' \\
+                            -H 'Content-Type: multipart/form-data' \\
+                            -F 'docker.asset=@${tarFileName}' \\
+                            -F 'docker.asset.filename=${tarFileName}' \\
+                            -F 'docker.componentName=${componentName}' \\
+                            -F 'docker.tag=${imageTag}' \\
+                            -F 'docker.forceName=true'
                         """
                         
                         try {
@@ -171,6 +170,19 @@ pipeline {
                             
                             if (response == 0) {
                                 echo "Successfully uploaded Docker image to Nexus"
+                                
+                                // Verify the upload
+                                def verifyCmd = """
+                                    curl -s -k -u '${NEXUS_USER}:${NEXUS_PASS}' \\
+                                    '${nexusApiUrl}/service/rest/v1/search?repository=${repositoryName}&name=${componentName}&version=${imageTag}'
+                                """
+                                def verifyResponse = sh(script: verifyCmd, returnStdout: true).trim()
+                                
+                                if (verifyResponse.contains(componentName)) {
+                                    echo "Verified: Image exists in Nexus repository"
+                                } else {
+                                    error "Unable to verify image in Nexus repository"
+                                }
                             } else {
                                 error "Failed to upload Docker image to Nexus. Exit code: ${response}"
                             }
