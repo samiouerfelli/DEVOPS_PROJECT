@@ -126,23 +126,23 @@ pipeline {
             }
         }
 
-        stage('Tag and Push Docker Image to Nexus') {
+        stage('Push Docker Image to Nexus') {
             steps {
                 script {
-                    // First, save the image as tar
-                    sh "docker save ${DOCKER_IMAGE} -o ./docker-image.tar"
+                    // Save docker image as tar
+                    sh "docker save ${DOCKER_IMAGE} > image.tar"
                     
-                    echo 'Pushing Docker image to Nexus...'
+                    // Push to Nexus Raw Repository
                     withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
                         sh """
-                            curl -v -u "$NEXUS_USER:$NEXUS_PASS" \
-                            --upload-file ./docker-image.tar \
-                            "${NEXUS_URL}/repository/${NEXUS_REPOSITORYY}/${DOCKER_IMAGE.split(':')[0]}/${BUILD_NUMBER}/image.tar"
+                            curl -v -u "${NEXUS_USER}:${NEXUS_PASS}" \
+                            --upload-file image.tar \
+                            "http://10.0.2.15:8081/repository/raw-docker/docker-images/${BUILD_NUMBER}/${DOCKER_IMAGE.split(':')[0]}.tar"
                         """
                     }
                     
-                    // Clean up the tar file
-                    sh "rm ./docker-image.tar"
+                    // Cleanup
+                    sh "rm image.tar"
                 }
             }
         }
