@@ -12,7 +12,7 @@ pipeline {
         SONAR_PROJECT_KEY = 'devops_project'
         NEXUS_VERSION = "nexus3"
         NEXUS_PROTOCOL = "http"
-        NEXUS_URL = "http://10.0.2.15:8081"
+        NEXUS_URL = "10.0.2.15:8081"
         NEXUS_REPOSITORY = "maven-releases"
         NEXUS_CREDENTIAL_ID = "nexus-credentials"
         KUBECONFIG = credentials('kubeconfig-credentials-id')
