@@ -134,10 +134,10 @@ pipeline {
 
                     echo 'Pushing Docker image to Nexus...'
                     withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
-                        sh '''
-                            echo "$NEXUS_PASS" | docker login ${NEXUS_URL} -u "$NEXUS_USER" --password-stdin
+                        sh """
+                            echo "$NEXUS_PASS" | docker login --insecure-registry ${NEXUS_URL} -u "$NEXUS_USER" --password-stdin
                             docker push ${nexusImage}
-                        '''
+                        """
                     }
                 }
             }
