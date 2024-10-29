@@ -126,18 +126,39 @@ pipeline {
             }
         }
 
-        stage('Tag and Push Docker Image to Nexus') {
+        stage('Upload Docker Image as Artifact') {
             steps {
                 script {
-                    def nexusImage = "10.0.2.15:5000/${DOCKER_IMAGE.split(':')[0]}:${BUILD_NUMBER}"
-                    echo 'Tagging Docker image for Nexus...'
-                    sh "docker tag ${DOCKER_IMAGE} ${nexusImage}"
+                    def imageName = "${DOCKER_IMAGE.split(':')[0]}" // Base name of the Docker image
+                    def version = "${BUILD_NUMBER}" // Unique version for each build
+                    def tarFile = "${imageName}-${version}.tar"
 
-                    echo 'Pushing Docker image to Nexus directly...'
-                    sh "docker push ${nexusImage}"
+                    // Save Docker image as a tarball file
+                    echo 'Saving Docker image as tarball...'
+                    sh "docker save -o ${tarFile} ${DOCKER_IMAGE}"
+
+                    // Upload tarball to Nexus as a raw artifact
+                    nexusArtifactUploader(
+                        nexusVersion: 'nexus3',
+                        protocol: 'http',
+                        nexusUrl: '10.0.2.15:8081',
+                        repository: 'docker-images-raw',
+                        credentialsId: 'nexus-credentials',
+                        groupId: 'com.example.docker',
+                        version: version,
+                        artifacts: [
+                            [
+                                artifactId: imageName,
+                                classifier: '',
+                                file: tarFile,
+                                type: 'tar'
+                            ]
+                        ]
+                    )
                 }
             }
         }
+
 
 
 
