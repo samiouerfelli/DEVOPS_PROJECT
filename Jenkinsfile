@@ -139,12 +139,15 @@ pipeline {
                     """
                     
                     withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
-                        // Upload the tar file to Nexus
+                        // Upload the tar file to Nexus with correct field names
                         sh """
                             curl -v -u '${NEXUS_USER}:${NEXUS_PASS}' \
                             -X POST '${NEXUS_URL}/service/rest/v1/components?repository=${NEXUS_REPOSITORYY}' \
-                            -F "docker.asset=@${imageTarName}" \
-                            -F "docker.asset.filename=${imageTarName}"
+                            -F "maven2.asset=@${imageTarName}" \
+                            -F "maven2.asset.extension=tar" \
+                            -F "maven2.groupId=${imageName.split('/')[0]}" \
+                            -F "maven2.artifactId=${imageName.split('/')[1]}" \
+                            -F "maven2.version=${imageTag}"
                         """
                     }
                     
