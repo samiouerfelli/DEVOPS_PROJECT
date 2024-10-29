@@ -13,6 +13,7 @@ pipeline {
         NEXUS_VERSION = "nexus3"
         NEXUS_PROTOCOL = "http"
         NEXUS_URL = "10.0.2.15:8081"
+        NEXUS_URLL = "10.0.2.15:8082"
         NEXUS_REPOSITORY = "maven-releases"
         NEXUS_REPOSITORYY = "docker-releases"
         NEXUS_CREDENTIAL_ID = "nexus-credentials"
@@ -129,30 +130,23 @@ pipeline {
         stage('Push Docker Image to Nexus') {
             steps {
                 script {
-                    def imageName = DOCKER_IMAGE.split(':')[0]
-                    def imageTag = BUILD_NUMBER
-                    def imageTarName = "${imageName.replace('/', '-')}-${imageTag}.tar"
-                    
-                    // First save the Docker image as a tar file
-                    sh """
-                        docker save ${DOCKER_IMAGE} -o ${imageTarName}
-                    """
+                    def nexusImage = "${NEXUS_URLL}/${NEXUS_REPOSITORYY}/${DOCKER_IMAGE.split(':')[0]}:${BUILD_NUMBER}"
                     
                     withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
-                        // Upload the tar file to Nexus with correct field names
+                        // Tag image for Nexus repository
+                        sh "docker tag ${DOCKER_IMAGE} ${nexusImage}"
+                        
+                        // Login to Nexus Docker registry
                         sh """
-                            curl -v -u '${NEXUS_USER}:${NEXUS_PASS}' \
-                            -X POST '${NEXUS_URL}/service/rest/v1/components?repository=${NEXUS_REPOSITORYY}' \
-                            -F "maven2.asset=@${imageTarName}" \
-                            -F "maven2.asset.extension=tar" \
-                            -F "maven2.groupId=${imageName.split('/')[0]}" \
-                            -F "maven2.artifactId=${imageName.split('/')[1]}" \
-                            -F "maven2.version=${imageTag}"
+                            echo '${NEXUS_PASS}' | docker login ${NEXUS_URLL} -u '${NEXUS_USER}' --password-stdin
                         """
+                        
+                        // Push to Nexus
+                        sh "docker push ${nexusImage}"
+                        
+                        // Logout for security
+                        sh "docker logout ${NEXUS_URLL}"
                     }
-                    
-                    // Clean up the tar file
-                    sh "rm ${imageTarName}"
                 }
             }
         }
