@@ -84,6 +84,8 @@ spec:
         prometheus.io/port: "8080"
         prometheus.io/path: "/metrics"
     spec:
+      imagePullSecrets:
+        - name: nexus-cred  # Add this line
       containers:
         - name: myapp
           image: 10.0.2.15:8081/repository/docker-repo/lookabj/myapp:${BUILD_NUMBER}
@@ -108,6 +110,7 @@ spec:
               value: "prometheus,health,info,metrics"
             - name: MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS
               value: "always"
+
 ---
 apiVersion: v1
 kind: Service

@@ -132,11 +132,14 @@ pipeline {
                     sh "docker tag ${DOCKER_IMAGE} ${nexusImage}"
 
                     echo 'Pushing Docker image to Nexus...'
-                    sh 'echo $NEXUS_CREDENTIALS_PSW | docker login ${NEXUS_URL} -u $NEXUS_CREDENTIALS_USR --password-stdin'
+                    withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
+                        sh "echo ${NEXUS_PASS} | docker login ${NEXUS_URL} -u ${NEXUS_USER} --password-stdin"
+                    }
                     sh "docker push ${nexusImage}"
                 }
             }
         }
+
 
 
         stage('Push Docker Image to Docker Hub') {
