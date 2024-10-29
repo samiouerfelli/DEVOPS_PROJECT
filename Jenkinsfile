@@ -129,7 +129,7 @@ pipeline {
         stage('Upload Docker Image as Artifact') {
             steps {
                 script {
-                    def imageName = "${DOCKER_IMAGE.split(':')[0]}" // Base name of the Docker image
+                    def imageName = "${DOCKER_IMAGE.split(':')[0].split('/')[-1]}" // Extracts only the image name
                     def version = "${BUILD_NUMBER}" // Unique version for each build
                     def tarFile = "${imageName}-${version}.tar"
 
@@ -158,10 +158,6 @@ pipeline {
                 }
             }
         }
-
-
-
-
 
 
         stage('Push Docker Image to Docker Hub') {
