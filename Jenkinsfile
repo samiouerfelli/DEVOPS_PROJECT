@@ -14,6 +14,7 @@ pipeline {
         NEXUS_PROTOCOL = "http"
         NEXUS_URL = "10.0.2.15:8081"
         NEXUS_REPOSITORY = "maven-releases"
+        NEXUS_REPOSITORYY = "docker-releases"
         NEXUS_CREDENTIAL_ID = "nexus-credentials"
         KUBECONFIG = credentials('kubeconfig-credentials-id')
         APP_NAMESPACE = "myapp"
@@ -128,7 +129,7 @@ pipeline {
         stage('Tag and Push Docker Image to Nexus') {
             steps {
                 script {
-                    def nexusImage = "${NEXUS_URL}/repository/docker-repo/${DOCKER_IMAGE.split(':')[0]}:${BUILD_NUMBER}"
+                    def nexusImage = "${NEXUS_URL}/repository/${NEXUS_REPOSITORYY}/${DOCKER_IMAGE.split(':')[0]}:${BUILD_NUMBER}"
                     echo 'Tagging Docker image for Nexus...'
                     sh "docker tag ${DOCKER_IMAGE} ${nexusImage}"
 
