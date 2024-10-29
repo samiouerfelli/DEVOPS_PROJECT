@@ -127,7 +127,7 @@ pipeline {
         stage('Tag and Push Docker Image to Nexus') {
             steps {
                 script {
-                    def nexusImage = "${NEXUS_URL}/repository/docker-repo/${DOCKER_IMAGE}:${BUILD_NUMBER}"
+                    def nexusImage = "${NEXUS_URL}/repository/docker-repo/${DOCKER_IMAGE.split(':')[0]}:${BUILD_NUMBER}"
                     echo 'Tagging Docker image for Nexus...'
                     sh "docker tag ${DOCKER_IMAGE} ${nexusImage}"
 
@@ -137,6 +137,7 @@ pipeline {
                 }
             }
         }
+
 
         stage('Push Docker Image to Docker Hub') {
             steps {
