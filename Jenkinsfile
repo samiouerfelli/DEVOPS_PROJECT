@@ -127,75 +127,111 @@ pipeline {
         }
 
         stage('Tag and Push Docker Image to Nexus') {
-            steps {
-                script {
-                    // Save the image as a tar file
-                    def imageName = DOCKER_IMAGE.split(':')[0]
-                    def imageTag = BUILD_NUMBER
-                    def tarFileName = "docker-image-${BUILD_NUMBER}.tar"
-                    
-                    // Export the Docker image to a tar file
+    steps {
+        script {
+            // Save image details
+            def imageName = DOCKER_IMAGE.split(':')[0]
+            def imageTag = BUILD_NUMBER
+            def tarFileName = "docker-image-${BUILD_NUMBER}.tar"
+            
+            // Add Maven settings for deployment
+            def settingsXml = """
+<settings>
+    <servers>
+        <server>
+            <id>nexus</id>
+            <username>${NEXUS_USER}</username>
+            <password>${NEXUS_PASS}</password>
+        </server>
+    </servers>
+</settings>"""
+
+            // Create pom.xml for deployment
+            def pomXml = """
+<project>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.example</groupId>
+    <artifactId>docker-image</artifactId>
+    <version>${BUILD_NUMBER}</version>
+    <packaging>tar</packaging>
+    
+    <distributionManagement>
+        <repository>
+            <id>nexus</id>
+            <url>http://${NEXUS_URL}/repository/${NEXUS_REPOSITORYY}</url>
+        </repository>
+    </distributionManagement>
+    
+    <build>
+        <extensions>
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-http</artifactId>
+                <version>3.5.3</version>
+            </extension>
+        </extensions>
+    </build>
+</project>"""
+            
+            withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
+                try {
+                    // Export Docker image to tar
                     sh "docker save ${DOCKER_IMAGE} -o ${tarFileName}"
                     
-                    // Calculate the SHA256 digest of the tar file
-                    def fileDigest = sh(script: "sha256sum ${tarFileName} | cut -d' ' -f1", returnStdout: true).trim()
+                    // Write temporary Maven files
+                    writeFile file: 'settings.xml', text: settingsXml
+                    writeFile file: 'pom.xml', text: pomXml
                     
-                    // Define the Nexus upload URL and components
-                    def nexusApiUrl = "http://${NEXUS_URL}"
-                    def repositoryName = "${NEXUS_REPOSITORYY}"
-                    def componentName = imageName.tokenize('/').last()
+                    // Create directory structure
+                    sh """
+                        mkdir -p target/docker-layout
+                        mv ${tarFileName} target/docker-layout/
+                        cd target/docker-layout
+                        tar -czf ../docker-image-${BUILD_NUMBER}.tar.gz *
+                    """
                     
-                    // Create the upload URL
-                    def uploadUrl = "${nexusApiUrl}/service/rest/v1/components?repository=${repositoryName}"
+                    // Deploy to Nexus using Maven
+                    sh """
+                        mvn deploy:deploy-file \
+                        -Durl=http://${NEXUS_URL}/repository/${NEXUS_REPOSITORYY} \
+                        -DrepositoryId=nexus \
+                        -Dfile=target/docker-image-${BUILD_NUMBER}.tar.gz \
+                        -DpomFile=pom.xml \
+                        -Dpackaging=tar.gz \
+                        -DgeneratePom=false \
+                        -s settings.xml \
+                        -DgroupId=com.example \
+                        -DartifactId=docker-image \
+                        -Dversion=${BUILD_NUMBER} \
+                        -Dclassifier=docker
+                    """
                     
-                    // Use withCredentials to securely access Nexus credentials
-                    withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
-                        // Prepare curl command with fixed formatting
-                        def curlCmd = """
-                            curl -v -k -f \\
-                            -u '${NEXUS_USER}:${NEXUS_PASS}' \\
-                            -X POST '${uploadUrl}' \\
-                            -H 'accept: application/json' \\
-                            -H 'Content-Type: multipart/form-data' \\
-                            -F 'docker.asset=@${tarFileName}' \\
-                            -F 'docker.asset.filename=${tarFileName}' \\
-                            -F 'docker.componentName=${componentName}' \\
-                            -F 'docker.tag=${imageTag}' \\
-                            -F 'docker.forceName=true'
-                        """
-                        
-                        try {
-                            // Execute the curl command
-                            def response = sh(script: curlCmd, returnStatus: true)
-                            
-                            if (response == 0) {
-                                echo "Successfully uploaded Docker image to Nexus"
-                                
-                                // Verify the upload
-                                def verifyCmd = """
-                                    curl -s -k -u '${NEXUS_USER}:${NEXUS_PASS}' \\
-                                    '${nexusApiUrl}/service/rest/v1/search?repository=${repositoryName}&name=${componentName}&version=${imageTag}'
-                                """
-                                def verifyResponse = sh(script: verifyCmd, returnStdout: true).trim()
-                                
-                                if (verifyResponse.contains(componentName)) {
-                                    echo "Verified: Image exists in Nexus repository"
-                                } else {
-                                    error "Unable to verify image in Nexus repository"
-                                }
-                            } else {
-                                error "Failed to upload Docker image to Nexus. Exit code: ${response}"
-                            }
-                        } catch (Exception e) {
-                            error "Error uploading to Nexus: ${e.getMessage()}"
-                        } finally {
-                            // Clean up the tar file
-                            sh "rm -f ${tarFileName}"
-                        }
+                    // Verify upload
+                    def verifyCmd = """
+                        curl -s -f -u '${NEXUS_USER}:${NEXUS_PASS}' \
+                        'http://${NEXUS_URL}/service/rest/v1/search?repository=${NEXUS_REPOSITORYY}&maven.groupId=com.example&maven.artifactId=docker-image&maven.version=${BUILD_NUMBER}'
+                    """
+                    
+                    def verifyResponse = sh(script: verifyCmd, returnStatus: true)
+                    if (verifyResponse == 0) {
+                        echo "Successfully verified upload to Nexus"
+                    } else {
+                        error "Failed to verify upload in Nexus"
                     }
+                    
+                } catch (Exception e) {
+                    error "Failed to upload Docker image: ${e.getMessage()}"
+                } finally {
+                    // Cleanup
+                    sh """
+                        rm -f settings.xml pom.xml ${tarFileName}
+                        rm -rf target
+                    """
                 }
             }
         }
+    }
+}
 
 
 
