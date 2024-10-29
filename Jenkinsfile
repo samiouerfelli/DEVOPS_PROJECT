@@ -129,13 +129,20 @@ pipeline {
         stage('Tag and Push Docker Image to Nexus') {
             steps {
                 script {
-                    def nexusImage = "${NEXUS_URL}/repository/${NEXUS_REPOSITORYY}/${DOCKER_IMAGE.split(':')[0]}:${BUILD_NUMBER}"
+                    // First, save the image as tar
+                    sh "docker save ${DOCKER_IMAGE} -o ./docker-image.tar"
+                    
                     echo 'Pushing Docker image to Nexus...'
                     withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
                         sh """
-                            curl -X PUT -u "$NEXUS_USER:$NEXUS_PASS" -T ./target/*.jar "${nexusImage}"
+                            curl -v -u "$NEXUS_USER:$NEXUS_PASS" \
+                            --upload-file ./docker-image.tar \
+                            "${NEXUS_URL}/repository/${NEXUS_REPOSITORYY}/${DOCKER_IMAGE.split(':')[0]}/${BUILD_NUMBER}/image.tar"
                         """
                     }
+                    
+                    // Clean up the tar file
+                    sh "rm ./docker-image.tar"
                 }
             }
         }
