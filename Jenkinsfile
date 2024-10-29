@@ -126,23 +126,61 @@ pipeline {
             }
         }
 
-        stage('Push Docker Image to Nexus') {
+        stage('Push Docker Image to Nexus Repository') {
             steps {
                 script {
-                    // Save docker image as tar
-                    sh "docker save ${DOCKER_IMAGE} > image.tar"
+                    // Save the image as a tar file
+                    def imageName = DOCKER_IMAGE.split(':')[0]
+                    def imageTag = BUILD_NUMBER
+                    def tarFileName = "docker-image-${BUILD_NUMBER}.tar"
                     
-                    // Push to Nexus Raw Repository
+                    // Export the Docker image to a tar file
+                    sh "docker save ${DOCKER_IMAGE} -o ${tarFileName}"
+                    
+                    // Calculate the SHA256 digest of the tar file
+                    def fileDigest = sh(script: "sha256sum ${tarFileName} | cut -d' ' -f1", returnStdout: true).trim()
+                    
+                    // Define the Nexus upload URL and components
+                    def nexusApiUrl = "http://${NEXUS_URL}"
+                    def repositoryName = "${NEXUS_REPOSITORYY}"
+                    def componentName = imageName.tokenize('/').last()
+                    
+                    // Create the upload URL
+                    def uploadUrl = "${nexusApiUrl}/service/rest/v1/components?repository=${repositoryName}"
+                    
+                    // Use withCredentials to securely access Nexus credentials
                     withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
-                        sh """
-                            curl -v -u "${NEXUS_USER}:${NEXUS_PASS}" \
-                            --upload-file image.tar \
-                            "http://10.0.2.15:8081/repository/raw-docker/docker-images/${BUILD_NUMBER}/${DOCKER_IMAGE.split(':')[0]}.tar"
+                        // Prepare curl command with proper authentication and multipart form data
+                        def curlCmd = """
+                            curl -v -k -f \
+                                -u '${NEXUS_USER}:${NEXUS_PASS}' \
+                                -X POST '${uploadUrl}' \
+                                -H 'accept: application/json' \
+                                -H 'Content-Type: multipart/form-data' \
+                                -F "docker.asset=@${tarFileName};type=application/x-tar" \
+                                -F 'docker.asset.filename=${tarFileName}' \
+                                -F 'docker.contentType=application/vnd.docker.distribution.manifest.v2+json' \
+                                -F 'docker.repository=${componentName}' \
+                                -F 'docker.tag=${imageTag}' \
+                                -F 'docker.digest=sha256:${fileDigest}'
                         """
+                        
+                        try {
+                            // Execute the curl command
+                            def response = sh(script: curlCmd, returnStatus: true)
+                            
+                            if (response == 0) {
+                                echo "Successfully uploaded Docker image to Nexus"
+                            } else {
+                                error "Failed to upload Docker image to Nexus. Exit code: ${response}"
+                            }
+                        } catch (Exception e) {
+                            error "Error uploading to Nexus: ${e.getMessage()}"
+                        } finally {
+                            // Clean up the tar file
+                            sh "rm -f ${tarFileName}"
+                        }
                     }
-                    
-                    // Cleanup
-                    sh "rm image.tar"
                 }
             }
         }
