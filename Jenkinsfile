@@ -13,7 +13,6 @@ pipeline {
         NEXUS_VERSION = "nexus3"
         NEXUS_PROTOCOL = "http"
         NEXUS_URL = "10.0.2.15:8081"
-        NEXUS_URLL = "10.0.2.15:8082"
         NEXUS_REPOSITORY = "maven-releases"
         NEXUS_REPOSITORYY = "docker-releases"
         NEXUS_CREDENTIAL_ID = "nexus-credentials"
@@ -127,29 +126,21 @@ pipeline {
             }
         }
 
-        stage('Push Docker Image to Nexus') {
+        stage('Tag and Push Docker Image to Nexus') {
             steps {
                 script {
-                    def nexusImage = "${NEXUS_URLL}/${NEXUS_REPOSITORYY}/${DOCKER_IMAGE.split(':')[0]}:${BUILD_NUMBER}"
-                    
-                    withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
-                        // Tag image for Nexus repository
-                        sh "docker tag ${DOCKER_IMAGE} ${nexusImage}"
-                        
-                        // Login to Nexus Docker registry
-                        sh """
-                            echo '${NEXUS_PASS}' | docker login ${NEXUS_URLL} -u '${NEXUS_USER}' --password-stdin
-                        """
-                        
-                        // Push to Nexus
-                        sh "docker push ${nexusImage}"
-                        
-                        // Logout for security
-                        sh "docker logout ${NEXUS_URLL}"
-                    }
+                    def nexusImage = "10.0.2.15:5000/${DOCKER_IMAGE.split(':')[0]}:${BUILD_NUMBER}"
+                    echo 'Tagging Docker image for Nexus...'
+                    sh "docker tag ${DOCKER_IMAGE} ${nexusImage}"
+
+                    echo 'Pushing Docker image to Nexus directly...'
+                    sh "docker push ${nexusImage}"
                 }
             }
         }
+
+
+
 
 
         stage('Push Docker Image to Docker Hub') {
