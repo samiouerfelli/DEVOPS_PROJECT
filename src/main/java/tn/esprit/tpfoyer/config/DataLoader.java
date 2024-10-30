@@ -27,7 +27,6 @@ public class DataLoader implements CommandLineRunner {
 
     private EtudiantRepository etudiantRepository;
 
-    private FoyerRepository foyerRepository;
 
     private ReservationRepository reservationRepository;
 
