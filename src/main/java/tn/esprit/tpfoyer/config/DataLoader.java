@@ -2,34 +2,35 @@ package tn.esprit.tpfoyer.config;
 
 
 import com.github.javafaker.Faker;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.tpfoyer.entity.*;
 import tn.esprit.tpfoyer.repository.*;
 
-import java.time.ZoneId;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
+
 
 @Component
+@AllArgsConstructor
 public class DataLoader implements CommandLineRunner {
 
-    @Autowired
+
     private BlocRepository blocRepository;
-    @Autowired
+
     private ChambreRepository chambreRepository;
-    @Autowired
+
     private EtudiantRepository etudiantRepository;
-    @Autowired
+
     private FoyerRepository foyerRepository;
-    @Autowired
+
     private ReservationRepository reservationRepository;
-    @Autowired
+
     private UniversiteRepository universiteRepository;
     private final Faker faker = new Faker();
 

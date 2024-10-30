@@ -5,19 +5,18 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+
 import tn.esprit.tpfoyer.control.*;
 import tn.esprit.tpfoyer.entity.Universite;
 import tn.esprit.tpfoyer.service.*;
 
 import java.util.Arrays;
-import java.util.Optional;
+
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class UniversiteRestControllerTest {
+class UniversiteRestControllerTest {
 
     @Mock
     private IUniversiteService universiteService;

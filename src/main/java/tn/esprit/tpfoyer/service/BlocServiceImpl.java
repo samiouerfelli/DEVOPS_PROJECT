@@ -50,7 +50,6 @@ public class BlocServiceImpl  implements IBlocService {
 
     @Transactional
     public Bloc retrieveBloc(Long blocId) {
-
         return blocRepository.findById(blocId).get();
     }
 

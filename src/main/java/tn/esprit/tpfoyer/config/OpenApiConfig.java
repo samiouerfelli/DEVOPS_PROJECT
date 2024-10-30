@@ -14,19 +14,22 @@ import org.springframework.context.annotation.Configuration;
 @OpenAPIDefinition
 @Configuration
 public class OpenApiConfig {
+
+    private static final String JSON ="application/json";
+    private static final String DEFAULTVALUE ="default";
     @Bean
     public OpenAPI baseOpenAPI(){
         ApiResponse badRequest = new ApiResponse().content(
-                new Content().addMediaType("application/json",
-                        new io.swagger.v3.oas.models.media.MediaType().addExamples("default",
+                new Content().addMediaType(JSON,
+                        new io.swagger.v3.oas.models.media.MediaType().addExamples(DEFAULTVALUE,
                                 new Example().value("{\"code\" : 400, \"status\" : \"Bad Request\", \"Message\" : \"Bad Request\"}"))));
         ApiResponse internalServerError = new ApiResponse().content(
-                new Content().addMediaType("application/json",
-                        new io.swagger.v3.oas.models.media.MediaType().addExamples("default",
+                new Content().addMediaType(JSON,
+                        new io.swagger.v3.oas.models.media.MediaType().addExamples(DEFAULTVALUE,
                                 new Example().value("{\"code\" : 500, \"status\" : \"internalServerError\", \"Message\" : \"internalServerError\"}"))));
         ApiResponse successfulResponse = new ApiResponse().content(
-                new Content().addMediaType("application/json",
-                        new io.swagger.v3.oas.models.media.MediaType().addExamples("default",
+                new Content().addMediaType(JSON,
+                        new io.swagger.v3.oas.models.media.MediaType().addExamples(DEFAULTVALUE,
                                 new Example().value("{\"name\":\"string\",\"surname\":\"string\",\"age\":0}"))));
         Components components = new Components();
         components.addResponses("badRequest",badRequest);
