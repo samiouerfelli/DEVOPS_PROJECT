@@ -81,6 +81,7 @@
 
 
 
+
     </dependencies>
 
     <build>
@@ -125,7 +126,7 @@
         </repository>
         <snapshotRepository>
             <id>maven-snapshots</id>
-            <url>http://172.19.132.87:8081/repository/maven-releases/</url>
+            <url>http://172.19.132.87:8081/repository/maven-snapshots/</url>
         </snapshotRepository>
     </distributionManagement>
 
