@@ -126,7 +126,7 @@ pipeline {
             }
         }
 
-        stage('Upload Docker Image as Artifact') {
+        stage('Push Docker Image to Nexus') {
             steps {
                 script {
                     def imageName = "${DOCKER_IMAGE.split(':')[0].split('/')[-1]}" // Extracts only the image name
@@ -204,13 +204,11 @@ pipeline {
             }
         }
 
-        stage('Setup Kubernetes Namespace and RBAC') {
+        stage('Setup Prometheus Config') {
             steps {
                 script {
                     sh '''
-                        kubectl --kubeconfig=$KUBECONFIG apply -f prometheus-rbac.yaml
-                        kubectl --kubeconfig=$KUBECONFIG apply -f prometheus.yaml
-                        kubectl --kubeconfig=$KUBECONFIG apply -f service-monitor.yaml
+                        kubectl --kubeconfig=$KUBECONFIG apply -f prometheus-config.yaml
                     '''
                 }
             }
