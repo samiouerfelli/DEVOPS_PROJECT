@@ -3,13 +3,18 @@ kind: ServiceMonitor
 metadata:
   name: myapp-service-monitor
   namespace: myapp
+  labels:
+    release: prometheus
 spec:
   selector:
     matchLabels:
       app: myapp
   endpoints:
   - port: metrics
-    path: /metrics
+    path: /actuator/prometheus
+    interval: 15s
+    scrapeTimeout: 14s
+    scheme: http
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -19,7 +24,7 @@ rules:
   - apiGroups: [""]
     resources: ["nodes", "nodes/proxy", "nodes/metrics", "services", "endpoints", "pods"]
     verbs: ["get", "list", "watch"]
-  - apiGroups: ["extensions"]
+  - apiGroups: ["extensions", "networking.k8s.io"]
     resources: ["ingresses"]
     verbs: ["get", "list", "watch"]
   - nonResourceURLs: ["/metrics"]
@@ -45,11 +50,91 @@ metadata:
   namespace: myapp
 data:
   prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+    
     scrape_configs:
-      - job_name: 'myapp'
+      - job_name: 'spring-actuator'
+        metrics_path: '/actuator/prometheus'
         kubernetes_sd_configs:
           - role: endpoints
+            namespaces:
+              names:
+                - myapp
         relabel_configs:
           - source_labels: [__meta_kubernetes_service_label_app]
-            action: keep
             regex: myapp
+            action: keep
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            regex: metrics
+            action: keep
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: kubernetes_namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: kubernetes_pod_name
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: myapp
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: myapp
+  labels:
+    app: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      serviceAccountName: prometheus
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v2.45.0
+        args:
+          - "--config.file=/etc/prometheus/prometheus.yml"
+          - "--storage.tsdb.path=/prometheus"
+          - "--web.enable-lifecycle"
+          - "--web.external-url=/prometheus"
+          - "--web.route-prefix=/prometheus"
+        ports:
+        - containerPort: 9090
+          name: http
+        volumeMounts:
+        - name: prometheus-config
+          mountPath: /etc/prometheus/
+        - name: prometheus-storage
+          mountPath: /prometheus
+      volumes:
+        - name: prometheus-config
+          configMap:
+            name: prometheus-config
+        - name: prometheus-storage
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: myapp
+  labels:
+    app: prometheus
+spec:
+  selector:
+    app: prometheus
+  ports:
+    - port: 9090
+      targetPort: 9090
+      name: http
+  type: ClusterIP  # Changed to ClusterIP since we're using Ingress

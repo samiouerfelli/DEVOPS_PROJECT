@@ -62,7 +62,7 @@ spec:
           configMap:
             name: mysql-config
 ---
-#Spring deployment app
+# Spring Boot application deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -81,8 +81,8 @@ spec:
         app: myapp
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "8081"
-        prometheus.io/path: "/metrics"
+        prometheus.io/port: "8091"
+        prometheus.io/path: "/actuator/prometheus"
     spec:
       containers:
         - name: myapp
@@ -91,7 +91,7 @@ spec:
           ports:
             - containerPort: 8089
               name: http
-            - containerPort: 8081
+            - containerPort: 8091
               name: metrics
           env:
             - name: SPRING_DATASOURCE_URL
@@ -103,12 +103,13 @@ spec:
             - name: SPRING_JPA_HIBERNATE_DDL_AUTO
               value: "update"
             - name: MANAGEMENT_SERVER_PORT
-              value: "8081"
+              value: "8091"
             - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
               value: "prometheus,health,info,metrics"
             - name: MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS
               value: "always"
 ---
+# Service configuration
 apiVersion: v1
 kind: Service
 metadata:
@@ -126,7 +127,7 @@ spec:
       nodePort: 30007
       name: http
     - protocol: TCP
-      port: 8081
-      targetPort: 8081
+      port: 8091
+      targetPort: 8091
       name: metrics
   type: NodePort
