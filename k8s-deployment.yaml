@@ -62,7 +62,7 @@ spec:
           configMap:
             name: mysql-config
 ---
-# spring-app-deployment.yaml
+#Spring deployment app
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -81,15 +81,13 @@ spec:
         app: myapp
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "8080"
+        prometheus.io/port: "8081"
         prometheus.io/path: "/metrics"
     spec:
-      imagePullSecrets:
-        - name: nexus-cred  # Add this line
       containers:
         - name: myapp
-          image: 10.0.2.15:8081/repository/docker-repo/lookabj/myapp:${BUILD_NUMBER}
-          imagePullPolicy: IfNotPresent  # Ensures Kubernetes tries to use the locally loaded image first
+          image: lookabj/myapp:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8089
               name: http
@@ -110,7 +108,6 @@ spec:
               value: "prometheus,health,info,metrics"
             - name: MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS
               value: "always"
-
 ---
 apiVersion: v1
 kind: Service
