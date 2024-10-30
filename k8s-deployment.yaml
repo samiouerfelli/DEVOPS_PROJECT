@@ -62,7 +62,7 @@ spec:
           configMap:
             name: mysql-config
 ---
-# Spring Boot application deployment
+#Spring deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -93,6 +93,18 @@ spec:
               name: http
             - containerPort: 8091
               name: metrics
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8091
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8091
+            initialDelaySeconds: 30
+            periodSeconds: 10
           env:
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:mysql://mysql-db:3306/tpfoyer?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false"
@@ -105,11 +117,22 @@ spec:
             - name: MANAGEMENT_SERVER_PORT
               value: "8091"
             - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
-              value: "prometheus,health,info,metrics"
+              value: "*"
             - name: MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS
               value: "always"
+            - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH
+              value: "/actuator"
+            # Add base path for ingress
+            - name: SERVER_SERVLET_CONTEXT_PATH
+              value: "/myapp"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
 ---
-# Service configuration
 apiVersion: v1
 kind: Service
 metadata:
@@ -124,10 +147,9 @@ spec:
     - protocol: TCP
       port: 8089
       targetPort: 8089
-      nodePort: 30007
       name: http
     - protocol: TCP
       port: 8091
       targetPort: 8091
       name: metrics
-  type: NodePort
+  type: ClusterIP  # Changed from NodePort since we're using Ingress

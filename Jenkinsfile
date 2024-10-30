@@ -18,8 +18,8 @@ pipeline {
         NEXUS_CREDENTIAL_ID = "nexus-credentials"
         KUBECONFIG = credentials('kubeconfig-credentials-id')
         APP_NAMESPACE = "myapp"
-        GRAFANA_URL = 'http://localhost:3000'
-        PROMETHEUS_URL = 'http://localhost:9090'
+        PROMETHEUS_URL = "http://localhost/prometheus"
+        GRAFANA_URL = "http://localhost/grafana"
         GRAFANA_CREDS = credentials('grafana-admin-credentials')
     }
 
@@ -204,11 +204,12 @@ pipeline {
             }
         }
 
-        stage('Setup Prometheus Config') {
+        stage('Setup Prometheus and Grafana Config') {
             steps {
                 script {
                     sh '''
                         kubectl --kubeconfig=$KUBECONFIG apply -f prometheus-config.yaml
+                        kubectl --kubeconfig=$KUBECONFIG apply -f grafana-configmaps.yaml
                     '''
                 }
             }
@@ -235,11 +236,12 @@ pipeline {
                         curl -X POST "${GRAFANA_URL}/api/datasources" \
                             -H 'Content-Type: application/json' \
                             -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
-                            -d '${datasourceJson.trim()}' \
-                            || true
+                            -d '${datasourceJson.trim()}'
                     """, returnStatus: true)
                     
-                    echo "Datasource setup completed with status: ${response}"
+                    if (response != 0) {
+                        error "Failed to setup Prometheus data source. Exit code: ${response}"
+                    }
                 }
             }
         }
@@ -317,6 +319,7 @@ pipeline {
                         "message": "Updated by Jenkins Pipeline"
                     }
                     """
+                    
                     def response = sh(script: """
                         curl -X POST "${GRAFANA_URL}/api/dashboards/db" \
                             -H 'Content-Type: application/json' \
