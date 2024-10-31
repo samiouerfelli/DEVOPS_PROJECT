@@ -29,7 +29,6 @@ class EtudiantServiceImplTest {
         MockitoAnnotations.openMocks(this);
     }
 
-    // Test for adding an Etudiant
     @Test
     void testAddEtudiant() {
         Etudiant etudiant = new Etudiant();
@@ -40,7 +39,6 @@ class EtudiantServiceImplTest {
         verify(etudiantRepository, times(1)).save(etudiant);
     }
 
-    // Test for retrieving all Etudiants
     @Test
     void testRetrieveAllEtudiants() {
         Etudiant etudiant1 = new Etudiant();
@@ -54,7 +52,6 @@ class EtudiantServiceImplTest {
         verify(etudiantRepository, times(1)).findAll();
     }
 
-    // Test for retrieving a single Etudiant by ID
     @Test
     void testRetrieveEtudiant() {
         Etudiant etudiant = new Etudiant();
@@ -65,7 +62,15 @@ class EtudiantServiceImplTest {
         verify(etudiantRepository, times(1)).findById(1L);
     }
 
-    // Test for updating an Etudiant
+    @Test
+    void testRetrieveNonExistentEtudiant() {
+        when(etudiantRepository.findById(99L)).thenReturn(Optional.empty());
+
+        Etudiant result = etudiantService.retrieveEtudiant(99L);
+        assertNull(result);
+        verify(etudiantRepository, times(1)).findById(99L);
+    }
+
     @Test
     void testUpdateEtudiant() {
         Etudiant etudiant = new Etudiant();
@@ -76,7 +81,6 @@ class EtudiantServiceImplTest {
         verify(etudiantRepository, times(1)).save(etudiant);
     }
 
-    // Test for deleting an Etudiant
     @Test
     void testDeleteEtudiant() {
         Long id = 1L;
@@ -86,7 +90,6 @@ class EtudiantServiceImplTest {
         verify(etudiantRepository, times(1)).deleteById(id);
     }
 
-    // Test for retrieving an Etudiant by CIN
     @Test
     void testRetrieveEtudiantByCin() {
         Etudiant etudiant = new Etudiant();
@@ -96,5 +99,15 @@ class EtudiantServiceImplTest {
         Etudiant result = etudiantService.recupererEtudiantParCin(cin);
         assertNotNull(result);
         verify(etudiantRepository, times(1)).findEtudiantByCinEtudiant(cin);
+    }
+
+    @Test
+    void testRetrieveEtudiantByInvalidCin() {
+        long invalidCin = 0L;
+        when(etudiantRepository.findEtudiantByCinEtudiant(invalidCin)).thenReturn(null);
+
+        Etudiant result = etudiantService.recupererEtudiantParCin(invalidCin);
+        assertNull(result);
+        verify(etudiantRepository, times(1)).findEtudiantByCinEtudiant(invalidCin);
     }
 }
