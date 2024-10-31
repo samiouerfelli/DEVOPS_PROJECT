@@ -6,12 +6,15 @@ import java.util.List;
 
 public interface IEtudiantService {
 
-    public List<Etudiant> retrieveAllEtudiants();
-    public Etudiant retrieveEtudiant(Long etudiantId);
-    public Etudiant addEtudiant(Etudiant c);
-    public void removeEtudiant(Long etudiantId);
-    public Etudiant modifyEtudiant(Etudiant etudiant);
-    public Etudiant recupererEtudiantParCin(long cin);
+    List<Etudiant> retrieveAllEtudiants();
 
+    Etudiant retrieveEtudiant(Long etudiantId);
 
+    Etudiant addEtudiant(Etudiant etudiant);
+
+    void removeEtudiant(Long etudiantId);
+
+    Etudiant modifyEtudiant(Etudiant etudiant);
+
+    Etudiant recupererEtudiantParCin(long cin);
 }

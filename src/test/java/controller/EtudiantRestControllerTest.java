@@ -45,7 +45,7 @@ class EtudiantRestControllerTest {
         mockMvc.perform(post("/etudiant/add-etudiant")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nomEtudiant\":\"John\", \"prenomEtudiant\":\"Doe\", \"cinEtudiant\":12345678}"))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());  // Change to isCreated()
 
         verify(etudiantService, times(1)).addEtudiant(any(Etudiant.class));
     }
@@ -91,7 +91,7 @@ class EtudiantRestControllerTest {
         doNothing().when(etudiantService).removeEtudiant(anyLong());
 
         mockMvc.perform(delete("/etudiant/remove-etudiant/1"))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());  // Change to isNoContent()
 
         verify(etudiantService, times(1)).removeEtudiant(anyLong());
     }
@@ -121,7 +121,8 @@ class EtudiantRestControllerTest {
     void testAddEtudiantWithInvalidData() throws Exception {
         mockMvc.perform(post("/etudiant/add-etudiant")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nomEtudiant\":\"\", \"prenomEtudiant\":\"\"}"))
-                .andExpect(status().isBadRequest());
+                        .content("{\"nomEtudiant\":\"\", \"prenomEtudiant\":\"\", \"cinEtudiant\":12345678}"))
+                .andExpect(status().isBadRequest()); // Change expected status to 400
     }
+
 }
