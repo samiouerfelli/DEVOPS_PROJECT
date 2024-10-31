@@ -181,16 +181,22 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes') {
-            steps {
-                script {
-                    sh '''
-                        # Apply the deployment and service
-                        kubectl --kubeconfig=$KUBECONFIG apply -f k8s-deployment.yaml
-                    '''
-                }
-            }
+        stage('Deploy to Kubernetes') {             
+            steps {                 
+                script {                     
+                    sh '''                         
+                        # Check if the namespace exists; if not, create it
+                        if ! kubectl --kubeconfig=$KUBECONFIG get namespace myapp > /dev/null 2>&1; then
+                            kubectl --kubeconfig=$KUBECONFIG create namespace myapp
+                        fi
+                        
+                        # Apply the deployment and service to the specified namespace
+                        kubectl --kubeconfig=$KUBECONFIG apply -f k8s-deployment.yaml -n myapp                     
+                    '''                 
+                }             
+            }         
         }
+
 
         stage('Verify Deployment') {
             steps {
@@ -221,6 +227,20 @@ pipeline {
         stage('Setup Prometheus DataSource in Grafana') {
             steps {
                 script {
+                    // Add initial delay to ensure services are ready
+                    sleep(time: 10, unit: 'SECONDS')
+                    
+                    // First check if Grafana is accessible
+                    def healthCheck = sh(script: """
+                        curl -s -o /dev/null -w "%{http_code}" \
+                            "${GRAFANA_URL}/api/health" \
+                            -u '${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}'
+                    """, returnStdout: true).trim()
+                    
+                    if (healthCheck != "200") {
+                        error "Grafana is not accessible. HTTP Status: ${healthCheck}"
+                    }
+                    
                     def datasourceJson = """
                     {
                         "name": "Prometheus",
@@ -235,15 +255,37 @@ pipeline {
                     }
                     """
                     
-                    def response = sh(script: """
-                        curl -X POST "${GRAFANA_URL}/api/datasources" \
-                            -H 'Content-Type: application/json' \
-                            -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
-                            -d '${datasourceJson.trim()}'
-                    """, returnStatus: true)
+                    // First try to get existing datasource
+                    def checkExisting = sh(script: """
+                        curl -s -o /dev/null -w "%{http_code}" \
+                            "${GRAFANA_URL}/api/datasources/name/Prometheus" \
+                            -u '${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}'
+                    """, returnStdout: true).trim()
                     
-                    if (response != 0) {
-                        error "Failed to setup Prometheus data source. Exit code: ${response}"
+                    if (checkExisting == "404") {
+                        // Create new datasource
+                        echo "Creating new Prometheus datasource..."
+                        def createResponse = sh(script: """
+                            curl -X POST \
+                                "${GRAFANA_URL}/api/datasources" \
+                                -H 'Content-Type: application/json' \
+                                -u '${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}' \
+                                -d '${datasourceJson.replaceAll("'", "'\\''")}' \
+                                -v
+                        """, returnStdout: true)
+                        echo "Create response: ${createResponse}"
+                    } else {
+                        // Update existing datasource
+                        echo "Updating existing Prometheus datasource..."
+                        def updateResponse = sh(script: """
+                            curl -X PUT \
+                                "${GRAFANA_URL}/api/datasources/name/Prometheus" \
+                                -H 'Content-Type: application/json' \
+                                -u '${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}' \
+                                -d '${datasourceJson.replaceAll("'", "'\\''")}' \
+                                -v
+                        """, returnStdout: true)
+                        echo "Update response: ${updateResponse}"
                     }
                 }
             }
