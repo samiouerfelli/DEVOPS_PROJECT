@@ -160,15 +160,15 @@ pipeline {
         }
 
 
-        stage('Push Docker Image to Docker Hub') {
-            steps {
-                script {
-                    echo 'Pushing Docker image to Docker Hub...'
-                    sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
-                    sh 'docker push $DOCKER_IMAGE'
-                }
-            }
-        }
+        // stage('Push Docker Image to Docker Hub') {
+        //     steps {
+        //         script {
+        //             echo 'Pushing Docker image to Docker Hub...'
+        //             sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+        //             sh 'docker push $DOCKER_IMAGE'
+        //         }
+        //     }
+        // }
 
         stage('Test Kubernetes Access') {
             steps {
@@ -185,11 +185,6 @@ pipeline {
             steps {                 
                 script {                     
                     sh '''                         
-                        # Check if the namespace exists; if not, create it
-                        if ! kubectl --kubeconfig=$KUBECONFIG get namespace myapp > /dev/null 2>&1; then
-                            kubectl --kubeconfig=$KUBECONFIG create namespace myapp
-                        fi
-                        
                         # Apply the deployment and service to the specified namespace
                         kubectl --kubeconfig=$KUBECONFIG apply -f k8s-deployment.yaml -n myapp                     
                     '''                 
@@ -214,170 +209,15 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        kubectl --kubeconfig=$KUBECONFIG apply -f prometheus-config.yaml
-                        kubectl --kubeconfig=$KUBECONFIG apply -f grafana-configmaps.yaml
-                        kubectl --kubeconfig=$KUBECONFIG apply -f prometheus-deployment.yaml
-                        kubectl --kubeconfig=$KUBECONFIG apply -f grafana-deployment.yaml
-                        kubectl --kubeconfig=$KUBECONFIG apply -f ingress.yaml
+                        kubectl --kubeconfig=$KUBECONFIG apply -f setup-prometheus.yaml
+                        kubectl --kubeconfig=$KUBECONFIG apply -f node-exporter.yaml
+                        kubectl --kubeconfig=$KUBECONFIG apply -f kube-state-metrics.yaml
+                        kubectl --kubeconfig=$KUBECONFIG apply -f setup-grafana.yaml
                     '''
                 }
             }
         }
         
-        stage('Setup Prometheus DataSource in Grafana') {
-            steps {
-                script {
-                    // Add initial delay to ensure services are ready
-                    sleep(time: 10, unit: 'SECONDS')
-                    
-                    // First check if Grafana is accessible
-                    def healthCheck = sh(script: """
-                        curl -s -o /dev/null -w "%{http_code}" \
-                            "${GRAFANA_URL}/api/health" \
-                            -u '${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}'
-                    """, returnStdout: true).trim()
-                    
-                    if (healthCheck != "200") {
-                        error "Grafana is not accessible. HTTP Status: ${healthCheck}"
-                    }
-                    
-                    def datasourceJson = """
-                    {
-                        "name": "Prometheus",
-                        "type": "prometheus",
-                        "url": "${PROMETHEUS_URL}",
-                        "access": "proxy",
-                        "isDefault": true,
-                        "jsonData": {
-                            "httpMethod": "GET",
-                            "timeInterval": "5s"
-                        }
-                    }
-                    """
-                    
-                    // First try to get existing datasource
-                    def checkExisting = sh(script: """
-                        curl -s -o /dev/null -w "%{http_code}" \
-                            "${GRAFANA_URL}/api/datasources/name/Prometheus" \
-                            -u '${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}'
-                    """, returnStdout: true).trim()
-                    
-                    if (checkExisting == "404") {
-                        // Create new datasource
-                        echo "Creating new Prometheus datasource..."
-                        def createResponse = sh(script: """
-                            curl -X POST \
-                                "${GRAFANA_URL}/api/datasources" \
-                                -H 'Content-Type: application/json' \
-                                -u '${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}' \
-                                -d '${datasourceJson.replaceAll("'", "'\\''")}' \
-                                -v
-                        """, returnStdout: true)
-                        echo "Create response: ${createResponse}"
-                    } else {
-                        // Update existing datasource
-                        echo "Updating existing Prometheus datasource..."
-                        def updateResponse = sh(script: """
-                            curl -X PUT \
-                                "${GRAFANA_URL}/api/datasources/name/Prometheus" \
-                                -H 'Content-Type: application/json' \
-                                -u '${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}' \
-                                -d '${datasourceJson.replaceAll("'", "'\\''")}' \
-                                -v
-                        """, returnStdout: true)
-                        echo "Update response: ${updateResponse}"
-                    }
-                }
-            }
-        }
-
-        stage('Create Dashboard in Grafana') {
-            steps {
-                script {
-                    def dashboardJson = """
-                    {
-                        "dashboard": {
-                            "id": null,
-                            "uid": "simple-dashboard",
-                            "title": "Application Monitoring Dashboard",
-                            "tags": ["kubernetes", "prometheus"],
-                            "timezone": "browser",
-                            "schemaVersion": 16,
-                            "version": 1,
-                            "refresh": "5s",
-                            "panels": [
-                                {
-                                    "title": "Container CPU Usage",
-                                    "type": "timeseries",
-                                    "datasource": {
-                                        "type": "prometheus",
-                                        "uid": "Prometheus"
-                                    },
-                                    "targets": [
-                                        {
-                                            "expr": "sum(rate(container_cpu_usage_seconds_total[1m])) by (pod)",
-                                            "refId": "A",
-                                            "legendFormat": "{{pod}}"
-                                        }
-                                    ],
-                                    "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
-                                },
-                                {
-                                    "title": "Container Memory Usage",
-                                    "type": "timeseries",
-                                    "datasource": {
-                                        "type": "prometheus",
-                                        "uid": "Prometheus"
-                                    },
-                                    "targets": [
-                                        {
-                                            "expr": "sum(container_memory_working_set_bytes) by (pod)",
-                                            "refId": "A",
-                                            "legendFormat": "{{pod}}"
-                                        }
-                                    ],
-                                    "fieldConfig": {
-                                        "defaults": {
-                                            "unit": "bytes"
-                                        }
-                                    },
-                                    "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 }
-                                },
-                                {
-                                    "title": "Available Metrics",
-                                    "type": "stat",
-                                    "datasource": {
-                                        "type": "prometheus",
-                                        "uid": "Prometheus"
-                                    },
-                                    "targets": [
-                                        {
-                                            "expr": "count(up)",
-                                            "refId": "A"
-                                        }
-                                    ],
-                                    "gridPos": { "x": 0, "y": 16, "w": 12, "h": 4 }
-                                }
-                            ]
-                        },
-                        "overwrite": true,
-                        "message": "Updated by Jenkins Pipeline"
-                    }
-                    """
-                    
-                    def response = sh(script: """
-                        curl -X POST "${GRAFANA_URL}/api/dashboards/db" \
-                            -H 'Content-Type: application/json' \
-                            -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
-                            -d '${dashboardJson.trim()}'
-                    """, returnStatus: true)
-                    
-                    if (response != 0) {
-                        error "Failed to create dashboard. Exit code: ${response}"
-                    }
-                }
-            }
-        }
 
         stage('Send Notification') {
             steps {
