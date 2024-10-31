@@ -117,7 +117,11 @@ spec:
             - name: MANAGEMENT_SERVER_PORT
               value: "8091"
             - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
-              value: "*"
+              value: "prometheus,health,info,metrics"
+            - name: MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED
+              value: "true"
+            - name: MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED
+              value: "true"  
             - name: MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS
               value: "always"
             - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH
@@ -139,17 +143,17 @@ metadata:
   name: myapp-service
   namespace: myapp
   labels:
-    app: myapp
+    app: myapp    # This matches the ServiceMonitor selector
 spec:
   selector:
     app: myapp
   ports:
-    - protocol: TCP
-      port: 8089
-      targetPort: 8089
-      name: http
-    - protocol: TCP
+    - name: metrics   # This matches the ServiceMonitor endpoint port
       port: 8091
       targetPort: 8091
-      name: metrics
-  type: ClusterIP  # Changed from NodePort since we're using Ingress
+      protocol: TCP
+    - name: http
+      port: 8089
+      targetPort: 8089
+      protocol: TCP
+  type: ClusterIP

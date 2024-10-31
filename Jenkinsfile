@@ -210,6 +210,9 @@ pipeline {
                     sh '''
                         kubectl --kubeconfig=$KUBECONFIG apply -f prometheus-config.yaml
                         kubectl --kubeconfig=$KUBECONFIG apply -f grafana-configmaps.yaml
+                        kubectl --kubeconfig=$KUBECONFIG apply -f prometheus-deployment.yaml
+                        kubectl --kubeconfig=$KUBECONFIG apply -f grafana-deployment.yaml
+                        kubectl --kubeconfig=$KUBECONFIG apply -f ingress.yaml
                     '''
                 }
             }
