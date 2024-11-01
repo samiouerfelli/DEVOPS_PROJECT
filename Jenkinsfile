@@ -244,11 +244,11 @@ pipeline {
         stage('Configure Grafana Datasource') {
             steps {
                 script {
-                    // Add Prometheus as a datasource
+                    // Add Prometheus as a datasource using basic auth
                     sh '''
                         curl -X POST http://localhost:32000/api/datasources \
                         -H "Content-Type: application/json" \
-                        -H "Authorization: Bearer ${GRAFANA_CREDS_PSW}" \
+                        -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
                         -d '{
                             "name": "Prometheus",
                             "type": "prometheus",
@@ -264,17 +264,17 @@ pipeline {
         stage('Create Grafana Dashboard') {
             steps {
                 script {
-                    // Create the dashboard using the configuration
+                    // Create the dashboard using basic auth
                     sh '''
                         # Save dashboard configuration to a file
                         cat > dashboard.json << 'EOF'
                         $(cat ${WORKSPACE}/grafana-dashboard.json)
         EOF
                         
-                        # Create the dashboard via API
+                        # Create the dashboard via API with basic auth
                         curl -X POST http://localhost:32000/api/dashboards/db \
                         -H "Content-Type: application/json" \
-                        -H "Authorization: Bearer ${GRAFANA_CREDS_PSW}" \
+                        -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
                         -d @dashboard.json
                     '''
                 }
