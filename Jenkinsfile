@@ -159,16 +159,15 @@ pipeline {
             }
         }
 
-
-        // stage('Push Docker Image to Docker Hub') {
-        //     steps {
-        //         script {
-        //             echo 'Pushing Docker image to Docker Hub...'
-        //             sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
-        //             sh 'docker push $DOCKER_IMAGE'
-        //         }
-        //     }
-        // }
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                script {
+                    echo 'Pushing Docker image to Docker Hub...'
+                    sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+                    sh 'docker push $DOCKER_IMAGE'
+                }
+            }
+        }
 
         stage('Test Kubernetes Access') {
             steps {
