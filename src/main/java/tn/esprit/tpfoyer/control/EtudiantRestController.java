@@ -1,70 +1,55 @@
 package tn.esprit.tpfoyer.control;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tn.esprit.tpfoyer.entity.Etudiant;
 import tn.esprit.tpfoyer.service.IEtudiantService;
 
 import java.util.List;
 
-
 @RestController
 @AllArgsConstructor
 @RequestMapping("/etudiant")
 public class EtudiantRestController {
 
-    IEtudiantService etudiantService;
-
+    private final IEtudiantService etudiantService;
 
     @GetMapping("/retrieve-all-etudiants")
-    public List<Etudiant> getEtudiants() {
+    public ResponseEntity<List<Etudiant>> getEtudiants() {
         List<Etudiant> listEtudiants = etudiantService.retrieveAllEtudiants();
-        return listEtudiants;
+        return listEtudiants.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(listEtudiants);
     }
-
-
-
-
-
-
-
-
-
-
-
 
     @GetMapping("/retrieve-etudiant-cin/{cin}")
-    public Etudiant retrieveEtudiantParCin(@PathVariable("cin") Long cin) {
+    public ResponseEntity<Etudiant> retrieveEtudiantParCin(@PathVariable("cin") Long cin) {
         Etudiant etudiant = etudiantService.recupererEtudiantParCin(cin);
-        return etudiant;
+        return etudiant != null ? ResponseEntity.ok(etudiant) : ResponseEntity.notFound().build();
     }
 
-
-    @GetMapping("/retrieve-etudiant/{etudiant-id}")
-    public Etudiant retrieveEtudiant(@PathVariable("etudiant-id") Long chId) {
-        Etudiant etudiant = etudiantService.retrieveEtudiant(chId);
-        return etudiant;
+    @GetMapping("/retrieve-etudiant/{id}")
+    public ResponseEntity<Etudiant> retrieveEtudiant(@PathVariable Long id) {
+        Etudiant etudiant = etudiantService.retrieveEtudiant(id);
+        return etudiant != null ? ResponseEntity.ok(etudiant) : ResponseEntity.notFound().build();
     }
 
-    // http://localhost:8089/tpfoyer/etudiant/add-etudiant
     @PostMapping("/add-etudiant")
-    public Etudiant addEtudiant(@RequestBody Etudiant c) {
-        Etudiant etudiant = etudiantService.addEtudiant(c);
-        return etudiant;
+    public ResponseEntity<Etudiant> addEtudiant(@Valid @RequestBody Etudiant etudiant) {
+        Etudiant savedEtudiant = etudiantService.addEtudiant(etudiant);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedEtudiant);
     }
 
-    // http://localhost:8089/tpfoyer/etudiant/remove-etudiant/{etudiant-id}
-    @DeleteMapping("/remove-etudiant/{etudiant-id}")
-    public void removeEtudiant(@PathVariable("etudiant-id") Long chId) {
+    @DeleteMapping("/remove-etudiant/{id}")
+    public ResponseEntity<Void> removeEtudiant(@PathVariable("id") Long chId) {
         etudiantService.removeEtudiant(chId);
+        return ResponseEntity.noContent().build();
     }
 
-    // http://localhost:8089/tpfoyer/etudiant/modify-etudiant
     @PutMapping("/modify-etudiant")
-    public Etudiant modifyEtudiant(@RequestBody Etudiant c) {
+    public ResponseEntity<Etudiant> modifyEtudiant(@RequestBody Etudiant c) {
         Etudiant etudiant = etudiantService.modifyEtudiant(c);
-        return etudiant;
+        return etudiant != null ? ResponseEntity.ok(etudiant) : ResponseEntity.badRequest().build();
     }
-
-
 }
