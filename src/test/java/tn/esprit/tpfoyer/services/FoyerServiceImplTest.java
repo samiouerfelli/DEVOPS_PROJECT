@@ -11,6 +11,7 @@ import tn.esprit.tpfoyer.service.FoyerServiceImpl;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -70,9 +71,8 @@ class FoyerServiceImplTest {
     void testRetrieveFoyer_nonExistentId() {
         when(foyerRepository.findById(anyLong())).thenReturn(Optional.empty());
 
-        Foyer result = foyerService.retrieveFoyer(99L);
-
-        assertNull(result);
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class, () -> foyerService.retrieveFoyer(99L));
+        assertEquals("Foyer with ID 99 not found", exception.getMessage());
         verify(foyerRepository, times(1)).findById(99L);
     }
 
@@ -123,6 +123,9 @@ class FoyerServiceImplTest {
         assertDoesNotThrow(() -> foyerService.removeFoyer(1L));
         verify(foyerRepository, times(1)).deleteById(1L);
     }
+
+
+
 
     @Test
     void testRemoveFoyer_nonExistentId() {
