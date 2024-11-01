@@ -131,16 +131,6 @@ spec:
               value: "always"
             - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH
               value: "/actuator"
-            # Add base path for ingress
-            - name: SERVER_SERVLET_CONTEXT_PATH
-              value: "/myapp"
-          resources:
-            requests:
-              memory: "512Mi"
-              cpu: "250m"
-            limits:
-              memory: "1Gi"
-              cpu: "500m"
 ---
 apiVersion: v1
 kind: Service

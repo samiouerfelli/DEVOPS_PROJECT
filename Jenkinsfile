@@ -244,18 +244,38 @@ pipeline {
         stage('Configure Grafana Datasource') {
             steps {
                 script {
-                    // Add Prometheus as a datasource using basic auth
                     sh '''
-                        curl -X POST http://localhost:32000/api/datasources \
-                        -H "Content-Type: application/json" \
-                        -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
-                        -d '{
-                            "name": "Prometheus",
-                            "type": "prometheus",
-                            "url": "http://localhost:30090",
-                            "access": "proxy",
-                            "isDefault": true
-                        }'
+                        # Check if Prometheus datasource exists
+                        DATASOURCE_ID=$(curl -s -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
+                            http://localhost:32000/api/datasources/name/Prometheus | grep -o '"id":[0-9]*' | cut -d':' -f2)
+
+                        if [ ! -z "$DATASOURCE_ID" ]; then
+                            # Update existing datasource
+                            echo "Updating existing Prometheus datasource..."
+                            curl -X PUT http://localhost:32000/api/datasources/$DATASOURCE_ID \
+                            -H "Content-Type: application/json" \
+                            -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
+                            -d '{
+                                "name": "Prometheus",
+                                "type": "prometheus",
+                                "url": "http://localhost:30090",
+                                "access": "proxy",
+                                "isDefault": true
+                            }'
+                        else
+                            # Create new datasource
+                            echo "Creating new Prometheus datasource..."
+                            curl -X POST http://localhost:32000/api/datasources \
+                            -H "Content-Type: application/json" \
+                            -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
+                            -d '{
+                                "name": "Prometheus",
+                                "type": "prometheus",
+                                "url": "http://localhost:30090",
+                                "access": "proxy",
+                                "isDefault": true
+                            }'
+                        fi
                     '''
                 }
             }
@@ -264,18 +284,72 @@ pipeline {
         stage('Create Grafana Dashboard') {
             steps {
                 script {
-                    // Create the dashboard using basic auth
+                    // The dashboard API automatically handles updates, so we don't need to modify this stage
                     sh '''
-                        # Save dashboard configuration to a file
-                        cat > dashboard.json << 'EOF'
-                        $(cat ${WORKSPACE}/grafana-dashboard.json)
-        EOF
-                        
-                        # Create the dashboard via API with basic auth
+                        # Create or update the dashboard via API with basic auth
                         curl -X POST http://localhost:32000/api/dashboards/db \
                         -H "Content-Type: application/json" \
                         -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
-                        -d @dashboard.json
+                        -d '{
+                            "dashboard": {
+                                "id": null,
+                                "title": "Kubernetes Cluster Monitoring",
+                                "tags": ["kubernetes", "monitoring"],
+                                "timezone": "browser",
+                                "refresh": "5s",
+                                "panels": [
+                                    {
+                                        "title": "Pod Restart Count",
+                                        "type": "graph",
+                                        "gridPos": {
+                                            "h": 8,
+                                            "w": 12,
+                                            "x": 0,
+                                            "y": 0
+                                        },
+                                        "targets": [
+                                            {
+                                                "expr": "sum(kube_pod_container_status_restarts_total) by (pod)",
+                                                "legendFormat": "{{pod}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "title": "Network Receive Rate",
+                                        "type": "graph",
+                                        "gridPos": {
+                                            "h": 8,
+                                            "w": 12,
+                                            "x": 12,
+                                            "y": 0
+                                        },
+                                        "targets": [
+                                            {
+                                                "expr": "rate(node_network_receive_bytes_total[5m])",
+                                                "legendFormat": "{{device}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "title": "Pod Status by Phase",
+                                        "type": "pie",
+                                        "gridPos": {
+                                            "h": 8,
+                                            "w": 12,
+                                            "x": 0,
+                                            "y": 8
+                                        },
+                                        "targets": [
+                                            {
+                                                "expr": "sum by (phase) (kube_pod_status_phase)",
+                                                "legendFormat": "{{phase}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "overwrite": true
+                        }'
                     '''
                 }
             }
