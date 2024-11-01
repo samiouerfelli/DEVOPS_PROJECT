@@ -244,6 +244,12 @@ pipeline {
             steps {
                 script {
                     sh '''
+                        # Wait for Grafana to be ready
+                        echo "Waiting for Grafana to be ready..."
+                        until curl -s -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" http://localhost:32000/api/health; do
+                            sleep 5
+                        done
+
                         # Check if Prometheus datasource exists
                         DATASOURCE_ID=$(curl -s -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
                             http://localhost:32000/api/datasources/name/Prometheus | grep -o '"id":[0-9]*' | cut -d':' -f2)
@@ -257,9 +263,16 @@ pipeline {
                             -d '{
                                 "name": "Prometheus",
                                 "type": "prometheus",
-                                "url": "http://localhost:30090",
+                                "url": "http://prometheus.monitoring.svc.cluster.local:9090",
                                 "access": "proxy",
-                                "isDefault": true
+                                "isDefault": true,
+                                "jsonData": {
+                                    "timeInterval": "15s",
+                                    "queryTimeout": "60s",
+                                    "httpMethod": "POST"
+                                },
+                                "secureJsonData": {},
+                                "readOnly": false
                             }'
                         else
                             # Create new datasource
@@ -270,11 +283,23 @@ pipeline {
                             -d '{
                                 "name": "Prometheus",
                                 "type": "prometheus",
-                                "url": "http://localhost:30090",
+                                "url": "http://prometheus.monitoring.svc.cluster.local:9090",
                                 "access": "proxy",
-                                "isDefault": true
+                                "isDefault": true,
+                                "jsonData": {
+                                    "timeInterval": "15s",
+                                    "queryTimeout": "60s",
+                                    "httpMethod": "POST"
+                                },
+                                "secureJsonData": {},
+                                "readOnly": false
                             }'
                         fi
+
+                        # Verify datasource connection
+                        echo "Verifying Prometheus datasource connection..."
+                        curl -s -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
+                            http://localhost:32000/api/datasources/proxy/1/api/v1/query?query=up
                     '''
                 }
             }
@@ -283,7 +308,6 @@ pipeline {
         stage('Create Grafana Dashboard') {
             steps {
                 script {
-                    // The dashboard API automatically handles updates, so we don't need to modify this stage
                     sh '''
                         # Create or update the dashboard via API with basic auth
                         curl -X POST http://localhost:32000/api/dashboards/db \
@@ -295,11 +319,11 @@ pipeline {
                                 "title": "Kubernetes Cluster Monitoring",
                                 "tags": ["kubernetes", "monitoring"],
                                 "timezone": "browser",
-                                "refresh": "5s",
+                                "refresh": "10s",
                                 "panels": [
                                     {
                                         "title": "Pod Restart Count",
-                                        "type": "graph",
+                                        "type": "timeseries",
                                         "gridPos": {
                                             "h": 8,
                                             "w": 12,
@@ -309,13 +333,21 @@ pipeline {
                                         "targets": [
                                             {
                                                 "expr": "sum(kube_pod_container_status_restarts_total) by (pod)",
-                                                "legendFormat": "{{pod}}"
+                                                "legendFormat": "{{pod}}",
+                                                "interval": "",
+                                                "exemplar": true
                                             }
-                                        ]
+                                        ],
+                                        "options": {
+                                            "tooltip": {
+                                                "mode": "multi",
+                                                "sort": "desc"
+                                            }
+                                        }
                                     },
                                     {
                                         "title": "Network Receive Rate",
-                                        "type": "graph",
+                                        "type": "timeseries",
                                         "gridPos": {
                                             "h": 8,
                                             "w": 12,
@@ -325,13 +357,21 @@ pipeline {
                                         "targets": [
                                             {
                                                 "expr": "rate(node_network_receive_bytes_total[5m])",
-                                                "legendFormat": "{{device}}"
+                                                "legendFormat": "{{device}}",
+                                                "interval": "",
+                                                "exemplar": true
                                             }
-                                        ]
+                                        ],
+                                        "options": {
+                                            "tooltip": {
+                                                "mode": "multi",
+                                                "sort": "desc"
+                                            }
+                                        }
                                     },
                                     {
                                         "title": "Pod Status by Phase",
-                                        "type": "pie",
+                                        "type": "piechart",
                                         "gridPos": {
                                             "h": 8,
                                             "w": 12,
@@ -341,13 +381,23 @@ pipeline {
                                         "targets": [
                                             {
                                                 "expr": "sum by (phase) (kube_pod_status_phase)",
-                                                "legendFormat": "{{phase}}"
+                                                "legendFormat": "{{phase}}",
+                                                "interval": "",
+                                                "exemplar": true
                                             }
-                                        ]
+                                        ],
+                                        "options": {
+                                            "legend": {
+                                                "displayMode": "table",
+                                                "placement": "right",
+                                                "values": ["value"]
+                                            }
+                                        }
                                     }
                                 ]
                             },
-                            "overwrite": true
+                            "overwrite": true,
+                            "message": "Updated by Jenkins Pipeline"
                         }'
                     '''
                 }
