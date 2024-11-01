@@ -1,4 +1,4 @@
-package controller;
+package tn.esprit.tpfoyer.controllers;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
