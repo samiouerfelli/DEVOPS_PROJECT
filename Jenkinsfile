@@ -186,7 +186,7 @@ pipeline {
                 script {                     
                     sh '''                         
                         # Apply the deployment and service to the specified namespace
-                        kubectl --kubeconfig=$KUBECONFIG apply -f k8s-deployment.yaml -n myapp                     
+                        kubectl --kubeconfig=$KUBECONFIG apply -f k8s-deployment.yaml                     
                     '''                 
                 }             
             }         
@@ -213,6 +213,69 @@ pipeline {
                         kubectl --kubeconfig=$KUBECONFIG apply -f node-exporter.yaml
                         kubectl --kubeconfig=$KUBECONFIG apply -f kube-state-metrics.yaml
                         kubectl --kubeconfig=$KUBECONFIG apply -f setup-grafana.yaml
+                    '''
+                }
+            }
+        }
+
+        stage('Wait for Grafana') {
+            steps {
+                script {
+                    // Wait for Grafana to be ready
+                    sh '''
+                        attempt_counter=0
+                        max_attempts=30
+                        
+                        until $(curl --output /dev/null --silent --fail http://localhost:32000/api/health); do
+                            if [ ${attempt_counter} -eq ${max_attempts} ];then
+                                echo "Max attempts reached. Grafana is not available."
+                                exit 1
+                            fi
+                            
+                            printf '.'
+                            attempt_counter=$(($attempt_counter+1))
+                            sleep 5
+                        done
+                    '''
+                }
+            }
+        }
+
+        stage('Configure Grafana Datasource') {
+            steps {
+                script {
+                    // Add Prometheus as a datasource
+                    sh '''
+                        curl -X POST http://localhost:32000/api/datasources \
+                        -H "Content-Type: application/json" \
+                        -H "Authorization: Bearer ${GRAFANA_CREDS_PSW}" \
+                        -d '{
+                            "name": "Prometheus",
+                            "type": "prometheus",
+                            "url": "http://localhost:30090",
+                            "access": "proxy",
+                            "isDefault": true
+                        }'
+                    '''
+                }
+            }
+        }
+
+        stage('Create Grafana Dashboard') {
+            steps {
+                script {
+                    // Create the dashboard using the configuration
+                    sh '''
+                        # Save dashboard configuration to a file
+                        cat > dashboard.json << 'EOF'
+                        $(cat ${WORKSPACE}/grafana-dashboard.json)
+        EOF
+                        
+                        # Create the dashboard via API
+                        curl -X POST http://localhost:32000/api/dashboards/db \
+                        -H "Content-Type: application/json" \
+                        -H "Authorization: Bearer ${GRAFANA_CREDS_PSW}" \
+                        -d @dashboard.json
                     '''
                 }
             }
