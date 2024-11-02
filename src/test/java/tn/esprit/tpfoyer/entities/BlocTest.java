@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class BlocTest {
-   private static final String BLOC = "Bloc A";
+   private static final String BLOC_A = "Bloc A";
 
     private Bloc bloc;
 
