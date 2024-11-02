@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class BlocTest {
+   private static final String BLOC = "Bloc A";
 
     private Bloc bloc;
 
@@ -34,7 +35,7 @@ public class BlocTest {
     void testPropertyAssignments() {
         // Arrange
         bloc.setIdBloc(1L);
-        bloc.setNomBloc("Bloc A");
+        bloc.setNomBloc(BLOC);
         bloc.setCapaciteBloc(100);
 
         // Create a Foyer instance for testing
@@ -44,7 +45,7 @@ public class BlocTest {
 
         // Act & Assert
         assertEquals(1L, bloc.getIdBloc());
-        assertEquals("Bloc A", bloc.getNomBloc());
+        assertEquals(BLOC, bloc.getNomBloc());
         assertEquals(100, bloc.getCapaciteBloc());
         assertEquals(foyer, bloc.getFoyer());
     }
@@ -71,7 +72,7 @@ public class BlocTest {
     void testToString() {
         // Arrange
         bloc.setIdBloc(1L);
-        bloc.setNomBloc("Bloc A");
+        bloc.setNomBloc(BLOC);
         bloc.setCapaciteBloc(100);
 
         // Act
