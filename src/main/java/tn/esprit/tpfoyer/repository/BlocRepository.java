@@ -21,7 +21,7 @@ import java.util.List;
 
 
 @Repository
- public interface BlocRepository extends JpaRepository<Bloc, Long> {
+public interface BlocRepository extends JpaRepository<Bloc, Long> {
 
 
 
@@ -42,11 +42,9 @@ import java.util.List;
 
 
 
-  // Récupérer les Blocs qui ont une capacité supérieure à 50 :
+ // Récupérer les Blocs qui ont une capacité supérieure à 50 :
 
-   List<Bloc> findAllByCapaciteBlocGreaterThan(long c);
-
-
+ List<Bloc> findAllByCapaciteBlocGreaterThan(long c);
 
 
 
@@ -61,20 +59,22 @@ import java.util.List;
 
 
 
-   // Récupérer les Blocs qui ont une capacité inférieurs à 50 :
-   // List<Bloc> findAllByCapaciteBlocLessThan(long c);
 
 
-    // Récupérer tous les Blocs qui ont un nom qui commence par "Bl" :
-    List<Bloc> findAllByNomBlocStartingWith(String c);
+ // Récupérer les Blocs qui ont une capacité inférieurs à 50 :
 
 
-    // Récuprer tous les blocs qui ont un nom donné et une capacité donnée :
-    List<Bloc> findAllByNomBlocAndCapaciteBloc (String nom , long capacite );
+
+ // Récupérer tous les Blocs qui ont un nom qui commence par "Bl" :
+ List<Bloc> findAllByNomBlocStartingWith(String c);
 
 
-    // Récupérer le bloc qui a un nom donné :
-    Bloc findByNomBloc (String nom);
+ // Récuprer tous les blocs qui ont un nom donné et une capacité donnée :
+ List<Bloc> findAllByNomBlocAndCapaciteBloc (String nom , long capacite );
+
+
+ // Récupérer le bloc qui a un nom donné :
+ Bloc findByNomBloc (String nom);
 
 
 
@@ -98,14 +98,13 @@ import java.util.List;
      */
 
 
-    Bloc findBlocByNomBlocAndCapaciteBlocGreaterThan(String nb, long c);
+ Bloc findBlocByNomBlocAndCapaciteBlocGreaterThan(String nb, long c);
 
-    // List des blocs non affectés à aucun foyer :
-    List<Bloc> findAllByFoyerIsNull();
+ // List des blocs non affectés à aucun foyer :
+ List<Bloc> findAllByFoyerIsNull();
 
 
-    //Bloc findByC
-    //findAllByFoyerIsNull();
+
 
 
 
