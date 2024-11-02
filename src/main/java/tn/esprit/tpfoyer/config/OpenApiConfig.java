@@ -35,6 +35,6 @@ public class OpenApiConfig {
         components.addResponses("badRequest",badRequest);
         components.addResponses("internalServerError",internalServerError);
         components.addResponses("successfulResponse",successfulResponse);
-        return new OpenAPI().components(components).info(new Info().title("Springboot_Swagger Project OpenAPI Docs").version("1.0.0").description("Doc Description"));
+        return new OpenAPI().components(components).info(new Info().title("Springboot_DevOps Project ").version("1.0.0").description("Doc Description"));
     }
 }
