@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.HashSet;
 import java.util.Set;
 
 
@@ -29,7 +30,7 @@ public class Chambre {
 
 
     @OneToMany
-    Set<Reservation> reservations;
+    Set<Reservation> reservations = new HashSet<>();
 
     @ManyToOne(cascade = CascadeType.ALL)
     Bloc bloc;

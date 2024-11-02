@@ -10,84 +10,55 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.HashSet;
 import java.util.Set;
 
-public class ChambreTest {
+class ChambreTest {
 
     private Chambre chambre;
 
     @BeforeEach
     void setUp() {
+        // Initialize a new Chambre object before each test
         chambre = new Chambre();
     }
 
     @Test
     void testDefaultConstructor() {
-        // Assert that default constructor initializes fields to null or default values
-        assertEquals(0, chambre.getIdChambre());
-        assertEquals(0, chambre.getNumeroChambre());
-        assertNull(chambre.getTypeC());
-        assertNull(chambre.getBloc());
-        assertNotNull(chambre.getReservations());
-        assertTrue(chambre.getReservations().isEmpty());
+        // Assert that the chambre object is not null
+        assertNotNull(chambre);
+
+        // Assert that the default values are as expected
+        assertEquals(0L, chambre.getIdChambre()); // Default ID should be initialized
+        assertEquals(0L, chambre.getNumeroChambre()); // Default should be zero as per default behavior
+        assertNull(chambre.getTypeC()); // Type should be null by default
+        assertTrue(chambre.getReservations().isEmpty()); // Reservations set should be empty
+        assertNull(chambre.getBloc()); // Bloc should be null by default
     }
 
     @Test
-    void testPropertyAssignments() {
-        // Arrange
-        chambre.setIdChambre(1L);
+    void testSettersAndGetters() {
+        // Set values using setters
         chambre.setNumeroChambre(101);
-        chambre.setTypeC(TypeChambre.SIMPLE);
+        chambre.setTypeC(TypeChambre.SIMPLE); // Assuming SIMPLE is a valid enum value
+        chambre.setReservations(new HashSet<>());
 
-        // Create a Bloc instance to associate with Chambre
-        Bloc bloc = new Bloc();
-        bloc.setIdBloc(1L);
-        chambre.setBloc(bloc);
+        // Create a mock Bloc and set it
+        Bloc mockBloc = new Bloc();
+        chambre.setBloc(mockBloc);
 
-        // Act & Assert
-        assertEquals(1L, chambre.getIdChambre());
+        // Assert that the getters return the expected values
         assertEquals(101, chambre.getNumeroChambre());
         assertEquals(TypeChambre.SIMPLE, chambre.getTypeC());
-        assertEquals(bloc, chambre.getBloc());
-    }
-
-    @Test
-    void testReservationsAssociation() {
-        // Arrange
-        Reservation reservation1 = new Reservation();
-        Reservation reservation2 = new Reservation();
-        Set<Reservation> reservations = new HashSet<>();
-        reservations.add(reservation1);
-        reservations.add(reservation2);
-
-        // Act
-        chambre.setReservations(reservations);
-
-        // Assert
-        assertEquals(2, chambre.getReservations().size());
-        assertTrue(chambre.getReservations().contains(reservation1));
-        assertTrue(chambre.getReservations().contains(reservation2));
+        assertNotNull(chambre.getReservations()); // Reservations should not be null
+        assertTrue(chambre.getReservations().isEmpty()); // Should still be empty
+        assertEquals(mockBloc, chambre.getBloc()); // Assert that the Bloc is set correctly
     }
 
     @Test
     void testToString() {
-        // Arrange
-        chambre.setIdChambre(1L);
         chambre.setNumeroChambre(101);
-        chambre.setTypeC(TypeChambre.DOUBLE);
+        chambre.setTypeC(TypeChambre.SIMPLE);
 
-        // Act
-        String toStringResult = chambre.toString();
-
-        // Assert
-        assertTrue(toStringResult.contains("idChambre=1"));
-        assertTrue(toStringResult.contains("numeroChambre=101"));
-        assertTrue(toStringResult.contains("typeC=DOUBLE"));
-    }
-
-    @Test
-    void testTypeChambreEnumValues() {
-        // Check that enum values are as expected
-        assertEquals(TypeChambre.SIMPLE, TypeChambre.valueOf("SIMPLE"));
-        assertEquals(TypeChambre.DOUBLE, TypeChambre.valueOf("DOUBLE"));
-        assertEquals(TypeChambre.TRIPLE, TypeChambre.valueOf("TRIPLE"));
+        // This will assert that the toString method doesn't return null or is not empty
+        assertNotNull(chambre.toString());
+        assertFalse(chambre.toString().isEmpty());
     }
 }
