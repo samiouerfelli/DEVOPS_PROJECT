@@ -114,16 +114,17 @@ class BlocRestControllerTest {
 
     @Test
     void testRecuperBlocsParNomEtCap() {
+        private static final String BLOC = "Bloc1";
         // Arrange
         List<Bloc> blocList = new ArrayList<>();
         blocList.add(new Bloc());
-        when(blocService.trouverBlocsParNomEtCap("Bloc1", 100)).thenReturn(blocList);
+        when(blocService.trouverBlocsParNomEtCap(BLOC, 100)).thenReturn(blocList);
 
         // Act
-        List<Bloc> result = blocRestController.recuperBlocsParNomEtCap("Bloc1", 100);
+        List<Bloc> result = blocRestController.recuperBlocsParNomEtCap(BLOC, 100);
 
         // Assert
         assertEquals(1, result.size());
-        verify(blocService, times(1)).trouverBlocsParNomEtCap("Bloc1", 100);
+        verify(blocService, times(1)).trouverBlocsParNomEtCap(BLOC, 100);
     }
 }
