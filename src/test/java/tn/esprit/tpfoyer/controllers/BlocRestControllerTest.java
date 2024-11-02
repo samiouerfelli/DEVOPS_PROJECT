@@ -17,6 +17,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class BlocRestControllerTest {
+    private static final String BLOC = "Bloc1";
 
     @InjectMocks
     private BlocRestController blocRestController;
@@ -114,7 +115,6 @@ class BlocRestControllerTest {
 
     @Test
     void testRecuperBlocsParNomEtCap() {
-        private static final String BLOC = "Bloc1";
         // Arrange
         List<Bloc> blocList = new ArrayList<>();
         blocList.add(new Bloc());
