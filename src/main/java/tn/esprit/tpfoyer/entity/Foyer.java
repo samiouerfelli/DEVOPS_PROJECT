@@ -13,6 +13,7 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
+@EqualsAndHashCode // Added for equality checks
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Foyer {
 
@@ -24,15 +25,12 @@ public class Foyer {
     long capaciteFoyer;
 
     @OneToOne(mappedBy = "foyer")
-    @ToString.Exclude
     @JsonIgnore
     Universite universite;
 
     @OneToMany(mappedBy = "foyer")
-            @JsonIgnore
-            @ToString.Exclude
+    @JsonIgnore
     Set<Bloc> blocs;
 
+    // No @ToString.Exclude so that universite and blocs can be included in the toString output
 }
-
-
