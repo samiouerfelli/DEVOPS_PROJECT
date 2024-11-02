@@ -35,7 +35,7 @@ public class BlocTest {
     void testPropertyAssignments() {
         // Arrange
         bloc.setIdBloc(1L);
-        bloc.setNomBloc(BLOC);
+        bloc.setNomBloc(BLOC_A);
         bloc.setCapaciteBloc(100);
 
         // Create a Foyer instance for testing
@@ -45,7 +45,7 @@ public class BlocTest {
 
         // Act & Assert
         assertEquals(1L, bloc.getIdBloc());
-        assertEquals(BLOC, bloc.getNomBloc());
+        assertEquals(BLOC_A, bloc.getNomBloc());
         assertEquals(100, bloc.getCapaciteBloc());
         assertEquals(foyer, bloc.getFoyer());
     }
@@ -72,7 +72,7 @@ public class BlocTest {
     void testToString() {
         // Arrange
         bloc.setIdBloc(1L);
-        bloc.setNomBloc(BLOC);
+        bloc.setNomBloc(BLOC_A);
         bloc.setCapaciteBloc(100);
 
         // Act
