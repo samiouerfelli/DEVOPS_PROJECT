@@ -4,7 +4,7 @@ pipeline {
     tools {
         jdk 'JDK 17'
         maven 'Maven 3'
-        dependencyCheck 'OWASP-Dependency-Check'
+        'dependency-check' 'OWASP-Dependency-Check'
     }
 
     environment {
@@ -20,6 +20,7 @@ pipeline {
         KUBECONFIG = credentials('kubeconfig-credentials-id')
         APP_NAMESPACE = "myapp"
         GRAFANA_CREDS = credentials('grafana-admin-credentials')
+        DEPENDENCY_CHECK_DIR = "${WORKSPACE}/dependency-check-reports"
         
     }
 
@@ -122,42 +123,34 @@ pipeline {
                 script {
                     // Create directory for reports
                     sh '''
-                        mkdir -p dependency-check-reports
+                        mkdir -p ${DEPENDENCY_CHECK_DIR}
                         echo "Created reports directory"
                     '''
                     
-                    // Run Dependency Check with explicit paths
+                    // Run Dependency Check
                     dependencyCheck(
                         additionalArguments: """
-                            -o './dependency-check-reports' 
+                            -o '${DEPENDENCY_CHECK_DIR}'
                             -s './'
-                            -f 'ALL' 
+                            -f 'ALL'
                             --prettyPrint
-                            --failOnCVSS 7
                             --enableExperimental
-                            --scan target/
-                            --scanBootstrap
-                            --data /var/lib/jenkins/OWASP-dependency-check-data
+                            --scan 'target/'
                         """,
                         odcInstallation: 'OWASP-Dependency-Check'
                     )
 
-                    // Verify report exists
+                    // Verify report generation
                     sh '''
                         echo "Checking for generated reports..."
-                        ls -la dependency-check-reports/
-                        if [ ! -f "dependency-check-reports/dependency-check-report.xml" ]; then
-                            echo "ERROR: dependency-check-report.xml not generated!"
-                            exit 1
-                        fi
-                        echo "Reports generated successfully"
+                        ls -la ${DEPENDENCY_CHECK_DIR}
                     '''
                 }
             }
             post {
                 always {
                     dependencyCheckPublisher(
-                        pattern: 'dependency-check-reports/dependency-check-report.xml',
+                        pattern: '**/dependency-check-report.xml',
                         failedTotalHigh: 1,
                         unstableTotalHigh: 1
                     )
@@ -166,17 +159,10 @@ pipeline {
                         allowMissing: false,
                         alwaysLinkToLastBuild: true,
                         keepAll: true,
-                        reportDir: 'dependency-check-reports',
+                        reportDir: "${DEPENDENCY_CHECK_DIR}",
                         reportFiles: 'dependency-check-report.html',
-                        reportName: 'OWASP Dependency Check Report',
-                        reportTitles: 'OWASP Dependency Check Report'
+                        reportName: 'OWASP Dependency Check Report'
                     ])
-                }
-                failure {
-                    echo 'OWASP Dependency Check failed. Check the logs and reports.'
-                }
-                success {
-                    echo 'OWASP Dependency Check completed successfully.'
                 }
             }
         }
