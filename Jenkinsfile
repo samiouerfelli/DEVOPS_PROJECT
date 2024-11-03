@@ -4,6 +4,7 @@ pipeline {
     tools {
         jdk 'JDK 17'
         maven 'Maven 3'
+        dependencyCheck 'OWASP-Dependency-Check'
     }
 
     environment {
@@ -19,6 +20,7 @@ pipeline {
         KUBECONFIG = credentials('kubeconfig-credentials-id')
         APP_NAMESPACE = "myapp"
         GRAFANA_CREDS = credentials('grafana-admin-credentials')
+        
     }
 
     stages {
@@ -118,29 +120,63 @@ pipeline {
         stage('OWASP Dependency Check') {
             steps {
                 script {
+                    // Create directory for reports
+                    sh '''
+                        mkdir -p dependency-check-reports
+                        echo "Created reports directory"
+                    '''
+                    
+                    // Run Dependency Check with explicit paths
                     dependencyCheck(
-                        additionalArguments: '''
-                            -o "./" 
-                            -s "."
-                            -f "ALL" 
+                        additionalArguments: """
+                            -o './dependency-check-reports' 
+                            -s './'
+                            -f 'ALL' 
                             --prettyPrint
-                            --disableYarnAudit
-                        ''',
+                            --failOnCVSS 7
+                            --enableExperimental
+                            --scan target/
+                            --scanBootstrap
+                            --data /var/lib/jenkins/OWASP-dependency-check-data
+                        """,
                         odcInstallation: 'OWASP-Dependency-Check'
                     )
+
+                    // Verify report exists
+                    sh '''
+                        echo "Checking for generated reports..."
+                        ls -la dependency-check-reports/
+                        if [ ! -f "dependency-check-reports/dependency-check-report.xml" ]; then
+                            echo "ERROR: dependency-check-report.xml not generated!"
+                            exit 1
+                        fi
+                        echo "Reports generated successfully"
+                    '''
                 }
             }
             post {
                 always {
-                    dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+                    dependencyCheckPublisher(
+                        pattern: 'dependency-check-reports/dependency-check-report.xml',
+                        failedTotalHigh: 1,
+                        unstableTotalHigh: 1
+                    )
+                    
                     publishHTML([
                         allowMissing: false,
                         alwaysLinkToLastBuild: true,
                         keepAll: true,
-                        reportDir: './',
+                        reportDir: 'dependency-check-reports',
                         reportFiles: 'dependency-check-report.html',
-                        reportName: 'OWASP Dependency Check Report'
+                        reportName: 'OWASP Dependency Check Report',
+                        reportTitles: 'OWASP Dependency Check Report'
                     ])
+                }
+                failure {
+                    echo 'OWASP Dependency Check failed. Check the logs and reports.'
+                }
+                success {
+                    echo 'OWASP Dependency Check completed successfully.'
                 }
             }
         }
