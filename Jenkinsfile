@@ -18,8 +18,6 @@ pipeline {
         NEXUS_CREDENTIAL_ID = "nexus-credentials"
         KUBECONFIG = credentials('kubeconfig-credentials-id')
         APP_NAMESPACE = "myapp"
-        PROMETHEUS_URL = "http://localhost/prometheus"
-        GRAFANA_URL = "http://localhost/grafana"
         GRAFANA_CREDS = credentials('grafana-admin-credentials')
     }
 
@@ -225,7 +223,7 @@ pipeline {
                         attempt_counter=0
                         max_attempts=30
                         
-                        until $(curl --output /dev/null --silent --fail http://localhost:32000/api/health); do
+                        until $(curl --output /dev/null --silent --fail http://localhost:3000/api/health); do
                             if [ ${attempt_counter} -eq ${max_attempts} ];then
                                 echo "Max attempts reached. Grafana is not available."
                                 exit 1
@@ -246,18 +244,18 @@ pipeline {
                     sh '''
                         # Wait for Grafana to be ready
                         echo "Waiting for Grafana to be ready..."
-                        until curl -s -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" http://localhost:32000/api/health; do
+                        until curl -s -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" http://localhost:3000/api/health; do
                             sleep 5
                         done
 
                         # Check if Prometheus datasource exists
                         DATASOURCE_ID=$(curl -s -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
-                            http://localhost:32000/api/datasources/name/Prometheus | grep -o '"id":[0-9]*' | cut -d':' -f2)
+                            http://localhost:3000/api/datasources/name/Prometheus | grep -o '"id":[0-9]*' | cut -d':' -f2)
 
                         if [ ! -z "$DATASOURCE_ID" ]; then
                             # Update existing datasource
                             echo "Updating existing Prometheus datasource..."
-                            curl -X PUT http://localhost:32000/api/datasources/$DATASOURCE_ID \
+                            curl -X PUT http://localhost:3000/api/datasources/$DATASOURCE_ID \
                             -H "Content-Type: application/json" \
                             -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
                             -d '{
@@ -277,7 +275,7 @@ pipeline {
                         else
                             # Create new datasource
                             echo "Creating new Prometheus datasource..."
-                            curl -X POST http://localhost:32000/api/datasources \
+                            curl -X POST http://localhost:3000/api/datasources \
                             -H "Content-Type: application/json" \
                             -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
                             -d '{
@@ -299,7 +297,7 @@ pipeline {
                         # Verify datasource connection
                         echo "Verifying Prometheus datasource connection..."
                         curl -s -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
-                            http://localhost:32000/api/datasources/proxy/1/api/v1/query?query=up
+                            http://localhost:3000/api/datasources/proxy/1/api/v1/query?query=up
                     '''
                 }
             }
@@ -310,7 +308,7 @@ pipeline {
                 script {
                     sh '''
                         # Create or update the dashboard via API with basic auth
-                        curl -X POST http://localhost:32000/api/dashboards/db \
+                        curl -X POST http://localhost:3000/api/dashboards/db \
                         -H "Content-Type: application/json" \
                         -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
                         -d '{
