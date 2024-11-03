@@ -141,7 +141,13 @@ pipeline {
                     
                     // Run Dependency Check with minimal configuration
                     dependencyCheck(
-                        additionalArguments: "--out '${reportDir}' --scan '${WORKSPACE}' --format XML --format HTML --prettyPrint --log '${reportDir}/dependency-check.log'",
+                        additionalArguments: """--out '${reportDir}' 
+                            --scan '${WORKSPACE}' 
+                            --format XML 
+                            --format HTML 
+                            --prettyPrint 
+                            --log '${reportDir}/dependency-check.log'
+                            --nvdApiKey '28b6b1bb-0c7a-4897-8217-f745efd1d1a0'""",
                         odcInstallation: 'OWASP-Dependency-Check'
                     )
                     
