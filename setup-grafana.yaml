@@ -1,4 +1,3 @@
-# grafana-datasource-config.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -25,7 +24,33 @@ data:
     }
 
 ---
-# grafana-deployment.yaml
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-credentials
+  namespace: monitoring
+type: Opaque
+data:
+  admin-user: YWRtaW4=   # Base64 encoded 'admin'
+  admin-password: YWRtaW4xMjM=  # Base64 encoded 'admin123'
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-pvc
+  namespace: monitoring
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -38,7 +63,6 @@ spec:
       app: grafana
   template:
     metadata:
-      name: grafana
       labels:
         app: grafana
     spec:
@@ -63,21 +87,39 @@ spec:
           readOnly: false
         env:
         - name: GF_SECURITY_ADMIN_USER
-          value: admin
+          valueFrom:
+            secretKeyRef:
+              name: grafana-credentials
+              key: admin-user
         - name: GF_SECURITY_ADMIN_PASSWORD
-          value: admin123
+          valueFrom:
+            secretKeyRef:
+              name: grafana-credentials
+              key: admin-password
         - name: GF_USERS_ALLOW_SIGN_UP
           value: "false"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
       volumes:
       - name: grafana-storage
-        emptyDir: {}
+        persistentVolumeClaim:
+          claimName: grafana-pvc
       - name: grafana-datasources
         configMap:
-          defaultMode: 420
           name: grafana-datasources
 
 ---
-# grafana-service.yaml
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -88,31 +130,6 @@ spec:
   ports:
     - port: 3000
       targetPort: 3000
-      nodePort: 32000
+      nodePort: 32000  # Ensure this port is allowed by firewall rules
   selector:
     app: grafana
-
----
-# optional-grafana-configmap.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: grafana-config
-  namespace: monitoring
-data:
-  grafana.ini: |
-    [analytics]
-    check_for_updates = true
-    [grafana_net]
-    url = https://grafana.net
-    [log]
-    mode = console
-    [paths]
-    data = /var/lib/grafana/
-    logs = /var/log/grafana
-    plugins = /var/lib/grafana/plugins
-    provisioning = /etc/grafana/provisioning
-    [server]
-    domain = localhost
-    root_url = %(protocol)s://%(domain)s:%(http_port)s/
-    serve_from_sub_path = true

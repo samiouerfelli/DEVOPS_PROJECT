@@ -1,5 +1,6 @@
 package tn.esprit.tpfoyer.control;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,7 +13,15 @@ import java.util.List;
 @RequestMapping("/foyer")
 public class FoyerRestController {
 
+
     private IFoyerService foyerService;
+
+    // Constructor injection
+    @Autowired
+    public FoyerRestController(IFoyerService foyerService) {
+        this.foyerService = foyerService;
+    }
+
 
     @PostMapping("/add-foyer")
     public ResponseEntity<Foyer> addFoyer(@RequestBody Foyer foyer) {

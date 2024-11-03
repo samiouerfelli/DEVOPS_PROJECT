@@ -5,6 +5,7 @@ metadata:
   name: monitoring
 
 ---
+
 # prometheus-clusterrole.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -29,6 +30,7 @@ rules:
   verbs: ["get"]
 
 ---
+
 # prometheus-clusterrolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -44,6 +46,7 @@ subjects:
   namespace: monitoring
 
 ---
+
 # prometheus-serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -52,6 +55,7 @@ metadata:
   namespace: monitoring
 
 ---
+
 # prometheus-config.yaml
 apiVersion: v1
 kind: ConfigMap
@@ -130,6 +134,22 @@ data:
           target_label: __address__
 
 ---
+
+# prometheus-storage-pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-pvc
+  namespace: monitoring
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+
 # prometheus-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -165,9 +185,11 @@ spec:
         configMap:
           name: prometheus-config
       - name: prometheus-storage
-        emptyDir: {}
+        persistentVolumeClaim:
+          claimName: prometheus-pvc
 
 ---
+
 # prometheus-service.yaml
 apiVersion: v1
 kind: Service
