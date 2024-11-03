@@ -28,13 +28,12 @@ public class BlocRestController {
     }
 
 
-    // http://localhost:8089/tpfoyer/bloc/retrieve-bloc/8
+    
     @GetMapping("/retrieve-bloc/{bloc-id}")
     public Bloc retrieveBloc(@PathVariable("bloc-id") Long bId) {
         return blocService.retrieveBloc(bId);
     }
-
-    // http://localhost:8089/tpfoyer/bloc/add-bloc
+    
     @PostMapping("/add-bloc")
     public Bloc addBloc(@RequestBody Bloc c) {
         return blocService.addBloc(c);
