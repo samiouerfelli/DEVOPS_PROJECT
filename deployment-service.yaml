@@ -87,6 +87,6 @@ spec:
   ports:
   - port: 80
     targetPort: 8089
-    nodePort: 30080  # Specify a port in the range 30000-32767
+    nodePort: 30010  # Specify a port in the range 30000-32767
   selector:
     app: foyerapp
