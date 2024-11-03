@@ -12,7 +12,7 @@ spec:
       labels:
         app: devops
     spec:
-    automountServiceAccountToken: false
+      automountServiceAccountToken: false
       containers:
         - name: devops
           image: louaykh1/devops:latest
@@ -24,7 +24,6 @@ spec:
               memory: "256Mi"
             limits:
               memory: "512Mi"
-
 
 ---
 
@@ -39,4 +38,4 @@ spec:
     - protocol: "TCP"
       port: 8080 
       targetPort: 8080 
-  type: LoadBalancer 
+  type: LoadBalancer
