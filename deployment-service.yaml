@@ -56,7 +56,7 @@ spec:
       - name: foyerapp
         image: rymsaidi/tpfoyer:latest
         ports:
-        - containerPort: 8089
+        - containerPort: 8083
         env:
         - name: SPRING_DATASOURCE_URL
           value: jdbc:mysql://mysql-service:3306/db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
@@ -76,7 +76,7 @@ spec:
   type: NodePort
   ports:
   - port: 80
-    targetPort: 8089
+    targetPort: 8083
     nodePort: 30010  # Specify a port in the range 30000-32767
   selector:
     app: foyerapp
