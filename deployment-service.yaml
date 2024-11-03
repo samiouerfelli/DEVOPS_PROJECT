@@ -1,8 +1,15 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: myapp
+
+
 # MySQL Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mysql
+  namespace: myapp
 spec:
   selector:
     matchLabels:
@@ -31,6 +38,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mysql-service
+  namespace: myapp
 spec:
   ports:
   - port: 3306
@@ -42,6 +50,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: foyerapp
+  namespace: myapp
 spec:
   replicas: 1
   selector:
@@ -72,6 +81,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: foyerapp-service
+  namespace: myapp
 spec:
   type: NodePort
   ports:
