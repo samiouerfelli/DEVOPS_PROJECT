@@ -122,30 +122,44 @@ pipeline {
         stage('OWASP Dependency Check') {
             steps {
                 script {
-                    // Create directory for reports with proper permissions
+                    def reportDir = "${WORKSPACE}/dependency-check-reports"
+                    
+                    // Clean up any existing reports
                     sh """
-                        mkdir -p ${WORKSPACE}/dependency-check-reports
-                        chmod -R 777 ${WORKSPACE}/dependency-check-reports
+                        rm -rf ${reportDir} || true
+                        mkdir -p ${reportDir}
+                        chmod -R 777 ${reportDir}
                     """
                     
-                    // Run Dependency Check with explicit paths
+                    // Run Dependency Check with more specific configuration
                     dependencyCheck(
                         additionalArguments: """
-                            --out "${WORKSPACE}/dependency-check-reports" \
-                            --scan "${WORKSPACE}" \
-                            --format "ALL" \
-                            --project "My Project" \
+                            --out "${reportDir}" \
+                            --scan "${WORKSPACE}/target/" \
+                            --format "HTML" \
+                            --format "XML" \
+                            --format "JSON" \
+                            --project "${JOB_NAME}" \
                             --failOnCVSS 7 \
-                            --prettyPrint
+                            --log "${reportDir}/dependency-check.log"
                         """,
                         odcInstallation: 'OWASP-Dependency-Check'
                     )
 
-                    // Verify report exists
+                    // Verify reports were generated
                     sh """
-                        ls -la ${WORKSPACE}/dependency-check-reports/
-                        if [ ! -f ${WORKSPACE}/dependency-check-reports/dependency-check-report.xml ]; then
-                            echo "Dependency check report not generated!"
+                        echo "Checking generated reports..."
+                        ls -la ${reportDir}/
+                        
+                        if [ ! -f ${reportDir}/dependency-check-report.xml ]; then
+                            echo "XML report not found!"
+                            cat ${reportDir}/dependency-check.log || true
+                            exit 1
+                        fi
+                        
+                        if [ ! -f ${reportDir}/dependency-check-report.html ]; then
+                            echo "HTML report not found!"
+                            cat ${reportDir}/dependency-check.log || true
                             exit 1
                         fi
                     """
@@ -155,34 +169,52 @@ pipeline {
                 always {
                     script {
                         try {
-                            // Use Ant-style glob pattern
-                            dependencyCheckPublisher(
-                                pattern: '**/dependency-check-reports/**/dependency-check-report.xml',
-                                failedTotalCritical: 1,
-                                failedTotalHigh: 5,
-                                failedTotalMedium: 10
-                            )
-                            
-                            publishHTML([
-                                allowMissing: false,
-                                alwaysLinkToLastBuild: true,
-                                keepAll: true,
-                                reportDir: "${WORKSPACE}/dependency-check-reports",
-                                reportFiles: 'dependency-check-report.html',
-                                reportName: 'OWASP Dependency Check Report',
-                                reportTitles: 'OWASP Dependency Check Report'
-                            ])
-
-                            // Archive the reports as artifacts
+                            // Archive the reports first
                             archiveArtifacts(
                                 artifacts: 'dependency-check-reports/**/*',
                                 allowEmptyArchive: true,
                                 fingerprint: true
                             )
+                            
+                            // Publish the dependency check results
+                            dependencyCheckPublisher(
+                                pattern: '**/dependency-check-reports/dependency-check-report.xml',
+                                failedTotalCritical: 1,
+                                failedTotalHigh: 5,
+                                failedTotalMedium: 10,
+                                unstableTotalCritical: 0,
+                                unstableTotalHigh: 3,
+                                unstableTotalMedium: 5
+                            )
+                            
+                            // Publish HTML report
+                            publishHTML(
+                                [
+                                    allowMissing: false,
+                                    alwaysLinkToLastBuild: true,
+                                    keepAll: true,
+                                    reportDir: 'dependency-check-reports',
+                                    reportFiles: 'dependency-check-report.html',
+                                    reportName: 'OWASP Dependency Check Report',
+                                    reportTitles: 'OWASP Dependency Check Report',
+                                    includes: '**/*'
+                                ]
+                            )
                         } catch (Exception e) {
-                            echo "Failed to publish dependency check reports: ${e.getMessage()}"
+                            echo "Error in post actions: ${e.getMessage()}"
                             currentBuild.result = 'UNSTABLE'
                         }
+                    }
+                    
+                    // Clean workspace but preserve reports
+                    dir("${WORKSPACE}") {
+                        sh """
+                            if [ -d dependency-check-reports ]; then
+                                mv dependency-check-reports /tmp/dc-reports-${BUILD_NUMBER} || true
+                                rm -rf * || true
+                                mv /tmp/dc-reports-${BUILD_NUMBER} dependency-check-reports || true
+                            fi
+                        """
                     }
                 }
                 success {
@@ -190,6 +222,12 @@ pipeline {
                 }
                 failure {
                     echo 'OWASP Dependency Check failed! Check the console output for details.'
+                    script {
+                        if (fileExists('dependency-check-reports/dependency-check.log')) {
+                            echo "Dependency Check Log:"
+                            sh 'cat dependency-check-reports/dependency-check.log'
+                        }
+                    }
                 }
             }
         }
