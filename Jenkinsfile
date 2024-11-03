@@ -115,11 +115,72 @@ pipeline {
             }
         }
 
+        stage('OWASP Dependency Check') {
+            steps {
+                script {
+                    dependencyCheck(
+                        additionalArguments: '''
+                            -o "./" 
+                            -s "."
+                            -f "ALL" 
+                            --prettyPrint
+                            --disableYarnAudit
+                        ''',
+                        odcInstallation: 'OWASP-Dependency-Check'
+                    )
+                }
+            }
+            post {
+                always {
+                    dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: './',
+                        reportFiles: 'dependency-check-report.html',
+                        reportName: 'OWASP Dependency Check Report'
+                    ])
+                }
+            }
+        }
+
+
         stage('Build Docker Image') {
             steps {
                 script {
                     echo 'Building Docker image...'
                     sh 'docker build -t $DOCKER_IMAGE .'
+                }
+            }
+        }
+
+        stage('Trivy Scan') {
+            steps {
+                script {
+                    sh '''
+                        # Scan for vulnerabilities in the Docker image
+                        trivy image --format template --template '@contrib/html.tpl' -o trivy-report.html $DOCKER_IMAGE
+                        # Also generate JSON report for processing
+                        trivy image --format json -o trivy-report.json $DOCKER_IMAGE
+                        
+                        # Optional: Fail build if critical vulnerabilities found
+                        CRITICAL_VULNS=$(cat trivy-report.json | jq -r '.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities[] | select(.Severity == "CRITICAL") | .VulnerabilityID' | wc -l)
+                        if [ $CRITICAL_VULNS -gt 0 ]; then
+                            echo "Found $CRITICAL_VULNS critical vulnerabilities"
+                            exit 1
+                        fi
+                    '''
+
+                    // Publish Trivy scan results
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: './',
+                        reportFiles: 'trivy-report.html',
+                        reportName: 'Trivy Security Report'
+                    ])
                 }
             }
         }
@@ -420,8 +481,16 @@ pipeline {
     }
     
     post {
-        always { cleanWs() }
-        failure { echo 'Monitoring setup failed! Check the logs for details.' }
-        success { echo 'Monitoring setup completed successfully!' }
+        always { 
+            cleanWs()
+            // Archive security reports
+            archiveArtifacts artifacts: '**/dependency-check-report.xml,**/trivy-report.json', allowEmptyArchive: true
+        }
+        failure { 
+            echo 'Pipeline failed! Check the security scan results.' 
+        }
+        success { 
+            echo 'Pipeline completed successfully with security scans!' 
+        }
     }
 }
