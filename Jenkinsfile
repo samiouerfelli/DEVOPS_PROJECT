@@ -129,61 +129,45 @@ pipeline {
                         
                         # Clean any previous reports
                         rm -rf ${WORKSPACE}/dependency-check-reports/*
-                        
-                        # Show current workspace structure
-                        echo "Workspace contents:"
-                        ls -la ${WORKSPACE}
-                        
-                        # Show maven target directory contents
-                        echo "Maven target contents:"
-                        ls -la ${WORKSPACE}/target || echo "No target directory found"
                     '''
                     
-                    // Run Dependency Check with verbose output
+                    // Run Dependency Check
                     dependencyCheck(
-                        additionalArguments: """
-                            --failOnCVSS 7 \
-                            --enableExperimental \
-                            --format ALL \
-                            --out ${WORKSPACE}/dependency-check-reports \
-                            --scan ${WORKSPACE}/target/ \
-                            --log ${WORKSPACE}/dependency-check-reports/dependency-check.log \
+                        additionalArguments: '''
+                            -o "${WORKSPACE}/dependency-check-reports" \
+                            -s "${WORKSPACE}" \
+                            -f "ALL" \
                             --prettyPrint \
-                            --enableRetired \
-                            -v
-                        """,
+                            --disableYarnAudit \
+                            --disableNodeAudit \
+                            --enableExperimental \
+                            --project "MyProject" \
+                            --failOnCVSS 7
+                        ''',
                         odcInstallation: 'OWASP-Dependency-Check'
                     )
                     
-                    // Verify report generation
+                    // Verify report generation and set permissions
                     sh '''
-                        echo "Checking dependency-check-reports directory contents:"
-                        ls -la ${WORKSPACE}/dependency-check-reports/
-                        
-                        # Check if reports exist
+                        # Check if reports were generated
                         if [ ! -f "${WORKSPACE}/dependency-check-reports/dependency-check-report.xml" ]; then
                             echo "ERROR: XML report not generated!"
-                            cat ${WORKSPACE}/dependency-check-reports/dependency-check.log
                             exit 1
                         fi
-                        
-                        if [ ! -f "${WORKSPACE}/dependency-check-reports/dependency-check-report.html" ]; then
-                            echo "ERROR: HTML report not generated!"
-                            cat ${WORKSPACE}/dependency-check-reports/dependency-check.log
-                            exit 1
-                        fi
-                        
-                        echo "Reports generated successfully!"
                         
                         # Ensure reports are readable
                         chmod -R 755 ${WORKSPACE}/dependency-check-reports/
+                        
+                        # List generated reports
+                        echo "Generated reports:"
+                        ls -la ${WORKSPACE}/dependency-check-reports/
                     '''
                 }
             }
             post {
                 always {
                     script {
-                        // Publish dependency check report
+                        // Publish dependency check results
                         dependencyCheckPublisher(
                             pattern: '**/dependency-check-reports/dependency-check-report.xml',
                             failedTotalCritical: 1,
@@ -192,8 +176,15 @@ pipeline {
                             unstableTotalHigh: 2
                         )
                         
+                        // Archive the reports as artifacts
+                        archiveArtifacts(
+                            artifacts: 'dependency-check-reports/**/*',
+                            fingerprint: true,
+                            allowEmptyArchive: false
+                        )
+                        
                         // Publish HTML report
-                        publishHTML(target: [
+                        publishHTML([
                             allowMissing: false,
                             alwaysLinkToLastBuild: true,
                             keepAll: true,
@@ -203,13 +194,6 @@ pipeline {
                             reportTitles: 'OWASP Dependency Check Report'
                         ])
                     }
-                    
-                    // Archive the reports
-                    archiveArtifacts(
-                        artifacts: 'dependency-check-reports/**/*',
-                        fingerprint: true,
-                        allowEmptyArchive: true
-                    )
                 }
                 failure {
                     echo 'OWASP Dependency Check failed. Check the logs for details.'
@@ -556,10 +540,8 @@ pipeline {
     }
     
     post {
-        always { 
-            cleanWs()
-            // Archive security reports
-            archiveArtifacts artifacts: '**/dependency-check-report.xml,**/trivy-report.json', allowEmptyArchive: true
+        cleanup {
+            cleanWs(patterns: [[pattern: 'dependency-check-reports/**', type: 'INCLUDE']])
         }
         failure { 
             echo 'Pipeline failed! Check the security scan results.' 
