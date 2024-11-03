@@ -253,7 +253,6 @@ pipeline {
                     // Create a temporary Trivy config file with optimizations
                     writeFile file: 'trivy-config.yaml', text: '''
                         scan:
-                        # Skip common directories that don't need secret scanning
                         skip-dirs:
                             - usr/share/
                             - var/lib/
@@ -261,7 +260,6 @@ pipeline {
                             - etc/alternatives/
                             - proc/
                             - sys/
-                        # Skip common file patterns
                         skip-files:
                             - '*.md'
                             - '*.txt'
@@ -279,8 +277,7 @@ pipeline {
                     sh """
                         # Scan for vulnerabilities and secrets with optimized settings
                         trivy image \\
-                            --format template \\
-                            --template '@contrib/html.tpl' \\
+                            --format html \\
                             --config trivy-config.yaml \\
                             --scanners vuln,secret \\
                             --severity HIGH,CRITICAL \\
