@@ -124,40 +124,72 @@ pipeline {
                 script {
                     // Create directory for reports with proper permissions
                     sh """
-                        mkdir -p ${OWASP_REPORT_DIR}
-                        chmod -R 777 ${OWASP_REPORT_DIR}
+                        mkdir -p ${WORKSPACE}/dependency-check-reports
+                        chmod -R 777 ${WORKSPACE}/dependency-check-reports
                     """
                     
                     // Run Dependency Check with explicit paths
                     dependencyCheck(
                         additionalArguments: """
-                            -o "${OWASP_REPORT_DIR}" 
-                            -s "${WORKSPACE}"
-                            -f "ALL"
+                            --out "${WORKSPACE}/dependency-check-reports" \
+                            --scan "${WORKSPACE}" \
+                            --format "ALL" \
+                            --project "My Project" \
+                            --failOnCVSS 7 \
                             --prettyPrint
                         """,
                         odcInstallation: 'OWASP-Dependency-Check'
                     )
 
-                    // Archive the reports
-                    archiveArtifacts artifacts: "${OWASP_REPORT_DIR}/*"
+                    // Verify report exists
+                    sh """
+                        ls -la ${WORKSPACE}/dependency-check-reports/
+                        if [ ! -f ${WORKSPACE}/dependency-check-reports/dependency-check-report.xml ]; then
+                            echo "Dependency check report not generated!"
+                            exit 1
+                        fi
+                    """
                 }
             }
             post {
                 always {
-                    dependencyCheckPublisher(
-                        pattern: "${OWASP_REPORT_DIR}/dependency-check-report.xml",
-                        stopBuild: false
-                    )
-                    
-                    publishHTML([
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: OWASP_REPORT_DIR,
-                        reportFiles: 'dependency-check-report.html',
-                        reportName: 'OWASP Dependency Check Report'
-                    ])
+                    script {
+                        try {
+                            // Use Ant-style glob pattern
+                            dependencyCheckPublisher(
+                                pattern: '**/dependency-check-reports/**/dependency-check-report.xml',
+                                failedTotalCritical: 1,
+                                failedTotalHigh: 5,
+                                failedTotalMedium: 10
+                            )
+                            
+                            publishHTML([
+                                allowMissing: false,
+                                alwaysLinkToLastBuild: true,
+                                keepAll: true,
+                                reportDir: "${WORKSPACE}/dependency-check-reports",
+                                reportFiles: 'dependency-check-report.html',
+                                reportName: 'OWASP Dependency Check Report',
+                                reportTitles: 'OWASP Dependency Check Report'
+                            ])
+
+                            // Archive the reports as artifacts
+                            archiveArtifacts(
+                                artifacts: 'dependency-check-reports/**/*',
+                                allowEmptyArchive: true,
+                                fingerprint: true
+                            )
+                        } catch (Exception e) {
+                            echo "Failed to publish dependency check reports: ${e.getMessage()}"
+                            currentBuild.result = 'UNSTABLE'
+                        }
+                    }
+                }
+                success {
+                    echo 'OWASP Dependency Check completed successfully!'
+                }
+                failure {
+                    echo 'OWASP Dependency Check failed! Check the console output for details.'
                 }
             }
         }
