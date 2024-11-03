@@ -244,137 +244,30 @@ pipeline {
         stage('Trivy Scan') {
             steps {
                 script {
-                    // Create directory for Trivy reports
                     sh """
                         mkdir -p ${TRIVY_REPORT_DIR}
-                        chmod -R 777 ${TRIVY_REPORT_DIR}
-                    """
-
-                    // Create a temporary Trivy config file with optimizations
-                    writeFile file: 'trivy-config.yaml', text: '''
-                        scan:
-                        skip-dirs:
-                            - usr/share/
-                            - var/lib/
-                            - var/cache/
-                            - etc/alternatives/
-                            - proc/
-                            - sys/
-                        skip-files:
-                            - '*.md'
-                            - '*.txt'
-                            - '*.po'
-                            - '*.template'
-                            - '*.html'
-                        secret:
-                        # Enable only specific secret scanning rules you need
-                        # Uncomment and modify based on your needs
-                        # enable-builtin-rules:
-                        #   - aws-secret-key
-                        #   - github-pat
-                    '''
-
-                    sh """
-                        # Generate a readable table output
-                        trivy image \\
-                            --format table \\
-                            --config trivy-config.yaml \\
-                            --scanners vuln,secret \\
-                            --severity HIGH,CRITICAL \\
-                            --timeout 30m \\
-                            --cache-dir /tmp/trivy \\
-                            --output ${TRIVY_REPORT_DIR}/trivy-report.txt \\
-                            $DOCKER_IMAGE
-
-                        # Generate JSON report for processing and archiving
-                        trivy image \\
-                            --format json \\
-                            --config trivy-config.yaml \\
-                            --scanners vuln,secret \\
-                            --severity HIGH,CRITICAL \\
-                            --timeout 30m \\
-                            --cache-dir /tmp/trivy \\
-                            --output ${TRIVY_REPORT_DIR}/trivy-report.json \\
-                            $DOCKER_IMAGE
-
-                        # Convert JSON to HTML using a simple template
-                        echo '<!DOCTYPE html>
-                        <html>
-                        <head>
-                            <title>Trivy Scan Results</title>
-                            <style>
-                                body { font-family: Arial, sans-serif; margin: 20px; }
-                                table { border-collapse: collapse; width: 100%; }
-                                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                                th { background-color: #f2f2f2; }
-                                .CRITICAL { color: #dc3545; }
-                                .HIGH { color: #fd7e14; }
-                            </style>
-                        </head>
-                        <body>
-                            <h1>Trivy Scan Results</h1>
-                            <div id="results"></div>
-                            <script>
-                                fetch("trivy-report.json")
-                                    .then(response => response.json())
-                                    .then(data => {
-                                        let html = "<table>";
-                                        html += "<tr><th>Package</th><th>Vulnerability ID</th><th>Severity</th><th>Description</th></tr>";
-                                        data.Results.forEach(result => {
-                                            if (result.Vulnerabilities) {
-                                                result.Vulnerabilities.forEach(vuln => {
-                                                    html += `<tr>
-                                                        <td>\${vuln.PkgName}:\${vuln.InstalledVersion}</td>
-                                                        <td>\${vuln.VulnerabilityID}</td>
-                                                        <td class="\${vuln.Severity}">\${vuln.Severity}</td>
-                                                        <td>\${vuln.Description}</td>
-                                                    </tr>`;
-                                                });
-                                            }
-                                        });
-                                        html += "</table>";
-                                        document.getElementById("results").innerHTML = html;
-                                    });
-                            </script>
-                        </body>
-                        </html>' > ${TRIVY_REPORT_DIR}/trivy-report.html
                         
-                        # Process findings and set build status
-                        if [ -f "${TRIVY_REPORT_DIR}/trivy-report.json" ]; then
-                            echo "Analyzing security findings..."
-                            
-                            # Count critical and high vulnerabilities
-                            CRITICAL_VULNS=\$(cat ${TRIVY_REPORT_DIR}/trivy-report.json | jq -r '.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities[] | select(.Severity == "CRITICAL") | .VulnerabilityID' | wc -l)
-                            HIGH_VULNS=\$(cat ${TRIVY_REPORT_DIR}/trivy-report.json | jq -r '.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities[] | select(.Severity == "HIGH") | .VulnerabilityID' | wc -l)
-                            
-                            echo "Found \$CRITICAL_VULNS critical and \$HIGH_VULNS high severity vulnerabilities"
-                            
-                            # Optional: Fail the build if too many critical vulnerabilities
-                            if [ \$CRITICAL_VULNS -gt ${env.MAX_CRITICAL_VULNS ?: 5} ]; then
-                                echo "Too many critical vulnerabilities found!"
-                                exit 1
-                            fi
+                        # Run Trivy scan for vulnerabilities only (skip secrets for speed)
+                        trivy image \\
+                            --scanners vuln \\
+                            --severity HIGH,CRITICAL \\
+                            --format json \\
+                            --output ${TRIVY_REPORT_DIR}/report.json \\
+                            $DOCKER_IMAGE
+
+                        # Check for critical vulnerabilities and fail if exceeds threshold
+                        CRITICAL_COUNT=\$(cat ${TRIVY_REPORT_DIR}/report.json | jq -r '.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities[] | select(.Severity == "CRITICAL") | .VulnerabilityID' | wc -l)
+                        
+                        echo "Found \$CRITICAL_COUNT critical vulnerabilities"
+                        
+                        if [ \$CRITICAL_COUNT -gt ${MAX_CRITICAL_VULNS} ]; then
+                            echo "Failed: Too many critical vulnerabilities!"
+                            exit 1
                         fi
-
-                        # Compress reports with better naming
-                        tar -czf ${TRIVY_REPORT_DIR}/trivy-reports-\$(date +%Y%m%d-%H%M%S).tar.gz -C ${TRIVY_REPORT_DIR} .
                     """
-
-                    // Publish HTML report
-                    publishHTML([
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: TRIVY_REPORT_DIR,
-                        reportFiles: 'trivy-report.html',
-                        reportName: 'Trivy Security Report'
-                    ])
-
-                    // Archive all reports
-                    archiveArtifacts(
-                        artifacts: "${TRIVY_REPORT_DIR}/*",
-                        fingerprint: true
-                    )
+                    
+                    // Archive the report
+                    archiveArtifacts "${TRIVY_REPORT_DIR}/*"
                 }
             }
         }
