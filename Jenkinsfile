@@ -249,21 +249,78 @@ pipeline {
                         chmod -R 777 ${TRIVY_REPORT_DIR}
                     """
 
+                    // Create a temporary Trivy config file with optimizations
+                    writeFile file: 'trivy-config.yaml', text: '''
+                        scan:
+                        # Skip common directories that don't need secret scanning
+                        skip-dirs:
+                            - usr/share/
+                            - var/lib/
+                            - var/cache/
+                            - etc/alternatives/
+                            - proc/
+                            - sys/
+                        # Skip common file patterns
+                        skip-files:
+                            - '*.md'
+                            - '*.txt'
+                            - '*.po'
+                            - '*.template'
+                            - '*.html'
+                        secret:
+                        # Enable only specific secret scanning rules you need
+                        # Uncomment and modify based on your needs
+                        # enable-builtin-rules:
+                        #   - aws-secret-key
+                        #   - github-pat
+                    '''
+
                     sh """
-                        # Scan for vulnerabilities in the Docker image
-                        trivy image --format template --template '@contrib/html.tpl' -o ${TRIVY_REPORT_DIR}/trivy-report.html $DOCKER_IMAGE
+                        # Scan for vulnerabilities and secrets with optimized settings
+                        trivy image \\
+                            --format template \\
+                            --template '@contrib/html.tpl' \\
+                            --config trivy-config.yaml \\
+                            --scanners vuln,secret \\
+                            --severity HIGH,CRITICAL \\
+                            --timeout 30m \\
+                            --cache-dir /tmp/trivy \\
+                            -o ${TRIVY_REPORT_DIR}/trivy-report.html \\
+                            $DOCKER_IMAGE
+
                         # Generate JSON report for processing
-                        trivy image --format json -o ${TRIVY_REPORT_DIR}/trivy-report.json $DOCKER_IMAGE
+                        trivy image \\
+                            --format json \\
+                            --config trivy-config.yaml \\
+                            --scanners vuln,secret \\
+                            --severity HIGH,CRITICAL \\
+                            --timeout 30m \\
+                            --cache-dir /tmp/trivy \\
+                            -o ${TRIVY_REPORT_DIR}/trivy-report.json \\
+                            $DOCKER_IMAGE
                         
-                        # Optional: Check for critical vulnerabilities
-                        CRITICAL_VULNS=\$(cat ${TRIVY_REPORT_DIR}/trivy-report.json | jq -r '.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities[] | select(.Severity == "CRITICAL") | .VulnerabilityID' | wc -l)
-                        echo "Found \$CRITICAL_VULNS critical vulnerabilities"
-                        
-                        # Archive the reports
-                        tar -czf ${TRIVY_REPORT_DIR}/trivy-reports.tar.gz -C ${TRIVY_REPORT_DIR} .
+                        # Process findings and set build status
+                        if [ -f "${TRIVY_REPORT_DIR}/trivy-report.json" ]; then
+                            echo "Analyzing security findings..."
+                            
+                            # Count critical and high vulnerabilities
+                            CRITICAL_VULNS=\$(cat ${TRIVY_REPORT_DIR}/trivy-report.json | jq -r '.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities[] | select(.Severity == "CRITICAL") | .VulnerabilityID' | wc -l)
+                            HIGH_VULNS=\$(cat ${TRIVY_REPORT_DIR}/trivy-report.json | jq -r '.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities[] | select(.Severity == "HIGH") | .VulnerabilityID' | wc -l)
+                            
+                            echo "Found \$CRITICAL_VULNS critical and \$HIGH_VULNS high severity vulnerabilities"
+                            
+                            # Optional: Fail the build if too many critical vulnerabilities
+                            if [ \$CRITICAL_VULNS -gt ${env.MAX_CRITICAL_VULNS ?: 5} ]; then
+                                echo "Too many critical vulnerabilities found!"
+                                exit 1
+                            fi
+                        fi
+
+                        # Compress reports with better naming
+                        tar -czf ${TRIVY_REPORT_DIR}/trivy-reports-\$(date +%Y%m%d-%H%M%S).tar.gz -C ${TRIVY_REPORT_DIR} .
                     """
 
-                    // Publish Trivy scan results
+                    // Publish HTML report
                     publishHTML([
                         allowMissing: false,
                         alwaysLinkToLastBuild: true,
@@ -273,8 +330,18 @@ pipeline {
                         reportName: 'Trivy Security Report'
                     ])
 
-                    // Archive the reports
-                    archiveArtifacts artifacts: "${TRIVY_REPORT_DIR}/*"
+                    // Archive the reports with a better pattern
+                    archiveArtifacts(
+                        artifacts: "${TRIVY_REPORT_DIR}/*",
+                        excludes: "**/*.tar.gz",
+                        fingerprint: true
+                    )
+                    
+                    // Archive the compressed reports separately
+                    archiveArtifacts(
+                        artifacts: "${TRIVY_REPORT_DIR}/*.tar.gz",
+                        fingerprint: true
+                    )
                 }
             }
         }
