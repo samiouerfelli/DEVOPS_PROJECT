@@ -275,18 +275,18 @@ pipeline {
                     '''
 
                     sh """
-                        # Scan for vulnerabilities and secrets with optimized settings
+                        # Generate a readable table output
                         trivy image \\
-                            --format html \\
+                            --format table \\
                             --config trivy-config.yaml \\
                             --scanners vuln,secret \\
                             --severity HIGH,CRITICAL \\
                             --timeout 30m \\
                             --cache-dir /tmp/trivy \\
-                            -o ${TRIVY_REPORT_DIR}/trivy-report.html \\
+                            --output ${TRIVY_REPORT_DIR}/trivy-report.txt \\
                             $DOCKER_IMAGE
 
-                        # Generate JSON report for processing
+                        # Generate JSON report for processing and archiving
                         trivy image \\
                             --format json \\
                             --config trivy-config.yaml \\
@@ -294,8 +294,50 @@ pipeline {
                             --severity HIGH,CRITICAL \\
                             --timeout 30m \\
                             --cache-dir /tmp/trivy \\
-                            -o ${TRIVY_REPORT_DIR}/trivy-report.json \\
+                            --output ${TRIVY_REPORT_DIR}/trivy-report.json \\
                             $DOCKER_IMAGE
+
+                        # Convert JSON to HTML using a simple template
+                        echo '<!DOCTYPE html>
+                        <html>
+                        <head>
+                            <title>Trivy Scan Results</title>
+                            <style>
+                                body { font-family: Arial, sans-serif; margin: 20px; }
+                                table { border-collapse: collapse; width: 100%; }
+                                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                                th { background-color: #f2f2f2; }
+                                .CRITICAL { color: #dc3545; }
+                                .HIGH { color: #fd7e14; }
+                            </style>
+                        </head>
+                        <body>
+                            <h1>Trivy Scan Results</h1>
+                            <div id="results"></div>
+                            <script>
+                                fetch("trivy-report.json")
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        let html = "<table>";
+                                        html += "<tr><th>Package</th><th>Vulnerability ID</th><th>Severity</th><th>Description</th></tr>";
+                                        data.Results.forEach(result => {
+                                            if (result.Vulnerabilities) {
+                                                result.Vulnerabilities.forEach(vuln => {
+                                                    html += `<tr>
+                                                        <td>\${vuln.PkgName}:\${vuln.InstalledVersion}</td>
+                                                        <td>\${vuln.VulnerabilityID}</td>
+                                                        <td class="\${vuln.Severity}">\${vuln.Severity}</td>
+                                                        <td>\${vuln.Description}</td>
+                                                    </tr>`;
+                                                });
+                                            }
+                                        });
+                                        html += "</table>";
+                                        document.getElementById("results").innerHTML = html;
+                                    });
+                            </script>
+                        </body>
+                        </html>' > ${TRIVY_REPORT_DIR}/trivy-report.html
                         
                         # Process findings and set build status
                         if [ -f "${TRIVY_REPORT_DIR}/trivy-report.json" ]; then
@@ -328,16 +370,9 @@ pipeline {
                         reportName: 'Trivy Security Report'
                     ])
 
-                    // Archive the reports with a better pattern
+                    // Archive all reports
                     archiveArtifacts(
                         artifacts: "${TRIVY_REPORT_DIR}/*",
-                        excludes: "**/*.tar.gz",
-                        fingerprint: true
-                    )
-                    
-                    // Archive the compressed reports separately
-                    archiveArtifacts(
-                        artifacts: "${TRIVY_REPORT_DIR}/*.tar.gz",
                         fingerprint: true
                     )
                 }
