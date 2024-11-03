@@ -22,7 +22,8 @@ pipeline {
         GRAFANA_CREDS = credentials('grafana-admin-credentials')
         DEPENDENCY_CHECK_DIR = "${WORKSPACE}/dependency-check-reports"
         OWASP_REPORT_DIR = "${WORKSPACE}/dependency-check-reports"
-        TRIVY_REPORT_DIR = "${WORKSPACE}/trivy-reports"
+        TRIVY_REPORT_DIR = 'trivy-reports'
+        MAX_CRITICAL_VULNS = 5 
     }
 
     stages {
