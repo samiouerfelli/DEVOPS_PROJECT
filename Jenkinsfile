@@ -21,7 +21,8 @@ pipeline {
         APP_NAMESPACE = "myapp"
         GRAFANA_CREDS = credentials('grafana-admin-credentials')
         DEPENDENCY_CHECK_DIR = "${WORKSPACE}/dependency-check-reports"
-        
+        OWASP_REPORT_DIR = "${WORKSPACE}/dependency-check-reports"
+        TRIVY_REPORT_DIR = "${WORKSPACE}/trivy-reports"
     }
 
     stages {
@@ -119,51 +120,47 @@ pipeline {
         }
 
         stage('OWASP Dependency Check') {
-    steps {
-        script {
-            // Create directory for reports
-            sh '''
-                mkdir -p ${WORKSPACE}/dependency-check-reports
-                chmod -R 777 ${WORKSPACE}/dependency-check-reports
-            '''
-            
-            // Run Dependency Check
-            dependencyCheck(
-                additionalArguments: '''
-                    --out "${WORKSPACE}/dependency-check-reports" \
-                    --scan "${WORKSPACE}/target/" \
-                    --format "ALL" \
-                    --prettyPrint
-                ''',
-                odcInstallation: 'OWASP-Dependency-Check'
-            )
+            steps {
+                script {
+                    // Create directory for reports with proper permissions
+                    sh """
+                        mkdir -p ${OWASP_REPORT_DIR}
+                        chmod -R 777 ${OWASP_REPORT_DIR}
+                    """
+                    
+                    // Run Dependency Check with explicit paths
+                    dependencyCheck(
+                        additionalArguments: """
+                            -o "${OWASP_REPORT_DIR}" 
+                            -s "${WORKSPACE}"
+                            -f "ALL"
+                            --prettyPrint
+                        """,
+                        odcInstallation: 'OWASP-Dependency-Check'
+                    )
+
+                    // Archive the reports
+                    archiveArtifacts artifacts: "${OWASP_REPORT_DIR}/*"
+                }
+            }
+            post {
+                always {
+                    dependencyCheckPublisher(
+                        pattern: "${OWASP_REPORT_DIR}/dependency-check-report.xml",
+                        stopBuild: false
+                    )
+                    
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: OWASP_REPORT_DIR,
+                        reportFiles: 'dependency-check-report.html',
+                        reportName: 'OWASP Dependency Check Report'
+                    ])
+                }
+            }
         }
-    }
-    post {
-        always {
-            // Publish results
-            dependencyCheckPublisher(
-                pattern: '**/dependency-check-reports/dependency-check-report.xml'
-            )
-            
-            // Publish HTML report
-            publishHTML([
-                allowMissing: false,
-                alwaysLinkToLastBuild: true,
-                keepAll: true,
-                reportDir: 'dependency-check-reports',
-                reportFiles: 'dependency-check-report.html',
-                reportName: 'OWASP Dependency Check Report'
-            ])
-        }
-        success {
-            echo 'OWASP Dependency Check completed successfully.'
-        }
-        failure {
-            echo 'OWASP Dependency Check failed. Check the report for details.'
-        }
-    }
-}
 
 
         stage('Build Docker Image') {
@@ -178,29 +175,38 @@ pipeline {
         stage('Trivy Scan') {
             steps {
                 script {
-                    sh '''
+                    // Create directory for Trivy reports
+                    sh """
+                        mkdir -p ${TRIVY_REPORT_DIR}
+                        chmod -R 777 ${TRIVY_REPORT_DIR}
+                    """
+
+                    sh """
                         # Scan for vulnerabilities in the Docker image
-                        trivy image --format template --template '@contrib/html.tpl' -o trivy-report.html $DOCKER_IMAGE
-                        # Also generate JSON report for processing
-                        trivy image --format json -o trivy-report.json $DOCKER_IMAGE
+                        trivy image --format template --template '@contrib/html.tpl' -o ${TRIVY_REPORT_DIR}/trivy-report.html $DOCKER_IMAGE
+                        # Generate JSON report for processing
+                        trivy image --format json -o ${TRIVY_REPORT_DIR}/trivy-report.json $DOCKER_IMAGE
                         
-                        # Optional: Fail build if critical vulnerabilities found
-                        CRITICAL_VULNS=$(cat trivy-report.json | jq -r '.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities[] | select(.Severity == "CRITICAL") | .VulnerabilityID' | wc -l)
-                        if [ $CRITICAL_VULNS -gt 0 ]; then
-                            echo "Found $CRITICAL_VULNS critical vulnerabilities"
-                            exit 1
-                        fi
-                    '''
+                        # Optional: Check for critical vulnerabilities
+                        CRITICAL_VULNS=\$(cat ${TRIVY_REPORT_DIR}/trivy-report.json | jq -r '.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities[] | select(.Severity == "CRITICAL") | .VulnerabilityID' | wc -l)
+                        echo "Found \$CRITICAL_VULNS critical vulnerabilities"
+                        
+                        # Archive the reports
+                        tar -czf ${TRIVY_REPORT_DIR}/trivy-reports.tar.gz -C ${TRIVY_REPORT_DIR} .
+                    """
 
                     // Publish Trivy scan results
                     publishHTML([
                         allowMissing: false,
                         alwaysLinkToLastBuild: true,
                         keepAll: true,
-                        reportDir: './',
+                        reportDir: TRIVY_REPORT_DIR,
                         reportFiles: 'trivy-report.html',
                         reportName: 'Trivy Security Report'
                     ])
+
+                    // Archive the reports
+                    archiveArtifacts artifacts: "${TRIVY_REPORT_DIR}/*"
                 }
             }
         }
@@ -283,226 +289,57 @@ pipeline {
             }
         }
 
-        stage('Setup Prometheus and Grafana Config') {
-            steps {
-                script {
-                    sh '''
-                        kubectl --kubeconfig=$KUBECONFIG apply -f setup-prometheus.yaml
-                        kubectl --kubeconfig=$KUBECONFIG apply -f node-exporter.yaml
-                        kubectl --kubeconfig=$KUBECONFIG apply -f kube-state-metrics.yaml
-                        kubectl --kubeconfig=$KUBECONFIG apply -f setup-grafana.yaml
-                    '''
-                }
-            }
-        }
-
-        stage('Wait for Grafana') {
-            steps {
-                script {
-                    // Wait for Grafana to be ready
-                    sh '''
-                        attempt_counter=0
-                        max_attempts=30
-                        
-                        until $(curl --output /dev/null --silent --fail http://localhost:32000/api/health); do
-                            if [ ${attempt_counter} -eq ${max_attempts} ];then
-                                echo "Max attempts reached. Grafana is not available."
-                                exit 1
-                            fi
-                            
-                            printf '.'
-                            attempt_counter=$(($attempt_counter+1))
-                            sleep 5
-                        done
-                    '''
-                }
-            }
-        }
-
-        stage('Configure Grafana Datasource') {
-            steps {
-                script {
-                    sh '''
-                        # Wait for Grafana to be ready
-                        echo "Waiting for Grafana to be ready..."
-                        until curl -s -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" http://localhost:32000/api/health; do
-                            sleep 5
-                        done
-
-                        # Check if Prometheus datasource exists
-                        DATASOURCE_ID=$(curl -s -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
-                            http://localhost:32000/api/datasources/name/Prometheus | grep -o '"id":[0-9]*' | cut -d':' -f2)
-
-                        if [ ! -z "$DATASOURCE_ID" ]; then
-                            # Update existing datasource
-                            echo "Updating existing Prometheus datasource..."
-                            curl -X PUT http://localhost:32000/api/datasources/$DATASOURCE_ID \
-                            -H "Content-Type: application/json" \
-                            -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
-                            -d '{
-                                "name": "Prometheus",
-                                "type": "prometheus",
-                                "url": "http://prometheus.monitoring.svc.cluster.local:9090",
-                                "access": "proxy",
-                                "isDefault": true,
-                                "jsonData": {
-                                    "timeInterval": "15s",
-                                    "queryTimeout": "60s",
-                                    "httpMethod": "POST"
-                                },
-                                "secureJsonData": {},
-                                "readOnly": false
-                            }'
-                        else
-                            # Create new datasource
-                            echo "Creating new Prometheus datasource..."
-                            curl -X POST http://localhost:32000/api/datasources \
-                            -H "Content-Type: application/json" \
-                            -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
-                            -d '{
-                                "name": "Prometheus",
-                                "type": "prometheus",
-                                "url": "http://prometheus.monitoring.svc.cluster.local:9090",
-                                "access": "proxy",
-                                "isDefault": true,
-                                "jsonData": {
-                                    "timeInterval": "15s",
-                                    "queryTimeout": "60s",
-                                    "httpMethod": "POST"
-                                },
-                                "secureJsonData": {},
-                                "readOnly": false
-                            }'
-                        fi
-
-                        # Verify datasource connection
-                        echo "Verifying Prometheus datasource connection..."
-                        curl -s -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
-                            http://localhost:32000/api/datasources/proxy/1/api/v1/query?query=up
-                    '''
-                }
-            }
-        }
-
-        stage('Create Grafana Dashboard') {
-            steps {
-                script {
-                    sh '''
-                        # Create or update the dashboard via API with basic auth
-                        curl -X POST http://localhost:32000/api/dashboards/db \
-                        -H "Content-Type: application/json" \
-                        -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
-                        -d '{
-                            "dashboard": {
-                                "id": null,
-                                "title": "Kubernetes Cluster Monitoring",
-                                "tags": ["kubernetes", "monitoring"],
-                                "timezone": "browser",
-                                "refresh": "10s",
-                                "panels": [
-                                    {
-                                        "title": "Pod Restart Count",
-                                        "type": "timeseries",
-                                        "gridPos": {
-                                            "h": 8,
-                                            "w": 12,
-                                            "x": 0,
-                                            "y": 0
-                                        },
-                                        "targets": [
-                                            {
-                                                "expr": "sum(kube_pod_container_status_restarts_total) by (pod)",
-                                                "legendFormat": "{{pod}}",
-                                                "interval": "",
-                                                "exemplar": true
-                                            }
-                                        ],
-                                        "options": {
-                                            "tooltip": {
-                                                "mode": "multi",
-                                                "sort": "desc"
-                                            }
-                                        }
-                                    },
-                                    {
-                                        "title": "Network Receive Rate",
-                                        "type": "timeseries",
-                                        "gridPos": {
-                                            "h": 8,
-                                            "w": 12,
-                                            "x": 12,
-                                            "y": 0
-                                        },
-                                        "targets": [
-                                            {
-                                                "expr": "rate(node_network_receive_bytes_total[5m])",
-                                                "legendFormat": "{{device}}",
-                                                "interval": "",
-                                                "exemplar": true
-                                            }
-                                        ],
-                                        "options": {
-                                            "tooltip": {
-                                                "mode": "multi",
-                                                "sort": "desc"
-                                            }
-                                        }
-                                    },
-                                    {
-                                        "title": "Pod Status by Phase",
-                                        "type": "piechart",
-                                        "gridPos": {
-                                            "h": 8,
-                                            "w": 12,
-                                            "x": 0,
-                                            "y": 8
-                                        },
-                                        "targets": [
-                                            {
-                                                "expr": "sum by (phase) (kube_pod_status_phase)",
-                                                "legendFormat": "{{phase}}",
-                                                "interval": "",
-                                                "exemplar": true
-                                            }
-                                        ],
-                                        "options": {
-                                            "legend": {
-                                                "displayMode": "table",
-                                                "placement": "right",
-                                                "values": ["value"]
-                                            }
-                                        }
-                                    }
-                                ]
-                            },
-                            "overwrite": true,
-                            "message": "Updated by Jenkins Pipeline"
-                        }'
-                    '''
-                }
-            }
-        }
-        
 
         stage('Send Notification') {
             steps {
-                emailext (
-                    subject: "Jenkins Pipeline: ${currentBuild.currentResult}",
-                    body: """
-                        <p>The Jenkins pipeline for the project has ${currentBuild.currentResult}.</p>
-                        <p>You can view the pipeline logs <a href="${env.BUILD_URL}">here</a>.</p>
-                    """,
-                    to: "${env.DEFAULT_RECIPIENTS}",
-                    replyTo: "${env.REPLY_TO_LIST}",
-                    recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']]
-                )
+                script {
+                    // Read the security reports
+                    def owaspReport = ""
+                    def trivyReport = ""
+                    
+                    try {
+                        owaspReport = readFile("${OWASP_REPORT_DIR}/dependency-check-report.html")
+                    } catch (Exception e) {
+                        owaspReport = "OWASP report not available: ${e.getMessage()}"
+                    }
+                    
+                    try {
+                        trivyReport = readFile("${TRIVY_REPORT_DIR}/trivy-report.html")
+                    } catch (Exception e) {
+                        trivyReport = "Trivy report not available: ${e.getMessage()}"
+                    }
+
+                    emailext (
+                        subject: "Jenkins Pipeline: ${currentBuild.currentResult} - Security Scan Results",
+                        body: """
+                            <h2>Pipeline Status: ${currentBuild.currentResult}</h2>
+                            <p>Build URL: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                            
+                            <h3>Security Reports Summary</h3>
+                            <h4>OWASP Dependency Check Report</h4>
+                            <p>Full report available in Jenkins: <a href="${env.BUILD_URL}OWASP_20Dependency_20Check_20Report">View OWASP Report</a></p>
+                            
+                            <h4>Trivy Security Scan Report</h4>
+                            <p>Full report available in Jenkins: <a href="${env.BUILD_URL}Trivy_20Security_20Report">View Trivy Report</a></p>
+                            
+                            <p>Please review the detailed reports in Jenkins for complete security analysis.</p>
+                        """,
+                        to: "${env.DEFAULT_RECIPIENTS}",
+                        replyTo: "${env.REPLY_TO_LIST}",
+                        recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']],
+                        attachmentsPattern: "${OWASP_REPORT_DIR}/dependency-check-report.html,${TRIVY_REPORT_DIR}/trivy-report.html"
+                    )
+                }
             }
         }
     }
     
     post {
         cleanup {
-            cleanWs(patterns: [[pattern: 'dependency-check-reports/**', type: 'INCLUDE']])
+            cleanWs(patterns: [
+                [pattern: 'dependency-check-reports/**', type: 'INCLUDE'],
+                [pattern: 'trivy-reports/**', type: 'INCLUDE']
+            ])
         }
         failure { 
             echo 'Pipeline failed! Check the security scan results.' 
