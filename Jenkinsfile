@@ -350,6 +350,206 @@ pipeline {
             }
         }
 
+        stage('Setup Prometheus and Grafana Config') {
+            steps {
+                script {
+                    sh '''
+                        kubectl --kubeconfig=$KUBECONFIG apply -f setup-prometheus.yaml
+                        kubectl --kubeconfig=$KUBECONFIG apply -f node-exporter.yaml
+                        kubectl --kubeconfig=$KUBECONFIG apply -f kube-state-metrics.yaml
+                        kubectl --kubeconfig=$KUBECONFIG apply -f setup-grafana.yaml
+                    '''
+                }
+            }
+        }
+
+        stage('Wait for Grafana') {
+            steps {
+                script {
+                    // Wait for Grafana to be ready
+                    sh '''
+                        attempt_counter=0
+                        max_attempts=30
+                        
+                        until $(curl --output /dev/null --silent --fail http://localhost:32000/api/health); do
+                            if [ ${attempt_counter} -eq ${max_attempts} ];then
+                                echo "Max attempts reached. Grafana is not available."
+                                exit 1
+                            fi
+                            
+                            printf '.'
+                            attempt_counter=$(($attempt_counter+1))
+                            sleep 5
+                        done
+                    '''
+                }
+            }
+        }
+
+        stage('Configure Grafana Datasource') {
+            steps {
+                script {
+                    sh '''
+                        # Wait for Grafana to be ready
+                        echo "Waiting for Grafana to be ready..."
+                        until curl -s -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" http://localhost:32000/api/health; do
+                            sleep 5
+                        done
+
+                        # Check if Prometheus datasource exists
+                        DATASOURCE_ID=$(curl -s -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
+                            http://localhost:32000/api/datasources/name/Prometheus | grep -o '"id":[0-9]*' | cut -d':' -f2)
+
+                        if [ ! -z "$DATASOURCE_ID" ]; then
+                            # Update existing datasource
+                            echo "Updating existing Prometheus datasource..."
+                            curl -X PUT http://localhost:32000/api/datasources/$DATASOURCE_ID \
+                            -H "Content-Type: application/json" \
+                            -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
+                            -d '{
+                                "name": "Prometheus",
+                                "type": "prometheus",
+                                "url": "http://prometheus.monitoring.svc.cluster.local:9090",
+                                "access": "proxy",
+                                "isDefault": true,
+                                "jsonData": {
+                                    "timeInterval": "15s",
+                                    "queryTimeout": "60s",
+                                    "httpMethod": "POST"
+                                },
+                                "secureJsonData": {},
+                                "readOnly": false
+                            }'
+                        else
+                            # Create new datasource
+                            echo "Creating new Prometheus datasource..."
+                            curl -X POST http://localhost:32000/api/datasources \
+                            -H "Content-Type: application/json" \
+                            -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
+                            -d '{
+                                "name": "Prometheus",
+                                "type": "prometheus",
+                                "url": "http://prometheus.monitoring.svc.cluster.local:9090",
+                                "access": "proxy",
+                                "isDefault": true,
+                                "jsonData": {
+                                    "timeInterval": "15s",
+                                    "queryTimeout": "60s",
+                                    "httpMethod": "POST"
+                                },
+                                "secureJsonData": {},
+                                "readOnly": false
+                            }'
+                        fi
+
+                        # Verify datasource connection
+                        echo "Verifying Prometheus datasource connection..."
+                        curl -s -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
+                            http://localhost:32000/api/datasources/proxy/1/api/v1/query?query=up
+                    '''
+                }
+            }
+        }
+
+        stage('Create Grafana Dashboard') {
+            steps {
+                script {
+                    sh '''
+                        # Create or update the dashboard via API with basic auth
+                        curl -X POST http://localhost:32000/api/dashboards/db \
+                        -H "Content-Type: application/json" \
+                        -u "${GRAFANA_CREDS_USR}:${GRAFANA_CREDS_PSW}" \
+                        -d '{
+                            "dashboard": {
+                                "id": null,
+                                "title": "Kubernetes Cluster Monitoring",
+                                "tags": ["kubernetes", "monitoring"],
+                                "timezone": "browser",
+                                "refresh": "10s",
+                                "panels": [
+                                    {
+                                        "title": "Pod Restart Count",
+                                        "type": "timeseries",
+                                        "gridPos": {
+                                            "h": 8,
+                                            "w": 12,
+                                            "x": 0,
+                                            "y": 0
+                                        },
+                                        "targets": [
+                                            {
+                                                "expr": "sum(kube_pod_container_status_restarts_total) by (pod)",
+                                                "legendFormat": "{{pod}}",
+                                                "interval": "",
+                                                "exemplar": true
+                                            }
+                                        ],
+                                        "options": {
+                                            "tooltip": {
+                                                "mode": "multi",
+                                                "sort": "desc"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "title": "Network Receive Rate",
+                                        "type": "timeseries",
+                                        "gridPos": {
+                                            "h": 8,
+                                            "w": 12,
+                                            "x": 12,
+                                            "y": 0
+                                        },
+                                        "targets": [
+                                            {
+                                                "expr": "rate(node_network_receive_bytes_total[5m])",
+                                                "legendFormat": "{{device}}",
+                                                "interval": "",
+                                                "exemplar": true
+                                            }
+                                        ],
+                                        "options": {
+                                            "tooltip": {
+                                                "mode": "multi",
+                                                "sort": "desc"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "title": "Pod Status by Phase",
+                                        "type": "piechart",
+                                        "gridPos": {
+                                            "h": 8,
+                                            "w": 12,
+                                            "x": 0,
+                                            "y": 8
+                                        },
+                                        "targets": [
+                                            {
+                                                "expr": "sum by (phase) (kube_pod_status_phase)",
+                                                "legendFormat": "{{phase}}",
+                                                "interval": "",
+                                                "exemplar": true
+                                            }
+                                        ],
+                                        "options": {
+                                            "legend": {
+                                                "displayMode": "table",
+                                                "placement": "right",
+                                                "values": ["value"]
+                                            }
+                                        }
+                                    }
+                                ]
+                            },
+                            "overwrite": true,
+                            "message": "Updated by Jenkins Pipeline"
+                        }'
+                    '''
+                }
+            }
+        }
+
 
         stage('Send Notification') {
             steps {
