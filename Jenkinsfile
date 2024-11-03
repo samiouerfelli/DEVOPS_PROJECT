@@ -119,90 +119,51 @@ pipeline {
         }
 
         stage('OWASP Dependency Check') {
-            steps {
-                script {
-                    // Setup directories with proper permissions
-                    sh '''
-                        # Create directories with proper permissions
-                        mkdir -p ${WORKSPACE}/dependency-check-reports
-                        chmod -R 777 ${WORKSPACE}/dependency-check-reports
-                        
-                        # Clean any previous reports
-                        rm -rf ${WORKSPACE}/dependency-check-reports/*
-                    '''
-                    
-                    // Run Dependency Check
-                    dependencyCheck(
-                        additionalArguments: '''
-                            -o "${WORKSPACE}/dependency-check-reports" \
-                            -s "${WORKSPACE}" \
-                            -f "ALL" \
-                            --prettyPrint \
-                            --disableYarnAudit \
-                            --disableNodeAudit \
-                            --enableExperimental \
-                            --project "MyProject" \
-                            --failOnCVSS 7
-                        ''',
-                        odcInstallation: 'OWASP-Dependency-Check'
-                    )
-                    
-                    // Verify report generation and set permissions
-                    sh '''
-                        # Check if reports were generated
-                        if [ ! -f "${WORKSPACE}/dependency-check-reports/dependency-check-report.xml" ]; then
-                            echo "ERROR: XML report not generated!"
-                            exit 1
-                        fi
-                        
-                        # Ensure reports are readable
-                        chmod -R 755 ${WORKSPACE}/dependency-check-reports/
-                        
-                        # List generated reports
-                        echo "Generated reports:"
-                        ls -la ${WORKSPACE}/dependency-check-reports/
-                    '''
-                }
-            }
-            post {
-                always {
-                    script {
-                        // Publish dependency check results
-                        dependencyCheckPublisher(
-                            pattern: '**/dependency-check-reports/dependency-check-report.xml',
-                            failedTotalCritical: 1,
-                            failedTotalHigh: 2,
-                            unstableTotalCritical: 1,
-                            unstableTotalHigh: 2
-                        )
-                        
-                        // Archive the reports as artifacts
-                        archiveArtifacts(
-                            artifacts: 'dependency-check-reports/**/*',
-                            fingerprint: true,
-                            allowEmptyArchive: false
-                        )
-                        
-                        // Publish HTML report
-                        publishHTML([
-                            allowMissing: false,
-                            alwaysLinkToLastBuild: true,
-                            keepAll: true,
-                            reportDir: 'dependency-check-reports',
-                            reportFiles: 'dependency-check-report.html',
-                            reportName: 'OWASP Dependency Check Report',
-                            reportTitles: 'OWASP Dependency Check Report'
-                        ])
-                    }
-                }
-                failure {
-                    echo 'OWASP Dependency Check failed. Check the logs for details.'
-                }
-                success {
-                    echo 'OWASP Dependency Check completed successfully.'
-                }
-            }
+    steps {
+        script {
+            // Create directory for reports
+            sh '''
+                mkdir -p ${WORKSPACE}/dependency-check-reports
+                chmod -R 777 ${WORKSPACE}/dependency-check-reports
+            '''
+            
+            // Run Dependency Check
+            dependencyCheck(
+                additionalArguments: '''
+                    --out "${WORKSPACE}/dependency-check-reports" \
+                    --scan "${WORKSPACE}/target/" \
+                    --format "ALL" \
+                    --prettyPrint
+                ''',
+                odcInstallation: 'OWASP-Dependency-Check'
+            )
         }
+    }
+    post {
+        always {
+            // Publish results
+            dependencyCheckPublisher(
+                pattern: '**/dependency-check-reports/dependency-check-report.xml'
+            )
+            
+            // Publish HTML report
+            publishHTML([
+                allowMissing: false,
+                alwaysLinkToLastBuild: true,
+                keepAll: true,
+                reportDir: 'dependency-check-reports',
+                reportFiles: 'dependency-check-report.html',
+                reportName: 'OWASP Dependency Check Report'
+            ])
+        }
+        success {
+            echo 'OWASP Dependency Check completed successfully.'
+        }
+        failure {
+            echo 'OWASP Dependency Check failed. Check the report for details.'
+        }
+    }
+}
 
 
         stage('Build Docker Image') {
