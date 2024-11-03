@@ -69,7 +69,7 @@ spec:
 ---
 # Foyer Application Service
 apiVersion: v1
-kind: ServiceAccount
+kind: Service
 metadata:
   name: foyerapp-service
 spec:
