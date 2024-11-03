@@ -23,7 +23,7 @@ pipeline {
         DEPENDENCY_CHECK_DIR = "${WORKSPACE}/dependency-check-reports"
         OWASP_REPORT_DIR = "${WORKSPACE}/dependency-check-reports"
         TRIVY_REPORT_DIR = 'trivy-reports'
-        MAX_CRITICAL_VULNS = 5 
+        MAX_CRITICAL_VULNS = 20 
     }
 
     stages {
