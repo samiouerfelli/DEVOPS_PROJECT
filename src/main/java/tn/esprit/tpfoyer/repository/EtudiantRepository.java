@@ -8,6 +8,6 @@ import tn.esprit.tpfoyer.entity.Etudiant;
 @Repository
 public interface EtudiantRepository extends JpaRepository<Etudiant, Long> {
 
-    Etudiant findEtudiantByCinEtudiant(long cin);
+    Etudiant findEtudiantByCinEtudiant(String cin);
 
 }

@@ -18,11 +18,9 @@ public class Universite {
     long idUniversite;
 
     String nomUniversite;
-
     String adresse;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "foyer_id") // Specify the foreign key column
     Foyer foyer;
-
 }
-

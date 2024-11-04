@@ -78,13 +78,14 @@ class EtudiantRestControllerTest {
     @Test
     void testRetrieveEtudiantByCin() throws Exception {
         Etudiant etudiant = new Etudiant();
-        when(etudiantService.recupererEtudiantParCin(anyLong())).thenReturn(etudiant);
+        when(etudiantService.recupererEtudiantParCin(anyString())).thenReturn(etudiant);
 
         mockMvc.perform(get("/etudiant/retrieve-etudiant-cin/12345678"))
                 .andExpect(status().isOk());
 
-        verify(etudiantService, times(1)).recupererEtudiantParCin(anyLong());
+        verify(etudiantService, times(1)).recupererEtudiantParCin(anyString());
     }
+
 
     @Test
     void testDeleteEtudiant() throws Exception {
@@ -116,6 +117,19 @@ class EtudiantRestControllerTest {
         mockMvc.perform(get("/etudiant/retrieve-etudiant/99"))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void testAddEtudiantWithInvalidCin() throws Exception {
+        mockMvc.perform(post("/etudiant/add-etudiant")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("nomEtudiant", "John")
+                        .param("prenomEtudiant", "Doe")
+                        .param("cinEtudiant", "invalid")  // Invalid CIN
+                        .param("dateNaissance", "01/01/2000"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("CIN must be exactly 8 digits long and numeric."));
+    }
+
 
     @Test
     void testAddEtudiantWithInvalidData() throws Exception {

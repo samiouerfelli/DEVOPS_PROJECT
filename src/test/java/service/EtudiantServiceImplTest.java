@@ -93,7 +93,7 @@ class EtudiantServiceImplTest {
     @Test
     void testRetrieveEtudiantByCin() {
         Etudiant etudiant = new Etudiant();
-        long cin = 12345678L;
+        String cin = "12345678L";
         when(etudiantRepository.findEtudiantByCinEtudiant(cin)).thenReturn(etudiant);
 
         Etudiant result = etudiantService.recupererEtudiantParCin(cin);
@@ -103,7 +103,7 @@ class EtudiantServiceImplTest {
 
     @Test
     void testRetrieveEtudiantByInvalidCin() {
-        long invalidCin = 0L;
+        String invalidCin = "0L";
         when(etudiantRepository.findEtudiantByCinEtudiant(invalidCin)).thenReturn(null);
 
         Etudiant result = etudiantService.recupererEtudiantParCin(invalidCin);

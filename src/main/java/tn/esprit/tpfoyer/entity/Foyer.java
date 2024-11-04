@@ -13,7 +13,7 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-@EqualsAndHashCode // Added for equality checks
+@EqualsAndHashCode
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Foyer {
 
@@ -24,13 +24,14 @@ public class Foyer {
     String nomFoyer;
     long capaciteFoyer;
 
-    @OneToOne(mappedBy = "foyer")
+    @OneToOne(mappedBy = "foyer", fetch = FetchType.LAZY)
     @JsonIgnore
+    @ToString.Exclude // Prevent circular reference in toString
     Universite universite;
 
-    @OneToMany(mappedBy = "foyer")
+    @OneToMany(mappedBy = "foyer", fetch = FetchType.LAZY)
     @JsonIgnore
+    @ToString.Exclude // Prevent circular reference in toString
     Set<Bloc> blocs;
 
-    // No @ToString.Exclude so that universite and blocs can be included in the toString output
 }

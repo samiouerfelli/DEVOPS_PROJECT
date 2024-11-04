@@ -9,5 +9,5 @@ public interface IEtudiantService {
     Etudiant retrieveEtudiant(Long idEtudiant);
     Etudiant modifyEtudiant(Etudiant etudiant);
     void removeEtudiant(Long idEtudiant);
-    Etudiant recupererEtudiantParCin(Long cin);
+    Etudiant recupererEtudiantParCin(String cin); // Keep as String
 }

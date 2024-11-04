@@ -10,10 +10,15 @@ import java.util.List;
 @Service
 public class EtudiantServiceImpl implements IEtudiantService {
 
+    @Autowired
     private EtudiantRepository etudiantRepository;
 
     @Override
     public Etudiant addEtudiant(Etudiant etudiant) {
+        // Check if CIN is unique before saving
+        if (etudiantRepository.findEtudiantByCinEtudiant(etudiant.getCinEtudiant()) != null) {
+            throw new IllegalArgumentException("CIN already exists. Each student must have a unique CIN.");
+        }
         return etudiantRepository.save(etudiant);
     }
 
@@ -29,8 +34,29 @@ public class EtudiantServiceImpl implements IEtudiantService {
 
     @Override
     public Etudiant modifyEtudiant(Etudiant etudiant) {
-        return etudiantRepository.save(etudiant);
+        Etudiant existingEtudiant = etudiantRepository.findById(etudiant.getIdEtudiant())
+                .orElseThrow(() -> new IllegalArgumentException("Etudiant not found"));
+
+        // Check if CIN is unique when modifying, ignoring current student
+        Etudiant etudiantWithSameCin = etudiantRepository.findEtudiantByCinEtudiant(etudiant.getCinEtudiant());
+        if (etudiantWithSameCin != null && etudiantWithSameCin.getIdEtudiant() != etudiant.getIdEtudiant()) {
+            throw new IllegalArgumentException("CIN already exists. Each student must have a unique CIN.");
+        }
+
+        // Set fields to update
+        existingEtudiant.setNomEtudiant(etudiant.getNomEtudiant());
+        existingEtudiant.setPrenomEtudiant(etudiant.getPrenomEtudiant());
+        existingEtudiant.setCinEtudiant(etudiant.getCinEtudiant());
+        existingEtudiant.setDateNaissance(etudiant.getDateNaissance());
+
+        // Profile picture update if provided
+        if (etudiant.getProfilePicture() != null) {
+            existingEtudiant.setProfilePicture(etudiant.getProfilePicture());
+        }
+
+        return etudiantRepository.save(existingEtudiant);
     }
+
 
     @Override
     public void removeEtudiant(Long idEtudiant) {
@@ -38,7 +64,7 @@ public class EtudiantServiceImpl implements IEtudiantService {
     }
 
     @Override
-    public Etudiant recupererEtudiantParCin(Long cin) {
+    public Etudiant recupererEtudiantParCin(String cin) { // Keep as String
         return etudiantRepository.findEtudiantByCinEtudiant(cin);
     }
 }
