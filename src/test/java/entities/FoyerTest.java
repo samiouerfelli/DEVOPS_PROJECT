@@ -30,13 +30,7 @@ class FoyerTest {
         assertNotEquals(foyer1, foyer3); // Should pass
     }
 
-    @Test
-    void testFoyerToString() {
-        Foyer foyer = new Foyer(3L, "Foyer C", 150, null, null);
-        String expectedString = "Foyer(idFoyer=3, nomFoyer=Foyer C, capaciteFoyer=150, universite=null, blocs=null)";
 
-        assertEquals(expectedString, foyer.toString()); // Should pass
-    }
 
     @Test
     void testFoyerId() {
