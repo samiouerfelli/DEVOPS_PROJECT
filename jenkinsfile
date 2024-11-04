@@ -9,14 +9,23 @@ pipeline {
         SCANNER_HOME = tool 'sonar-scanner'
         currentStage = '' // Variable to track the current stage name
         logFile = '' // Variable to track the log file for each stage
+        workspaceDir = '' // Variable to store workspace directory
     }
 
     stages {
+        stage('Initialize') {
+            steps {
+                script {
+                    workspaceDir = pwd()
+                }
+            }
+        }
+
         stage('Clean') {
             steps {
                 script {
                     currentStage = 'Clean'
-                    logFile = "clean.log"
+                    logFile = "${workspaceDir}/clean.log"
                 }
                 sh "mvn clean > ${logFile} 2>&1"
             }
@@ -26,9 +35,9 @@ pipeline {
             steps {
                 script {
                     currentStage = 'Setup DB'
-                    logFile = "setup_db.log"
-                    sh 'docker-compose up -d > ${logFile} 2>&1'
+                    logFile = "${workspaceDir}/setup_db.log"
                 }
+                sh "docker-compose up -d > ${logFile} 2>&1"
             }
         }
 
@@ -36,7 +45,7 @@ pipeline {
             steps {
                 script {
                     currentStage = 'Compile'
-                    logFile = "compile.log"
+                    logFile = "${workspaceDir}/compile.log"
                 }
                 sh "mvn compile > ${logFile} 2>&1"
             }
@@ -46,7 +55,7 @@ pipeline {
             steps {
                 script {
                     currentStage = 'Test'
-                    logFile = "test.log"
+                    logFile = "${workspaceDir}/test.log"
                 }
                 sh "mvn test -Dspring.profiles.active=local > ${logFile} 2>&1"
             }
@@ -56,7 +65,7 @@ pipeline {
             steps {
                 script {
                     currentStage = 'Generate JaCoCo Report'
-                    logFile = "jacoco_report.log"
+                    logFile = "${workspaceDir}/jacoco_report.log"
                 }
                 sh "mvn jacoco:report > ${logFile} 2>&1"
             }
@@ -66,7 +75,7 @@ pipeline {
             steps {
                 script {
                     currentStage = 'SonarQube Analysis'
-                    logFile = "sonarqube_analysis.log"
+                    logFile = "${workspaceDir}/sonarqube_analysis.log"
                     withSonarQubeEnv('sonar') {
                         sh '''
                             $SCANNER_HOME/bin/sonar-scanner \
@@ -82,7 +91,7 @@ pipeline {
             steps {
                 script {
                     currentStage = 'Quality Gate'
-                    logFile = "quality_gate.log"
+                    logFile = "${workspaceDir}/quality_gate.log"
                     waitForQualityGate abortPipeline: true, credentialsId: 'sonar-token'
                 }
             }
@@ -92,7 +101,7 @@ pipeline {
             steps {
                 script {
                     currentStage = 'Build'
-                    logFile = "build.log"
+                    logFile = "${workspaceDir}/build.log"
                 }
                 sh "mvn package -Dspring.profiles.active=local > ${logFile} 2>&1"
             }
@@ -102,7 +111,7 @@ pipeline {
             steps {
                 script {
                     currentStage = 'Publish To Nexus'
-                    logFile = "publish_to_nexus.log"
+                    logFile = "${workspaceDir}/publish_to_nexus.log"
                     withMaven(globalMavenSettingsConfig: 'global-settings', jdk: 'JDK17', maven: 'Maven3', traceability: true) {
                         sh "mvn deploy -Dspring.profiles.active=local > ${logFile} 2>&1"
                     }
@@ -114,7 +123,7 @@ pipeline {
             steps {
                 script {
                     currentStage = 'Build & Tag Docker Image'
-                    logFile = "docker_build_tag.log"
+                    logFile = "${workspaceDir}/docker_build_tag.log"
                     withDockerRegistry(credentialsId: 'docker-cred') {
                         sh "docker build -t samixouerfelli/etudiant-service:latest . > ${logFile} 2>&1"
                     }
@@ -126,7 +135,7 @@ pipeline {
             steps {
                 script {
                     currentStage = 'Push Docker Image'
-                    logFile = "docker_push.log"
+                    logFile = "${workspaceDir}/docker_push.log"
                     withDockerRegistry(credentialsId: 'docker-cred') {
                         sh "docker push samixouerfelli/etudiant-service:latest > ${logFile} 2>&1"
                     }
@@ -138,7 +147,7 @@ pipeline {
             steps {
                 script {
                     currentStage = 'Deploy To Kubernetes'
-                    logFile = "kubernetes_deploy.log"
+                    logFile = "${workspaceDir}/kubernetes_deploy.log"
                     withKubeConfig(
                         caCertificate: '',
                         clusterName: 'devops-k8s-cluster',
@@ -157,7 +166,7 @@ pipeline {
             steps {
                 script {
                     currentStage = 'Verify the Deployment'
-                    logFile = "kubernetes_verify.log"
+                    logFile = "${workspaceDir}/kubernetes_verify.log"
                     withKubeConfig(
                         caCertificate: '',
                         clusterName: 'devops-k8s-cluster',
@@ -181,11 +190,19 @@ pipeline {
                 def buildNumber = env.BUILD_NUMBER
                 def pipelineStatus = currentBuild.result ?: 'SUCCESS'
                 def bannerColor = pipelineStatus.toUpperCase() == 'SUCCESS' ? 'green' : 'red'
-                def errorSnippet = ""
+                def htmlLogFile = "${workspaceDir}/stage_logs.html"
 
                 // Only gather error logs if the build has failed
                 if (pipelineStatus != 'SUCCESS' && fileExists(logFile)) {
-                    errorSnippet = readFile(logFile).split('\n')[-10..-1].join("<br>")
+                    def errorSnippet = readFile(logFile).split('\n')[-10..-1].join("<br>")
+                    writeFile file: htmlLogFile, text: """
+                        <html>
+                        <body>
+                        <h2>Failed Stage: ${currentStage}</h2>
+                        <p><strong>Error Details (if any):</strong><br> ${errorSnippet}</p>
+                        </body>
+                        </html>
+                    """
                 }
 
                 def body = """
@@ -197,7 +214,6 @@ pipeline {
                             <h3 style="color: white;">Pipeline Status: ${pipelineStatus.toUpperCase()}</h3>
                         </div>
                         <p><strong>Failed Stage:</strong> ${currentStage}</p>
-                        <p><strong>Error Details (if any):</strong><br> ${errorSnippet}</p>
                         <p>Check the <a href="${BUILD_URL}">console output</a> for more details.</p>
                     </div>
                     </body>
@@ -210,7 +226,8 @@ pipeline {
                     to: 'sami.ouerfelli@pm.me',
                     from: 'jenkins@server.com',
                     replyTo: 'jenkins@server.com',
-                    mimeType: 'text/html'
+                    mimeType: 'text/html',
+                    attachmentsPattern: htmlLogFile
                 )
             }
         }
