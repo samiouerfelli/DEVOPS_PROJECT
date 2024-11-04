@@ -9,24 +9,19 @@ pipeline {
         SCANNER_HOME = tool 'sonar-scanner'
     }
 
-
     stages {
        
-  
         stage('Clean') {
             steps {
-                sh "mvn clean "
+                sh "mvn clean"
             }
         }
-
-    
 
         stage('Compile') {
             steps {
                 sh "mvn compile"
             }
         }
-
 
         stage('Build') {
             steps {
@@ -79,33 +74,47 @@ pipeline {
                 }
             }
         }
-         stage('Run Config Server') {
-                   steps {
-                           withCredentials([
-                               string(credentialsId: 'GIT_USERNAME', variable: 'GIT_USERNAME'),
-                               string(credentialsId: 'GIT_PASSWORD', variable: 'GIT_PASSWORD')
-                           ]) {
-                               sh '''
-                                   export GIT_USERNAME=$GIT_USERNAME
-                                   export GIT_PASSWORD=$GIT_PASSWORD
-                                   docker-compose up -d
-                               '''
-                           }
-                       }
-         }
+
+        stage('Run Config Server') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'GIT_USERNAME', variable: 'GIT_USERNAME'),
+                    string(credentialsId: 'GIT_PASSWORD', variable: 'GIT_PASSWORD')
+                ]) {
+                    sh '''
+                        export GIT_USERNAME=$GIT_USERNAME
+                        export GIT_PASSWORD=$GIT_PASSWORD
+                        docker-compose up -d
+                    '''
+                }
+            }
+        }
 
         stage('Deploy To Kubernetes') {
             steps {
-                withKubeConfig(caCertificate: '', clusterName: 'devops-k8s-cluster', contextName: 'devops-k8s-cluster', credentialsId: 'k8-cred', namespace: 'devops-project', serverUrl: 'https://devops-k8s-devops-resource--8172e1-o65hj7y3.hcp.centralus.azmk8s.io:443') {
+                withKubeConfig(
+                    caCertificate: '', 
+                    clusterName: 'devops-k8s-cluster', 
+                    contextName: 'devops-k8s-cluster', 
+                    credentialsId: 'k8-cred', 
+                    namespace: 'devops-project', 
+                    serverUrl: 'https://devops-k8s-devops-resource--8172e1-o65hj7y3.hcp.centralus.azmk8s.io:443'
+                ) {
                     sh "kubectl apply -f config-service-dep.yml"
-
                 }
             }
         }
 
         stage('Verify the Deployment') {
             steps {
-                withKubeConfig(caCertificate: '', clusterName: 'devops-k8s-cluster', contextName: 'devops-k8s-cluster', credentialsId: 'k8-cred', namespace: 'devops-project', serverUrl: 'https://devops-k8s-devops-resource--8172e1-o65hj7y3.hcp.centralus.azmk8s.io:443') {
+                withKubeConfig(
+                    caCertificate: '', 
+                    clusterName: 'devops-k8s-cluster', 
+                    contextName: 'devops-k8s-cluster', 
+                    credentialsId: 'k8-cred', 
+                    namespace: 'devops-project', 
+                    serverUrl: 'https://devops-k8s-devops-resource--8172e1-o65hj7y3.hcp.centralus.azmk8s.io:443'
+                ) {
                     sh "kubectl get pods -n devops-project"
                     sh "kubectl get svc -n devops-project"
                 }
