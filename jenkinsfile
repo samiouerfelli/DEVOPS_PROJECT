@@ -9,9 +9,8 @@ pipeline {
         SCANNER_HOME = tool 'sonar-scanner'
     }
 
-
     stages {
-       
+
         stage('Determine Version Increment') {
             steps {
                 script {
@@ -50,16 +49,16 @@ pipeline {
         }
 
         stage('Push Updated POM') {
-                    steps {
-                        script {
-                            sh 'git add pom.xml'
-                            sh "git commit -m 'Auto-update version to ${env.NEW_VERSION}'"
-                            sh 'git push origin bloc-service'
-                        }
-                    }
+            steps {
+                script {
+                    sh 'git add pom.xml'
+                    sh "git commit -m 'Auto-update version to ${env.NEW_VERSION}'"
+                    sh 'git push origin bloc-service'
                 }
+            }
+        }
 
-           stage('Setup DB') {
+        stage('Setup DB') {
             steps {
                 script {
                     sh 'docker-compose up -d'
@@ -72,34 +71,32 @@ pipeline {
                 sh "mvn compile"
             }
         }
+
         stage('Test') {
             steps {
                 sh "mvn test -Dspring.profiles.active=local"
             }
         }
 
+        stage('Generate JaCoCo Report') {
+            steps {
+                sh "mvn jacoco:report"
+            }
+        }
 
-          stage('Generate JaCoCo Report') {
-                            steps {
-                                sh "mvn jacoco:report"
-                            }
-                        }
-
-
-
-                  stage('SonarQube Analysis') {
-                        steps {
-                            script {
-                                withSonarQubeEnv('sonar') {
-                                    sh '''
-                                        $SCANNER_HOME/bin/sonar-scanner \
-                                        -Dsonar.projectName=bloc-service \
-                                        -Dsonar.projectKey=bloc-service
-                                    '''
-                                }
-                            }
-                        }
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    withSonarQubeEnv('sonar') {
+                        sh '''
+                            $SCANNER_HOME/bin/sonar-scanner \
+                            -Dsonar.projectName=bloc-service \
+                            -Dsonar.projectKey=bloc-service
+                        '''
                     }
+                }
+            }
+        }
 
         stage('Quality Gate') {
             steps {
@@ -111,14 +108,14 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh "mvn package -Dspring.profiles.active=local "
+                sh "mvn package -Dspring.profiles.active=local"
             }
         }
 
         stage('Publish To Nexus') {
             steps {
                 withMaven(globalMavenSettingsConfig: 'global-settings', jdk: 'JDK17', maven: 'Maven3', traceability: true) {
-                    sh "mvn deploy -Dspring.profiles.active=local "
+                    sh "mvn deploy -Dspring.profiles.active=local"
                 }
             }
         }
@@ -145,19 +142,66 @@ pipeline {
 
         stage('Deploy To Kubernetes') {
             steps {
-                withKubeConfig(caCertificate: '', clusterName: 'devops-k8s-cluster', contextName: 'devops-k8s-cluster', credentialsId: 'k8-cred', namespace: 'devops-project', serverUrl: 'https://devops-k8s-devops-resource--8172e1-o65hj7y3.hcp.centralus.azmk8s.io:443') {
+                withKubeConfig(
+                    caCertificate: '',
+                    clusterName: 'devops-k8s-cluster',
+                    contextName: 'devops-k8s-cluster',
+                    credentialsId: 'k8-cred',
+                    namespace: 'devops-project',
+                    serverUrl: 'https://devops-k8s-devops-resource--8172e1-o65hj7y3.hcp.centralus.azmk8s.io:443'
+                ) {
                     sh "kubectl apply -f bloc-service-dep.yml"
-
                 }
             }
         }
 
         stage('Verify the Deployment') {
             steps {
-                withKubeConfig(caCertificate: '', clusterName: 'devops-k8s-cluster', contextName: 'devops-k8s-cluster', credentialsId: 'k8-cred', namespace: 'devops-project', serverUrl: 'https://devops-k8s-devops-resource--8172e1-o65hj7y3.hcp.centralus.azmk8s.io:443') {
+                withKubeConfig(
+                    caCertificate: '',
+                    clusterName: 'devops-k8s-cluster',
+                    contextName: 'devops-k8s-cluster',
+                    credentialsId: 'k8-cred',
+                    namespace: 'devops-project',
+                    serverUrl: 'https://devops-k8s-devops-resource--8172e1-o65hj7y3.hcp.centralus.azmk8s.io:443'
+                ) {
                     sh "kubectl get pods -n devops-project"
                     sh "kubectl get svc -n devops-project"
                 }
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                def jobName = env.JOB_NAME
+                def buildNumber = env.BUILD_NUMBER
+                def pipelineStatus = currentBuild.result ?: 'SUCCESS'
+                def bannerColor = pipelineStatus.toUpperCase() == 'SUCCESS' ? 'green' : 'red'
+
+                def body = """
+                    <html>
+                    <body>
+                    <div style="border: 4px solid ${bannerColor}; padding: 10px;">
+                        <h2>${jobName} - Build ${buildNumber}</h2>
+                        <div style="background-color: ${bannerColor}; padding: 10px;">
+                            <h3 style="color: white;">Pipeline Status: ${pipelineStatus.toUpperCase()}</h3>
+                        </div>
+                        <p>Check the <a href="${BUILD_URL}">console output</a>.</p>
+                    </div>
+                    </body>
+                    </html>
+                """
+
+                emailext (
+                    subject: "${jobName} - Build ${buildNumber} - ${pipelineStatus.toUpperCase()}",
+                    body: body,
+                    to: 'sami.ouerfelli@pm.me',
+                    from: 'jenkins@server.com',
+                    replyTo: 'jenkins@server.com',
+                    mimeType: 'text/html'
+                )
             }
         }
     }
