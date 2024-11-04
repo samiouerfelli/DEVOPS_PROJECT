@@ -1,84 +1,137 @@
 package tn.esprit.tpfoyer.services;
 
-
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 import jakarta.transaction.Transactional;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import tn.esprit.tpfoyer.entity.Bloc;
+import tn.esprit.tpfoyer.entity.Foyer;
 import tn.esprit.tpfoyer.repository.BlocRepository;
-import tn.esprit.tpfoyer.service.IBlocService;
+import tn.esprit.tpfoyer.service.BlocServiceImpl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-@Service
-@AllArgsConstructor
-@Slf4j  // Simple Loggining Façade For Java
-public class BlocServiceImplTest  implements IBlocService {
+@ExtendWith(MockitoExtension.class)
+public class BlocServiceImplTest {
+    private static final String BLOC_A = "Bloc A";
+    @Mock
+    private BlocRepository blocRepository;
 
+    @InjectMocks
+    private BlocServiceImpl blocService;
 
-    BlocRepository blocRepository;
+    private Bloc bloc;
 
-    @Scheduled(fixedRate = 30000) // millisecondes // cron fixedRate
-    //@Scheduled(cron="0/15 * * * * *")
-    public List<Bloc> retrieveAllBlocs() {
+    @BeforeEach
+    public void setUp() {
+        // Initialize a Foyer object if needed for your tests
+        Foyer foyer = new Foyer();
 
-        List<Bloc> listB = blocRepository.findAll();
-        log.info("taille totale : " + listB.size());
-        for (Bloc b: listB) {
-            log.info("Bloc : " + b);
-        }
-
-        return listB;
+        bloc = new Bloc();
+        bloc.setIdBloc(1L); // Adjusted to use idBloc
+        bloc.setNomBloc(BLOC_A);
+        bloc.setCapaciteBloc(100);
+        bloc.setFoyer(foyer); // Assuming you may want to link it with a Foyer
     }
 
-    // Exemple sans Keywords :
-    @Transactional
-    public List<Bloc> retrieveBlocsSelonCapacite(long c) {
+    @Test
+    public void testRetrieveAllBlocs() {
+        List<Bloc> blocs = new ArrayList<>();
+        blocs.add(bloc);
 
-        List<Bloc> listB = blocRepository.findAll();
-        List<Bloc> listBselonC = new ArrayList<>();
+        when(blocRepository.findAll()).thenReturn(blocs);
 
-        for (Bloc b: listB) {
-            if (b.getCapaciteBloc()>=c)
-                listBselonC.add(b);
-        }
+        List<Bloc> result = blocService.retrieveAllBlocs();
 
-        return listBselonC;
+        assertEquals(1, result.size());
+        assertEquals(BLOC_A, result.get(0).getNomBloc());
+        verify(blocRepository, times(1)).findAll();
     }
 
-    @Transactional
-    public Bloc retrieveBloc(Long blocId) {
+    @Test
+    public void testRetrieveBlocsSelonCapacite() {
+        List<Bloc> blocs = new ArrayList<>();
+        blocs.add(bloc);
 
-        return blocRepository.findById(blocId).get();
+        when(blocRepository.findAll()).thenReturn(blocs);
+
+        List<Bloc> result = blocService.retrieveBlocsSelonCapacite(50);
+
+        assertEquals(1, result.size());
+        assertEquals(BLOC_A, result.get(0).getNomBloc());
     }
 
+    @Test
+    public void testRetrieveBloc() {
+        when(blocRepository.findById(1L)).thenReturn(Optional.of(bloc));
 
-    public Bloc addBloc(Bloc c) {
+        Bloc result = blocService.retrieveBloc(1L);
 
-        return blocRepository.save(c);
+        assertNotNull(result);
+        assertEquals(BLOC_A, result.getNomBloc());
     }
 
-    public Bloc modifyBloc(Bloc bloc) {
-        return blocRepository.save(bloc);
+    @Test
+    public void testAddBloc() {
+        when(blocRepository.save(any(Bloc.class))).thenReturn(bloc);
+
+        Bloc result = blocService.addBloc(bloc);
+
+        assertNotNull(result);
+        assertEquals(BLOC_A, result.getNomBloc());
+        verify(blocRepository, times(1)).save(bloc);
     }
 
-    public void removeBloc(Long blocId) {
-        blocRepository.deleteById(blocId);
+    @Test
+    public void testModifyBloc() {
+        when(blocRepository.save(any(Bloc.class))).thenReturn(bloc);
+
+        Bloc result = blocService.modifyBloc(bloc);
+
+        assertNotNull(result);
+        assertEquals(BLOC_A, result.getNomBloc());
+        verify(blocRepository, times(1)).save(bloc);
     }
 
+    @Test
+    public void testRemoveBloc() {
+        blocService.removeBloc(1L);
 
-
-    public List<Bloc> trouverBlocsSansFoyer() {
-        return blocRepository.findAllByFoyerIsNull();
+        verify(blocRepository, times(1)).deleteById(1L);
     }
 
-    public List<Bloc> trouverBlocsParNomEtCap(String nb, long c) {
-        return blocRepository.findAllByNomBlocAndCapaciteBloc(nb,  c);
+    @Test
+    public void testTrouverBlocsSansFoyer() {
+        List<Bloc> blocs = new ArrayList<>();
+        blocs.add(bloc);
+
+        when(blocRepository.findAllByFoyerIsNull()).thenReturn(blocs);
+
+        List<Bloc> result = blocService.trouverBlocsSansFoyer();
+
+        assertEquals(1, result.size());
+        assertEquals(BLOC_A, result.get(0).getNomBloc());
     }
 
+    @Test
+    public void testTrouverBlocsParNomEtCap() {
+        List<Bloc> blocs = new ArrayList<>();
+        blocs.add(bloc);
+
+        when(blocRepository.findAllByNomBlocAndCapaciteBloc(BLOC_A, 100)).thenReturn(blocs);
+
+        List<Bloc> result = blocService.trouverBlocsParNomEtCap(BLOC_A, 100);
+
+        assertEquals(1, result.size());
+        assertEquals(BLOC_A, result.get(0).getNomBloc());
+    }
 }
-
