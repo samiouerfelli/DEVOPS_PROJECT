@@ -242,32 +242,51 @@ pipeline {
             }
         }
 
-        stage('Trivy Scan') {
+        stage('Trivy Security Scan') {
             steps {
                 script {
-                    sh """
-                        mkdir -p ${TRIVY_REPORT_DIR} ${TRIVY_CACHE_DIR}
-                        
-                        trivy image \
-                            --cache-dir ${TRIVY_CACHE_DIR} \
-                            --scanners vuln \
-                            --severity HIGH,CRITICAL \
-                            --format json \
-                            --output ${TRIVY_REPORT_DIR}/report.json \
-                            ${DOCKER_IMAGE}
-
-                        # Check vulnerabilities and exit if exceeds threshold
-                        CRIT_COUNT=\$(cat ${TRIVY_REPORT_DIR}/report.json | jq -r '[.Results[].Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length')
-                        
-                        echo "Found \${CRIT_COUNT} critical vulnerabilities"
-                        
-                        if [ \${CRIT_COUNT} -gt ${MAX_CRITICAL_VULNS} ]; then
-                            echo "Security scan failed: Critical vulnerabilities (\${CRIT_COUNT}) exceed threshold (${MAX_CRITICAL_VULNS})"
-                            exit 1
-                        fi
-                    """
+                    def maxRetries = 3
+                    def retryDelay = 10 // seconds
                     
-                    archiveArtifacts artifacts: "${TRIVY_REPORT_DIR}/*"
+                    for (int i = 0; i < maxRetries; i++) {
+                        try {
+                            sh """
+                                mkdir -p trivy-reports
+                                
+                                # Update Trivy DB with retry mechanism
+                                trivy --cache-dir /tmp/trivy image \
+                                    --download-db-only
+                                
+                                # Run the scan
+                                trivy image \
+                                    --cache-dir /tmp/trivy \
+                                    --scanners vuln \
+                                    --severity HIGH,CRITICAL \
+                                    --format json \
+                                    --output trivy-reports/report.json \
+                                    ${DOCKER_IMAGE}
+                                
+                                # Check vulnerabilities
+                                CRIT_COUNT=\$(cat trivy-reports/report.json | jq -r '[.Results[].Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length')
+                                echo "Found \${CRIT_COUNT} critical vulnerabilities"
+                                
+                                if [ \${CRIT_COUNT} -gt 5 ]; then
+                                    echo "Security scan failed: Too many critical vulnerabilities"
+                                    exit 1
+                                fi
+                            """
+                            // If successful, break the retry loop
+                            break
+                        } catch (Exception e) {
+                            if (i == maxRetries - 1) {
+                                error "Failed to run Trivy scan after ${maxRetries} attempts"
+                            }
+                            echo "Attempt ${i + 1} failed, waiting ${retryDelay} seconds before retry..."
+                            sleep retryDelay
+                        }
+                    }
+                    
+                    archiveArtifacts artifacts: "trivy-reports/*"
                 }
             }
         }
