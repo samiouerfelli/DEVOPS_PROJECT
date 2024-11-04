@@ -306,12 +306,22 @@ pipeline {
             }
         }
 
-        stage('Push Docker Image to Hub') {
+        stage('Push to Docker Hub') {
             steps {
                 script {
-                    echo 'Pushing Docker image to Docker Hub...'
-                    sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
-                    sh 'docker push $DOCKER_IMAGE'
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                        sh '''
+                            echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin
+                            
+                            # Tag the image with Docker Hub username
+                            docker tag ${DOCKER_IMAGE} ${DOCKERHUB_USERNAME}/melekbejaoui-5arctic1-g2-devopsproject:latest
+                            
+                            # Push the tagged image
+                            docker push ${DOCKERHUB_USERNAME}/melekbejaoui-5arctic1-g2-devopsproject:latest
+                            
+                            docker logout
+                        '''
+                    }
                 }
             }
         }
