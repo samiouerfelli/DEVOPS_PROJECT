@@ -26,6 +26,7 @@ public class BlocServiceImplTest {
     @Mock
     private BlocRepository blocRepository;
 
+
     @InjectMocks
     private BlocServiceImpl blocService;
 
