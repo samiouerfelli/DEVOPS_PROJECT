@@ -149,11 +149,11 @@ pipeline {
                     currentStage = 'Deploy To Kubernetes'
                     logFile = "${workspaceDir}/kubernetes_deploy.log"
                     withKubeConfig(
-                        caCertificate: '',
-                        clusterName: 'devops-k8s-cluster',
-                        contextName: 'devops-k8s-cluster',
-                        credentialsId: 'k8-cred',
-                        namespace: 'devops-project',
+                        caCertificate: '', 
+                        clusterName: 'devops-k8s-cluster', 
+                        contextName: 'devops-k8s-cluster', 
+                        credentialsId: 'k8-cred', 
+                        namespace: 'devops-project', 
                         serverUrl: 'https://devops-k8s-devops-resource--8172e1-o65hj7y3.hcp.centralus.azmk8s.io:443'
                     ) {
                         sh "kubectl apply -f etudiant-dep.yml > ${logFile} 2>&1"
@@ -168,11 +168,11 @@ pipeline {
                     currentStage = 'Verify the Deployment'
                     logFile = "${workspaceDir}/kubernetes_verify.log"
                     withKubeConfig(
-                        caCertificate: '',
-                        clusterName: 'devops-k8s-cluster',
-                        contextName: 'devops-k8s-cluster',
-                        credentialsId: 'k8-cred',
-                        namespace: 'devops-project',
+                        caCertificate: '', 
+                        clusterName: 'devops-k8s-cluster', 
+                        contextName: 'devops-k8s-cluster', 
+                        credentialsId: 'k8-cred', 
+                        namespace: 'devops-project', 
                         serverUrl: 'https://devops-k8s-devops-resource--8172e1-o65hj7y3.hcp.centralus.azmk8s.io:443'
                     ) {
                         sh "kubectl get pods -n devops-project > ${logFile} 2>&1"
@@ -190,7 +190,7 @@ pipeline {
                 def buildNumber = env.BUILD_NUMBER
                 def pipelineStatus = currentBuild.result ?: 'SUCCESS'
                 def bannerColor = pipelineStatus.toUpperCase() == 'SUCCESS' ? 'green' : 'red'
-                def htmlLogFile = "${workspaceDir}/stage_logs.html"
+                def htmlLogFile = "stage_logs.html" // Relative path for attachment
 
                 // Only gather error logs if the build has failed
                 if (pipelineStatus != 'SUCCESS' && fileExists(logFile)) {
@@ -227,7 +227,7 @@ pipeline {
                     from: 'jenkins@server.com',
                     replyTo: 'jenkins@server.com',
                     mimeType: 'text/html',
-                    attachmentsPattern: htmlLogFile
+                    attachmentsPattern: 'stage_logs.html' // Relative path for attachment
                 )
             }
         }
