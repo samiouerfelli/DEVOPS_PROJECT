@@ -15,8 +15,7 @@ import tn.esprit.tpfoyer.service.IEtudiantService;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -38,16 +37,49 @@ class EtudiantRestControllerTest {
     }
 
     @Test
-    void testAddEtudiant() throws Exception {
+    void testAddEtudiantValidData() throws Exception {
         Etudiant etudiant = new Etudiant();
         when(etudiantService.addEtudiant(any(Etudiant.class))).thenReturn(etudiant);
 
         mockMvc.perform(post("/etudiant/add-etudiant")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nomEtudiant\":\"John\", \"prenomEtudiant\":\"Doe\", \"cinEtudiant\":12345678}"))
-                .andExpect(status().isCreated());  // Change to isCreated()
+                        .param("nomEtudiant", "John")
+                        .param("prenomEtudiant", "Doe")
+                        .param("cinEtudiant", "12345678")
+                        .param("dateNaissance", "01/01/2000"))
+                .andExpect(status().isCreated());
 
         verify(etudiantService, times(1)).addEtudiant(any(Etudiant.class));
+    }
+
+    @Test
+    void testAddEtudiantInvalidCin() throws Exception {
+        mockMvc.perform(post("/etudiant/add-etudiant")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("nomEtudiant", "John")
+                        .param("prenomEtudiant", "Doe")
+                        .param("cinEtudiant", "12345")
+                        .param("dateNaissance", "01/01/2000"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("CIN must be exactly 8 digits long and numeric."));
+
+        verify(etudiantService, times(0)).addEtudiant(any(Etudiant.class));
+    }
+
+    @Test
+    void testAddEtudiantDuplicateCin() throws Exception {
+        when(etudiantService.recupererEtudiantParCin("12345678")).thenReturn(new Etudiant());
+
+        mockMvc.perform(post("/etudiant/add-etudiant")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("nomEtudiant", "John")
+                        .param("prenomEtudiant", "Doe")
+                        .param("cinEtudiant", "12345678")
+                        .param("dateNaissance", "01/01/2000"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("CIN already exists. Each student must have a unique CIN."));
+
+        verify(etudiantService, times(0)).addEtudiant(any(Etudiant.class));
     }
 
     @Test
@@ -78,36 +110,47 @@ class EtudiantRestControllerTest {
     @Test
     void testRetrieveEtudiantByCin() throws Exception {
         Etudiant etudiant = new Etudiant();
-        when(etudiantService.recupererEtudiantParCin(anyString())).thenReturn(etudiant);
+        when(etudiantService.recupererEtudiantParCin("12345678")).thenReturn(etudiant);
 
         mockMvc.perform(get("/etudiant/retrieve-etudiant-cin/12345678"))
                 .andExpect(status().isOk());
 
-        verify(etudiantService, times(1)).recupererEtudiantParCin(anyString());
+        verify(etudiantService, times(1)).recupererEtudiantParCin("12345678");
     }
-
 
     @Test
     void testDeleteEtudiant() throws Exception {
         doNothing().when(etudiantService).removeEtudiant(anyLong());
 
         mockMvc.perform(delete("/etudiant/remove-etudiant/1"))
-                .andExpect(status().isNoContent());  // Change to isNoContent()
+                .andExpect(status().isNoContent());
 
         verify(etudiantService, times(1)).removeEtudiant(anyLong());
     }
 
     @Test
-    void testModifyEtudiant() throws Exception {
+    void testModifyEtudiantValidData() throws Exception {
         Etudiant etudiant = new Etudiant();
         when(etudiantService.modifyEtudiant(any(Etudiant.class))).thenReturn(etudiant);
 
-        mockMvc.perform(put("/etudiant/modify-etudiant")
+        mockMvc.perform(put("/etudiant/modify-etudiant/1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nomEtudiant\":\"Jane\", \"prenomEtudiant\":\"Doe\", \"cinEtudiant\":87654321}"))
+                        .param("nomEtudiant", "Jane")
+                        .param("prenomEtudiant", "Doe")
+                        .param("cinEtudiant", "87654321")
+                        .param("dateNaissance", "02/02/1999"))
                 .andExpect(status().isOk());
 
         verify(etudiantService, times(1)).modifyEtudiant(any(Etudiant.class));
+    }
+
+    @Test
+    void testModifyEtudiantInvalidCin() throws Exception {
+        mockMvc.perform(put("/etudiant/modify-etudiant/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("cinEtudiant", "123"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("CIN must be exactly 8 digits long and numeric."));
     }
 
     @Test
@@ -116,27 +159,7 @@ class EtudiantRestControllerTest {
 
         mockMvc.perform(get("/etudiant/retrieve-etudiant/99"))
                 .andExpect(status().isNotFound());
+
+        verify(etudiantService, times(1)).retrieveEtudiant(anyLong());
     }
-
-    @Test
-    void testAddEtudiantWithInvalidCin() throws Exception {
-        mockMvc.perform(post("/etudiant/add-etudiant")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .param("nomEtudiant", "John")
-                        .param("prenomEtudiant", "Doe")
-                        .param("cinEtudiant", "invalid")  // Invalid CIN
-                        .param("dateNaissance", "01/01/2000"))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string("CIN must be exactly 8 digits long and numeric."));
-    }
-
-
-    @Test
-    void testAddEtudiantWithInvalidData() throws Exception {
-        mockMvc.perform(post("/etudiant/add-etudiant")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nomEtudiant\":\"\", \"prenomEtudiant\":\"\", \"cinEtudiant\":12345678}"))
-                .andExpect(status().isBadRequest()); // Change expected status to 400
-    }
-
 }
