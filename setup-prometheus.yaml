@@ -1,12 +1,20 @@
-# prometheus-namespace.yaml
+---
+# Namespace
 apiVersion: v1
 kind: Namespace
 metadata:
   name: monitoring
 
 ---
+# Service Account
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: monitoring
 
-# prometheus-clusterrole.yaml
+---
+# ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -30,8 +38,7 @@ rules:
   verbs: ["get"]
 
 ---
-
-# prometheus-clusterrolebinding.yaml
+# ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -46,17 +53,7 @@ subjects:
   namespace: monitoring
 
 ---
-
-# prometheus-serviceaccount.yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: prometheus
-  namespace: monitoring
-
----
-
-# prometheus-config.yaml
+# ConfigMap
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -134,8 +131,31 @@ data:
           target_label: __address__
 
 ---
+# PersistentVolume
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: prometheus-pv
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /var/lib/kind/volumes/prometheus
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - devops-cluster-control-plane
 
-# prometheus-storage-pvc.yaml
+---
+# PersistentVolumeClaim
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -149,8 +169,7 @@ spec:
       storage: 5Gi
 
 ---
-
-# prometheus-deployment.yaml
+# Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -189,8 +208,7 @@ spec:
           claimName: prometheus-pvc
 
 ---
-
-# prometheus-service.yaml
+# Service
 apiVersion: v1
 kind: Service
 metadata:

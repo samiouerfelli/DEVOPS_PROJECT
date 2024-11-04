@@ -9,7 +9,7 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials-id')
-        DOCKER_IMAGE = 'lookabj/myapp:latest'
+        DOCKER_IMAGE = 'MelekBejaoui-5Arctic1-G2-devopsProject:latest'
         SONAR_PROJECT_KEY = 'devops_project'
         NEXUS_VERSION = "nexus3"
         NEXUS_PROTOCOL = "http"
@@ -82,7 +82,7 @@ pipeline {
         }
 
 
-         stage('Push to Nexus Repository') {
+        stage('Push to Nexus Repository') {
             steps {
                 script {
                     pom = readMavenPom file: "pom.xml"
@@ -355,8 +355,6 @@ pipeline {
                 script {
                     sh '''
                         kubectl --kubeconfig=$KUBECONFIG apply -f setup-prometheus.yaml
-                        kubectl --kubeconfig=$KUBECONFIG apply -f node-exporter.yaml
-                        kubectl --kubeconfig=$KUBECONFIG apply -f kube-state-metrics.yaml
                         kubectl --kubeconfig=$KUBECONFIG apply -f setup-grafana.yaml
                     '''
                 }
@@ -593,6 +591,8 @@ pipeline {
                 }
             }
         }
+
+        
     }
     
     post {

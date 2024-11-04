@@ -1,3 +1,5 @@
+---
+# ConfigMap for Grafana Datasource
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -24,7 +26,7 @@ data:
     }
 
 ---
-
+# Secret for Grafana Credentials
 apiVersion: v1
 kind: Secret
 metadata:
@@ -36,7 +38,31 @@ data:
   admin-password: YWRtaW4xMjM=  # Base64 encoded 'admin123'
 
 ---
-
+# PersistentVolume for Grafana
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: grafana-pv
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /var/lib/kind/volumes/grafana
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - devops-cluster-control-plane
+          
+---
+# PersistentVolumeClaim for Grafana
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -50,7 +76,7 @@ spec:
       storage: 5Gi
 
 ---
-
+# Deployment for Grafana
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -119,7 +145,7 @@ spec:
           name: grafana-datasources
 
 ---
-
+# Service for Grafana
 apiVersion: v1
 kind: Service
 metadata:
