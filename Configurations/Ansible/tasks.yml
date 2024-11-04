@@ -1,0 +1,255 @@
+---
+- name: Configure DevOps VM
+  hosts: devops_vm
+  become: yes
+  vars:
+    jdk17_version: "17.0.7"
+    maven_version: "3.9.9"
+
+    sonarqube_container_name: "sonarqube"
+    nexus_container_name: "nexus"
+
+    jenkins_port: 8080
+    sonarqube_port: 9000
+    nexus_port: 8081
+
+  tasks:
+    - name: Update and upgrade apt packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+      tags:
+        - update
+
+    - name: Install required system packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+      tags:
+        - packages
+
+    - name: Install JDK 17 (headless)
+      apt:
+        name: openjdk-17-jre-headless
+        state: present
+      tags:
+        - java
+
+    - name: Install Maven
+      get_url:
+        url: "https://archive.apache.org/dist/maven/maven-3/{{ maven_version }}/binaries/apache-maven-{{ maven_version }}-bin.tar.gz"
+        dest: /tmp/apache-maven-{{ maven_version }}-bin.tar.gz
+      tags:
+        - maven
+
+    - name: Extract Maven
+      unarchive:
+        src: "/tmp/apache-maven-{{ maven_version }}-bin.tar.gz"
+        dest: /opt/
+        remote_src: yes
+      tags:
+        - maven
+
+    - name: Create symlink for Maven
+      command: ln -s /opt/apache-maven-{{ maven_version }} /opt/maven creates=/opt/maven
+      tags:
+        - maven
+
+    - name: Export JAVA_HOME for JDK 17, and MAVEN_HOME
+      lineinfile:
+        path: /etc/profile.d/java_maven.sh
+        line: |
+          export JAVA_HOME_17=/usr/lib/jvm/java-17-openjdk-amd64
+          export MAVEN_HOME=/opt/maven
+          export PATH=$PATH:$JAVA_HOME_8/bin:$JAVA_HOME_17/bin:$MAVEN_HOME/bin
+        create: yes
+        state: present
+      tags:
+        - environment
+
+    - name: Download Jenkins GPG key
+      get_url:
+        url: "https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key"
+        dest: /usr/share/keyrings/jenkins-keyring.asc
+      tags:
+        - jenkins
+
+    - name: Add Jenkins repository
+      shell: |
+        echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
+        https://pkg.jenkins.io/debian-stable binary/ | tee \
+        /etc/apt/sources.list.d/jenkins.list > /dev/null
+      tags:
+        - jenkins
+
+    - name: Update package manager repositories
+      apt:
+        update_cache: yes
+      tags:
+        - jenkins
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+      tags:
+        - jenkins
+
+    - name: Start and enable Jenkins service
+      systemd:
+        name: jenkins
+        state: started
+        enabled: yes
+      tags:
+        - jenkins
+
+    - name: Open port 8080 for Jenkins
+      ufw:
+        rule: allow
+        port: "{{ jenkins_port }}"
+        proto: tcp
+      tags:
+        - firewall
+
+    - name: Install Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      tags:
+        - docker
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable"
+        state: present
+      tags:
+        - docker
+
+    - name: Update apt and install Docker
+      apt:
+        update_cache: yes
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: latest
+      tags:
+        - docker
+
+    - name: Ensure Docker service is running and enabled
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+      tags:
+        - docker
+
+    - name: Add user to Docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+      tags:
+        - docker
+
+    - name: Pull SonarQube Docker image
+      docker_image:
+        name: sonarqube
+        tag: latest
+        source: pull
+      tags:
+        - sonarqube
+
+    - name: Run SonarQube container
+      docker_container:
+        name: "{{ sonarqube_container_name }}"
+        image: sonarqube:latest
+        state: started
+        restart_policy: always
+        ports:
+          - "{{ sonarqube_port }}:9000"
+        env:
+          SONARQUBE_JDBC_URL: "jdbc:postgresql://db:5432/sonar"
+        volumes:
+          - sonarqube_data:/opt/sonarqube/data
+          - sonarqube_extensions:/opt/sonarqube/extensions
+      tags:
+        - sonarqube
+
+    - name: Create Docker volumes for SonarQube
+      docker_volume:
+        name: sonarqube_data
+        state: present
+      tags:
+        - sonarqube
+
+    - name: Create Docker volumes for SonarQube extensions
+      docker_volume:
+        name: sonarqube_extensions
+        state: present
+      tags:
+        - sonarqube
+
+    - name: Pull Nexus Docker image
+      docker_image:
+        name: sonatype/nexus3
+        source: pull
+      tags:
+        - nexus
+
+    - name: Run Nexus container
+      docker_container:
+        name: "{{ nexus_container_name }}"
+        image: sonatype/nexus3
+        state: started
+        restart_policy: always
+        ports:
+          - "{{ nexus_port }}:8081"
+        volumes:
+          - nexus-data:/nexus-data
+      tags:
+        - nexus
+
+    - name: Create Docker volume for Nexus
+      docker_volume:
+        name: nexus-data
+        state: present
+      tags:
+        - nexus
+
+    - name: Display Jenkins initial admin password
+      command: cat /var/lib/jenkins/secrets/initialAdminPassword
+      register: jenkins_initial_password
+      tags:
+        - jenkins
+
+    - name: Print Jenkins initial admin password
+      debug:
+        msg: "Jenkins Initial Admin Password: {{ jenkins_initial_password.stdout }}"
+      tags:
+        - jenkins
+
+    - name: Display Nexus initial admin password
+      community.docker.docker_container_exec:
+        container: "{{ nexus_container_name }}"
+        command: cat /nexus-data/admin.password
+      register: nexus_initial_password
+      tags:
+        - nexus
+
+    - name: Print Nexus initial admin password
+      debug:
+        msg: "Nexus Initial Admin Password: {{ nexus_initial_password.stdout }}"
+      tags:
+        - nexus
+
+  handlers:
+    - name: Restart Docker
+      systemd:
+        name: docker
+        state: restarted
