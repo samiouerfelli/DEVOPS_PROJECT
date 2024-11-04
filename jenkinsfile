@@ -12,45 +12,57 @@ pipeline {
     stages {
         stage('Clean') {
             steps {
-                sh "mvn clean"
+                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                    sh "mvn clean"
+                }
             }
         }
 
         stage('Setup DB') {
             steps {
-                script {
-                    sh 'docker-compose up -d'
+                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                    script {
+                        sh 'docker-compose up -d'
+                    }
                 }
             }
         }
 
         stage('Compile') {
             steps {
-                sh "mvn compile"
+                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                    sh "mvn compile"
+                }
             }
         }
 
         stage('Test') {
             steps {
-                sh "mvn test -Dspring.profiles.active=local"
+                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                    sh "mvn test -Dspring.profiles.active=local"
+                }
             }
         }
 
         stage('Generate JaCoCo Report') {
             steps {
-                sh "mvn jacoco:report"
+                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                    sh "mvn jacoco:report"
+                }
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                script {
-                    withSonarQubeEnv('sonar') {
-                        sh '''
-                            $SCANNER_HOME/bin/sonar-scanner \
-                            -Dsonar.projectName=etudiant-service \
-                            -Dsonar.projectKey=etudiant-service
-                        '''
+                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                    script {
+                        withSonarQubeEnv('sonar') {
+                            sh '''
+                                $SCANNER_HOME/bin/sonar-scanner \
+                                -Dsonar.projectName=etudiant-service \
+                                -Dsonar.projectKey=etudiant-service
+                            '''
+                        }
                     }
                 }
             }
@@ -58,31 +70,39 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                script {
-                    waitForQualityGate abortPipeline: true, credentialsId: 'sonar-token'
+                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                    script {
+                        waitForQualityGate abortPipeline: true, credentialsId: 'sonar-token'
+                    }
                 }
             }
         }
 
         stage('Build') {
             steps {
-                sh "mvn package -Dspring.profiles.active=local"
+                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                    sh "mvn package -Dspring.profiles.active=local"
+                }
             }
         }
 
         stage('Publish To Nexus') {
             steps {
-                withMaven(globalMavenSettingsConfig: 'global-settings', jdk: 'JDK17', maven: 'Maven3', traceability: true) {
-                    sh "mvn deploy -Dspring.profiles.active=local"
+                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                    withMaven(globalMavenSettingsConfig: 'global-settings', jdk: 'JDK17', maven: 'Maven3', traceability: true) {
+                        sh "mvn deploy -Dspring.profiles.active=local"
+                    }
                 }
             }
         }
 
         stage('Build & Tag Docker Image') {
             steps {
-                script {
-                    withDockerRegistry(credentialsId: 'docker-cred') {
-                        sh "docker build -t samixouerfelli/etudiant-service:latest ."
+                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                    script {
+                        withDockerRegistry(credentialsId: 'docker-cred') {
+                            sh "docker build -t samixouerfelli/etudiant-service:latest ."
+                        }
                     }
                 }
             }
@@ -90,9 +110,11 @@ pipeline {
 
         stage('Push Docker Image') {
             steps {
-                script {
-                    withDockerRegistry(credentialsId: 'docker-cred') {
-                        sh "docker push samixouerfelli/etudiant-service:latest"
+                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                    script {
+                        withDockerRegistry(credentialsId: 'docker-cred') {
+                            sh "docker push samixouerfelli/etudiant-service:latest"
+                        }
                     }
                 }
             }
@@ -100,31 +122,35 @@ pipeline {
 
         stage('Deploy To Kubernetes') {
             steps {
-                withKubeConfig(
-                    caCertificate: '', 
-                    clusterName: 'devops-k8s-cluster', 
-                    contextName: 'devops-k8s-cluster', 
-                    credentialsId: 'k8-cred', 
-                    namespace: 'devops-project', 
-                    serverUrl: 'https://devops-k8s-devops-resource--8172e1-o65hj7y3.hcp.centralus.azmk8s.io:443'
-                ) {
-                    sh "kubectl apply -f etudiant-dep.yml"
+                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                    withKubeConfig(
+                        caCertificate: '',
+                        clusterName: 'devops-k8s-cluster',
+                        contextName: 'devops-k8s-cluster',
+                        credentialsId: 'k8-cred',
+                        namespace: 'devops-project',
+                        serverUrl: 'https://devops-k8s-devops-resource--8172e1-o65hj7y3.hcp.centralus.azmk8s.io:443'
+                    ) {
+                        sh "kubectl apply -f etudiant-dep.yml"
+                    }
                 }
             }
         }
 
         stage('Verify the Deployment') {
             steps {
-                withKubeConfig(
-                    caCertificate: '', 
-                    clusterName: 'devops-k8s-cluster', 
-                    contextName: 'devops-k8s-cluster', 
-                    credentialsId: 'k8-cred', 
-                    namespace: 'devops-project', 
-                    serverUrl: 'https://devops-k8s-devops-resource--8172e1-o65hj7y3.hcp.centralus.azmk8s.io:443'
-                ) {
-                    sh "kubectl get pods -n devops-project"
-                    sh "kubectl get svc -n devops-project"
+                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                    withKubeConfig(
+                        caCertificate: '',
+                        clusterName: 'devops-k8s-cluster',
+                        contextName: 'devops-k8s-cluster',
+                        credentialsId: 'k8-cred',
+                        namespace: 'devops-project',
+                        serverUrl: 'https://devops-k8s-devops-resource--8172e1-o65hj7y3.hcp.centralus.azmk8s.io:443'
+                    ) {
+                        sh "kubectl get pods -n devops-project"
+                        sh "kubectl get svc -n devops-project"
+                    }
                 }
             }
         }
@@ -137,6 +163,9 @@ pipeline {
                 def buildNumber = env.BUILD_NUMBER
                 def pipelineStatus = currentBuild.result ?: 'SUCCESS'
                 def bannerColor = pipelineStatus.toUpperCase() == 'SUCCESS' ? 'green' : 'red'
+                def failedStage = currentBuild.rawBuild.stages.find { it.status.toString() == 'FAILED' }
+                def failedStageName = failedStage ? failedStage.name : 'None'
+                def logSnippet = failedStage ? currentBuild.rawBuild.log.substring(failedStage.startTimeInMillis, Math.min(failedStage.startTimeInMillis + 1000, currentBuild.rawBuild.log.size())) : 'No error details available'
 
                 def body = """
                     <html>
@@ -146,7 +175,9 @@ pipeline {
                         <div style="background-color: ${bannerColor}; padding: 10px;">
                             <h3 style="color: white;">Pipeline Status: ${pipelineStatus.toUpperCase()}</h3>
                         </div>
-                        <p>Check the <a href="${BUILD_URL}">console output</a>.</p>
+                        <p><b>Failed Stage:</b> ${failedStageName}</p>
+                        <p><b>Error Log:</b><pre>${logSnippet}</pre></p>
+                        <p>Check the <a href="${BUILD_URL}">console output</a> for full details.</p>
                     </div>
                     </body>
                     </html>
