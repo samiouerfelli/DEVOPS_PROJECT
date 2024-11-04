@@ -6,11 +6,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import tn.esprit.tpfoyer.Repository.UniversiteRepository;
-import tn.esprit.tpfoyer.Entities.Universite;
-import tn.esprit.tpfoyer.Entities.UniversiteDTO;
-import tn.esprit.tpfoyer.FeignClient.FoyerClient;
-import tn.esprit.tpfoyer.Services.UniversiteServiceImpl;
+import tn.esprit.tpfoyer.repository.UniversiteRepository;
+import tn.esprit.tpfoyer.entities.Universite;
+import tn.esprit.tpfoyer.entities.UniversiteDTO;
+import tn.esprit.tpfoyer.feignclient.FoyerClient;
+import tn.esprit.tpfoyer.services.UniversiteServiceImpl;
 
 import java.util.Collections;
 import java.util.List;
@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
-public class UniversiteServiceImplTest {
+ class UniversiteServiceImplTest {
 
     @InjectMocks
     private UniversiteServiceImpl universiteService;
@@ -37,7 +37,7 @@ public class UniversiteServiceImplTest {
     }
 
     @Test
-    public void testAddUniversite() {
+     void testAddUniversite() {
         Universite universite = new Universite();
         universite.setIdUniversite(1L);
         universite.setNomUniversite("Test University");
@@ -52,7 +52,7 @@ public class UniversiteServiceImplTest {
     }
 
     @Test
-    public void testAssignFoyerToUniversite() {
+     void testAssignFoyerToUniversite() {
         Universite universite = new Universite();
         universite.setIdUniversite(1L);
 
@@ -66,7 +66,7 @@ public class UniversiteServiceImplTest {
     }
 
     @Test
-    public void testRetrieveUniversite() {
+     void testRetrieveUniversite() {
         Universite mockUniversite = new Universite();
         mockUniversite.setIdUniversite(1L);
         mockUniversite.setNomUniversite("Test University");
@@ -81,7 +81,7 @@ public class UniversiteServiceImplTest {
     }
 
     @Test
-    public void testRetrieveAllUniversites() {
+     void testRetrieveAllUniversites() {
         Universite universite1 = new Universite();
         universite1.setIdUniversite(1L);
         universite1.setNomUniversite("University A");
@@ -100,7 +100,7 @@ public class UniversiteServiceImplTest {
     }
 
     @Test
-    public void testDeleteUniversite() {
+     void testDeleteUniversite() {
         Universite universite = new Universite();
         universite.setIdUniversite(1L);
         universite.setIdFoyer(2L);
@@ -114,7 +114,7 @@ public class UniversiteServiceImplTest {
     }
 
     @Test
-    public void testUnassignFoyerFromUniversite() {
+     void testUnassignFoyerFromUniversite() {
         Universite universite = new Universite();
         universite.setIdUniversite(1L);
         universite.setIdFoyer(2L);
@@ -128,7 +128,7 @@ public class UniversiteServiceImplTest {
     }
 
     @Test
-    public void testGetUniversitesWithoutFoyer() {
+     void testGetUniversitesWithoutFoyer() {
         Universite universite = new Universite();
         universite.setNomUniversite("University Without Foyer");
 
@@ -139,7 +139,7 @@ public class UniversiteServiceImplTest {
     }
 
     @Test
-    public void testUpdateUniversite() {
+     void testUpdateUniversite() {
         Universite universite = new Universite();
         universite.setIdUniversite(1L);
         universite.setNomUniversite("Original Name");

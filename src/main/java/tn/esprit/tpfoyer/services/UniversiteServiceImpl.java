@@ -1,13 +1,13 @@
-package tn.esprit.tpfoyer.Services;
+package tn.esprit.tpfoyer.services;
 
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
-import tn.esprit.tpfoyer.Entities.FoyerDTO;
-import tn.esprit.tpfoyer.Entities.Universite;
-import tn.esprit.tpfoyer.Entities.UniversiteDTO;
-import tn.esprit.tpfoyer.FeignClient.FoyerClient;
-import tn.esprit.tpfoyer.Repository.UniversiteRepository;
+import tn.esprit.tpfoyer.entities.FoyerDTO;
+import tn.esprit.tpfoyer.entities.Universite;
+import tn.esprit.tpfoyer.entities.UniversiteDTO;
+import tn.esprit.tpfoyer.feignclient.FoyerClient;
+import tn.esprit.tpfoyer.repository.UniversiteRepository;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,6 +18,9 @@ public class UniversiteServiceImpl  {
 
     UniversiteRepository universiteRepository;
     FoyerClient foyerClient;
+
+    private static final String MESSAGE = "Universite not found ";
+
 
     public UniversiteDTO convertToDto(Universite universite) {
         UniversiteDTO universiteDTO = new UniversiteDTO();
@@ -34,7 +37,7 @@ public class UniversiteServiceImpl  {
 
     public void assignFoyerToUniversite(Long idUniversite, Long idFoyer) {
         Universite universite = universiteRepository.findById(idUniversite)
-                .orElseThrow(() -> new RuntimeException("Universite not found"));
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
 
         universite.setIdFoyer(idFoyer);
         universiteRepository.save(universite);
@@ -42,7 +45,7 @@ public class UniversiteServiceImpl  {
 
     public UniversiteDTO retrieveUniversite(Long idUniversite) {
         Universite universite = universiteRepository.findById(idUniversite)
-                .orElseThrow(() -> new RuntimeException("Universite not found"));
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
 
         UniversiteDTO universiteDTO = convertToDto(universite);
 
@@ -80,7 +83,7 @@ public class UniversiteServiceImpl  {
 
     public UniversiteDTO updateUniversite(Long idUniversite, UniversiteDTO universiteDTO) {
         Universite universite = universiteRepository.findById(idUniversite)
-                .orElseThrow(() -> new RuntimeException("Universite not found"));
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
 
         universite.setNomUniversite(universiteDTO.getNomUniversite());
         universite.setAdresse(universiteDTO.getAdresse());
@@ -95,7 +98,7 @@ public class UniversiteServiceImpl  {
 
     public void deleteUniversite(Long idUniversite) {
         Universite universite = universiteRepository.findById(idUniversite)
-                .orElseThrow(() -> new RuntimeException("Universite not found"));
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
 
         if (universite.getIdFoyer() != null) {
             foyerClient.unassignFoyerFromUniversite(universite.getIdFoyer());
@@ -105,7 +108,7 @@ public class UniversiteServiceImpl  {
     }
     public void unassignFoyerFromUniversite(Long idUniversite) {
         Universite universite = universiteRepository.findById(idUniversite)
-                .orElseThrow(() -> new RuntimeException("Universite not found"));
+                .orElseThrow(() -> new RuntimeException(MESSAGE));
         universite.setIdFoyer(null);
         universiteRepository.save(universite);
     }

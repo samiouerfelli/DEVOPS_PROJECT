@@ -1,10 +1,10 @@
-package tn.esprit.tpfoyer.FeignClient;
+package tn.esprit.tpfoyer.feignclient;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
-import tn.esprit.tpfoyer.Entities.FoyerDTO;
+import tn.esprit.tpfoyer.entities.FoyerDTO;
 
 @FeignClient(name = "foyer-service")
 

@@ -7,10 +7,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import tn.esprit.tpfoyer.Entities.Universite;
-import tn.esprit.tpfoyer.RestController.UniversiteRestController;
-import tn.esprit.tpfoyer.Services.UniversiteServiceImpl;
-import tn.esprit.tpfoyer.Entities.UniversiteDTO;
+import tn.esprit.tpfoyer.entities.Universite;
+import tn.esprit.tpfoyer.restcontroller.UniversiteRestController;
+import tn.esprit.tpfoyer.services.UniversiteServiceImpl;
+import tn.esprit.tpfoyer.entities.UniversiteDTO;
 
 import java.util.List;
 
@@ -20,7 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UniversiteRestController.class)
-public class UniversiteRestControllerTest {
+ class UniversiteRestControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -29,7 +29,7 @@ public class UniversiteRestControllerTest {
     private UniversiteServiceImpl universiteService;
 
     @Test
-    public void testAddUniversite() throws Exception {
+     void testAddUniversite() throws Exception {
         Universite newUniversite = new Universite();
         newUniversite.setIdUniversite(1L);
         newUniversite.setNomUniversite("Test University");
@@ -46,14 +46,14 @@ public class UniversiteRestControllerTest {
     }
 
     @Test
-    public void testAssignFoyerToUniversite() throws Exception {
+     void testAssignFoyerToUniversite() throws Exception {
         mockMvc.perform(put("/api/v1/universites/1/assign-foyer")
                         .param("idFoyer", "2"))
                 .andExpect(status().isNoContent());
     }
 
     @Test
-    public void testRetrieveUniversite() throws Exception {
+     void testRetrieveUniversite() throws Exception {
         UniversiteDTO mockUniversite = new UniversiteDTO();
         mockUniversite.setIdUniversite(1L);
         mockUniversite.setNomUniversite("Test University");
@@ -69,7 +69,7 @@ public class UniversiteRestControllerTest {
     }
 
     @Test
-    public void testRetrieveAllUniversites() throws Exception {
+     void testRetrieveAllUniversites() throws Exception {
         UniversiteDTO universite1 = new UniversiteDTO();
         universite1.setIdUniversite(1L);
         universite1.setNomUniversite("University A");
@@ -88,20 +88,20 @@ public class UniversiteRestControllerTest {
     }
 
     @Test
-    public void testDeleteUniversite() throws Exception {
+     void testDeleteUniversite() throws Exception {
         mockMvc.perform(delete("/api/v1/universites/delete-universite/1"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Universite with ID 1 has been deleted successfully."));
     }
 
     @Test
-    public void testUnassignFoyerFromUniversite() throws Exception {
+     void testUnassignFoyerFromUniversite() throws Exception {
         mockMvc.perform(put("/api/v1/universites/unassign-foyer/1"))
                 .andExpect(status().isNoContent());
     }
 
     @Test
-    public void testGetUniversitesWithoutFoyer() throws Exception {
+     void testGetUniversitesWithoutFoyer() throws Exception {
         UniversiteDTO universiteDTO = new UniversiteDTO();
         universiteDTO.setIdUniversite(1L);
         universiteDTO.setNomUniversite("University Without Foyer");
@@ -114,7 +114,7 @@ public class UniversiteRestControllerTest {
     }
 
     @Test
-    public void testUpdateUniversite() throws Exception {
+     void testUpdateUniversite() throws Exception {
         UniversiteDTO universiteDTO = new UniversiteDTO();
         universiteDTO.setIdUniversite(1L);
         universiteDTO.setNomUniversite("Updated University");
