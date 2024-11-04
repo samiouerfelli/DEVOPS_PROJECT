@@ -9,7 +9,7 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials-id')
-        DOCKER_IMAGE = 'MelekBejaoui-5Arctic1-G2-devopsProject:latest'
+        DOCKER_IMAGE = 'melekbejaoui-5arctic1-g2-devopsproject:latest'
         SONAR_PROJECT_KEY = 'devops_project'
         NEXUS_VERSION = "nexus3"
         NEXUS_PROTOCOL = "http"
@@ -272,7 +272,7 @@ pipeline {
             }
         }
 
-        stage('Push Docker Image to Nexus') {
+        stage('Push Docker to Nexus') {
             steps {
                 script {
                     def imageName = "${DOCKER_IMAGE.split(':')[0].split('/')[-1]}" // Extracts only the image name
@@ -305,7 +305,7 @@ pipeline {
             }
         }
 
-        stage('Push Docker Image to Docker Hub') {
+        stage('Push Docker Image to Hub') {
             steps {
                 script {
                     echo 'Pushing Docker image to Docker Hub...'
@@ -315,7 +315,7 @@ pipeline {
             }
         }
 
-        stage('Test Kubernetes Access') {
+        stage('Test K8S Access') {
             steps {
                 script {
                     sh '''
@@ -326,7 +326,7 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes') {             
+        stage('Deploy to K8S') {             
             steps {                 
                 script {                     
                     sh '''                         
