@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import jakarta.validation.constraints.NotBlank;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -30,5 +31,6 @@ public class Etudiant {
     Date dateNaissance;
 
     @ManyToMany(mappedBy = "etudiants")
-    Set<Reservation> reservations;
+    Set<Reservation> reservations = new HashSet<>(); // Initialize to avoid null
+
 }

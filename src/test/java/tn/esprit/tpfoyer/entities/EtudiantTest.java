@@ -21,13 +21,14 @@ class EtudiantTest {
 
     @Test
     void testDefaultConstructor() {
+        // Assert that default constructor initializes fields to default values
         assertEquals(0, etudiant.getIdEtudiant());
         assertNull(etudiant.getNomEtudiant());
         assertNull(etudiant.getPrenomEtudiant());
         assertEquals(0, etudiant.getCinEtudiant());
         assertNull(etudiant.getDateNaissance());
-        assertNotNull(etudiant.getReservations());
-        assertTrue(etudiant.getReservations().isEmpty());
+        assertNotNull(etudiant.getReservations()); // Ensure this is not null
+        assertTrue(etudiant.getReservations().isEmpty()); // Should be empty by default
     }
 
     @Test
