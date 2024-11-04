@@ -15,7 +15,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class BlocServiceImplTest {
+ class BlocServiceImplTest {
 
     @Mock
     private BlocRepository blocRepository;
@@ -87,16 +87,43 @@ public class BlocServiceImplTest {
         verify(blocRepository, times(1)).deleteById(1L);
     }
 
-    @Test
-    void testRetrieveBlocsSelonCapacite() {
-        when(blocRepository.findAll()).thenReturn(Arrays.asList(bloc));
 
+
+    @Test
+    void testRetrieveBlocsSelonCapacite_WithValidCapacity() {
+        // Arrange
+        Bloc bloc1 = new Bloc(); // Create a Bloc that meets the condition
+        bloc1.setCapaciteBloc(60); // This should be >= 50
+        Bloc bloc2 = new Bloc(); // Create a Bloc that does not meet the condition
+        bloc2.setCapaciteBloc(40); // This is < 50
+        when(blocRepository.findAll()).thenReturn(Arrays.asList(bloc1, bloc2));
+
+        // Act
         List<Bloc> blocs = blocService.retrieveBlocsSelonCapacite(50);
 
-        assertEquals(1, blocs.size());
+        // Assert
+        assertEquals(1, blocs.size()); // Only one bloc meets the condition
         assertTrue(blocs.get(0).getCapaciteBloc() >= 50);
         verify(blocRepository, times(1)).findAll();
     }
+
+    @Test
+    void testRetrieveBlocsSelonCapacite_WithNoValidBlocs() {
+        // Arrange
+        Bloc bloc1 = new Bloc();
+        bloc1.setCapaciteBloc(40); // This is < 50
+        Bloc bloc2 = new Bloc();
+        bloc2.setCapaciteBloc(30); // This is also < 50
+        when(blocRepository.findAll()).thenReturn(Arrays.asList(bloc1, bloc2));
+
+        // Act
+        List<Bloc> blocs = blocService.retrieveBlocsSelonCapacite(50);
+
+        // Assert
+        assertTrue(blocs.isEmpty()); // Expect an empty list since none meet the condition
+        verify(blocRepository, times(1)).findAll();
+    }
+
 
     @Test
     void testFindBlocsSansFoyer() {
