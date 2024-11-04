@@ -11,6 +11,7 @@ public class TpFoyerApplicationTests {
     void contextLoads() {
         // Ajoutez une assertion pour vérifier que le contexte se charge correctement
         assertTrue(true); // Changez ceci en l'assertion appropriée pour votre test
+        TpFoyerApplication.main(new String[] {});
     }
 
 }
