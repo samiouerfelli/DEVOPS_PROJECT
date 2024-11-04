@@ -51,7 +51,7 @@ pipeline {
             }
         }
 
-        stage('Run Tests with JaCoCo') {
+        stage('JaCoCo Tests') {
             steps {
                 sh 'mvn test org.jacoco:jacoco-maven-plugin:report'
             }
