@@ -23,7 +23,6 @@ pipeline {
         DEPENDENCY_CHECK_DIR = "${WORKSPACE}/dependency-check-reports"
         OWASP_REPORT_DIR = "${WORKSPACE}/dependency-check-reports"
         TRIVY_REPORT_DIR = 'trivy-reports'
-        MAX_CRITICAL_VULNS = 20
         TRIVY_CACHE_DIR = '/tmp/trivy' 
     }
 
@@ -242,23 +241,14 @@ pipeline {
             }
         }
 
-        stage('Security Scan') {
+        stage('Trivy Security Scan') {
             steps {
                 script {
                     sh """
                         mkdir -p trivy-reports
                         
-                        # Increase timeout and run scan
                         export TRIVY_TIMEOUT=5m
                         
-                        trivy image \
-                            --cache-dir /tmp/trivy \
-                            --scanners vuln \
-                            --severity HIGH,CRITICAL \
-                            --format table \
-                            ${DOCKER_IMAGE} > trivy-reports/summary.txt
-                        
-                        # Generate detailed JSON report
                         trivy image \
                             --cache-dir /tmp/trivy \
                             --scanners vuln \
@@ -267,43 +257,18 @@ pipeline {
                             --output trivy-reports/report.json \
                             ${DOCKER_IMAGE}
                         
-                        # Extract and display critical vulnerabilities
-                        echo "=== Critical Vulnerabilities Summary ===" >> trivy-reports/summary.txt
-                        cat trivy-reports/report.json | jq -r '
-                            .Results[] | 
-                            select(.Vulnerabilities != null) | 
-                            .Vulnerabilities[] | 
-                            select(.Severity == "CRITICAL") | 
-                            "Package: \\(.PkgName)\\nVersion: \\(.InstalledVersion)\\nFix Version: \\(.FixedVersion)\\nTitle: \\(.Title)\\n"
-                        ' >> trivy-reports/summary.txt
-                        
                         # Count vulnerabilities
                         CRIT_COUNT=\$(cat trivy-reports/report.json | jq -r '[.Results[].Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length')
                         
                         echo "Found \${CRIT_COUNT} critical vulnerabilities"
-                        cat trivy-reports/summary.txt
                         
-                        # Archive the reports before potentially failing
-                        cp trivy-reports/summary.txt trivy-reports/scan-results.txt
+                        if [ \${CRIT_COUNT} -gt 20 ]; then
+                            echo "Security scan failed: Critical vulnerabilities (\${CRIT_COUNT}) exceed threshold (20)"
+                            exit 1
+                        fi
                     """
                     
                     archiveArtifacts artifacts: "trivy-reports/*"
-                    
-                    def criticalCount = sh(
-                        script: "cat trivy-reports/report.json | jq -r '[.Results[].Vulnerabilities[]? | select(.Severity == \"CRITICAL\")] | length'",
-                        returnStdout: true
-                    ).trim().toInteger()
-                    
-                    if (criticalCount > 5) {
-                        error """
-                            Security scan failed: Found ${criticalCount} critical vulnerabilities
-                            Please review the detailed report in Jenkins artifacts: trivy-reports/summary.txt
-                            Consider:
-                            1. Updating base image to latest version
-                            2. Reviewing and updating dependencies
-                            3. Adding necessary security patches
-                        """
-                    }
                 }
             }
         }
