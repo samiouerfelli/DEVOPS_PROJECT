@@ -23,7 +23,8 @@ pipeline {
         DEPENDENCY_CHECK_DIR = "${WORKSPACE}/dependency-check-reports"
         OWASP_REPORT_DIR = "${WORKSPACE}/dependency-check-reports"
         TRIVY_REPORT_DIR = 'trivy-reports'
-        MAX_CRITICAL_VULNS = 20 
+        MAX_CRITICAL_VULNS = 20
+        TRIVY_CACHE_DIR = '/tmp/trivy' 
     }
 
     stages {
@@ -245,29 +246,28 @@ pipeline {
             steps {
                 script {
                     sh """
-                        mkdir -p ${TRIVY_REPORT_DIR}
+                        mkdir -p ${TRIVY_REPORT_DIR} ${TRIVY_CACHE_DIR}
                         
-                        # Run Trivy scan for vulnerabilities only (skip secrets for speed)
-                        trivy image \\
-                            --scanners vuln \\
-                            --severity HIGH,CRITICAL \\
-                            --format json \\
-                            --output ${TRIVY_REPORT_DIR}/report.json \\
-                            $DOCKER_IMAGE
+                        trivy image \
+                            --cache-dir ${TRIVY_CACHE_DIR} \
+                            --scanners vuln \
+                            --severity HIGH,CRITICAL \
+                            --format json \
+                            --output ${TRIVY_REPORT_DIR}/report.json \
+                            ${DOCKER_IMAGE}
 
-                        # Check for critical vulnerabilities and fail if exceeds threshold
-                        CRITICAL_COUNT=\$(cat ${TRIVY_REPORT_DIR}/report.json | jq -r '.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities[] | select(.Severity == "CRITICAL") | .VulnerabilityID' | wc -l)
+                        # Check vulnerabilities and exit if exceeds threshold
+                        CRIT_COUNT=\$(cat ${TRIVY_REPORT_DIR}/report.json | jq -r '[.Results[].Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length')
                         
-                        echo "Found \$CRITICAL_COUNT critical vulnerabilities"
+                        echo "Found \${CRIT_COUNT} critical vulnerabilities"
                         
-                        if [ \$CRITICAL_COUNT -gt ${MAX_CRITICAL_VULNS} ]; then
-                            echo "Failed: Too many critical vulnerabilities!"
+                        if [ \${CRIT_COUNT} -gt ${MAX_CRITICAL_VULNS} ]; then
+                            echo "Security scan failed: Critical vulnerabilities (\${CRIT_COUNT}) exceed threshold (${MAX_CRITICAL_VULNS})"
                             exit 1
                         fi
                     """
                     
-                    // Archive the report
-                    archiveArtifacts "${TRIVY_REPORT_DIR}/*"
+                    archiveArtifacts artifacts: "${TRIVY_REPORT_DIR}/*"
                 }
             }
         }
