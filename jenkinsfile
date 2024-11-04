@@ -7,80 +7,49 @@ pipeline {
     }
     environment {
         SCANNER_HOME = tool 'sonar-scanner'
-        currentStage = '' // Variable to track the current stage name
-        logFile = '' // Variable to track the log file for each stage
-        workspaceDir = '' // Variable to store workspace directory
     }
 
     stages {
-        stage('Initialize') {
-            steps {
-                script {
-                    workspaceDir = pwd()
-                }
-            }
-        }
-
         stage('Clean') {
             steps {
-                script {
-                    currentStage = 'Clean'
-                    logFile = "${workspaceDir}/clean.log"
-                }
-                sh "mvn clean > ${logFile} 2>&1"
+                sh "mvn clean"
             }
         }
 
         stage('Setup DB') {
             steps {
                 script {
-                    currentStage = 'Setup DB'
-                    logFile = "${workspaceDir}/setup_db.log"
+                    sh 'docker-compose up -d'
                 }
-                sh "docker-compose up -d > ${logFile} 2>&1"
             }
         }
 
         stage('Compile') {
             steps {
-                script {
-                    currentStage = 'Compile'
-                    logFile = "${workspaceDir}/compile.log"
-                }
-                sh "mvn compile > ${logFile} 2>&1"
+                sh "mvn compile"
             }
         }
 
         stage('Test') {
             steps {
-                script {
-                    currentStage = 'Test'
-                    logFile = "${workspaceDir}/test.log"
-                }
-                sh "mvn test -Dspring.profiles.active=local > ${logFile} 2>&1"
+                sh "mvn test -Dspring.profiles.active=local"
             }
         }
 
         stage('Generate JaCoCo Report') {
             steps {
-                script {
-                    currentStage = 'Generate JaCoCo Report'
-                    logFile = "${workspaceDir}/jacoco_report.log"
-                }
-                sh "mvn jacoco:report > ${logFile} 2>&1"
+                sh "mvn jacoco:report"
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    currentStage = 'SonarQube Analysis'
-                    logFile = "${workspaceDir}/sonarqube_analysis.log"
                     withSonarQubeEnv('sonar') {
                         sh '''
                             $SCANNER_HOME/bin/sonar-scanner \
                             -Dsonar.projectName=etudiant-service \
-                            -Dsonar.projectKey=etudiant-service > ${logFile} 2>&1
+                            -Dsonar.projectKey=etudiant-service
                         '''
                     }
                 }
@@ -90,8 +59,6 @@ pipeline {
         stage('Quality Gate') {
             steps {
                 script {
-                    currentStage = 'Quality Gate'
-                    logFile = "${workspaceDir}/quality_gate.log"
                     waitForQualityGate abortPipeline: true, credentialsId: 'sonar-token'
                 }
             }
@@ -99,22 +66,14 @@ pipeline {
 
         stage('Build') {
             steps {
-                script {
-                    currentStage = 'Build'
-                    logFile = "${workspaceDir}/build.log"
-                }
-                sh "mvn package -Dspring.profiles.active=local > ${logFile} 2>&1"
+                sh "mvn package -Dspring.profiles.active=local"
             }
         }
 
         stage('Publish To Nexus') {
             steps {
-                script {
-                    currentStage = 'Publish To Nexus'
-                    logFile = "${workspaceDir}/publish_to_nexus.log"
-                    withMaven(globalMavenSettingsConfig: 'global-settings', jdk: 'JDK17', maven: 'Maven3', traceability: true) {
-                        sh "mvn deploy -Dspring.profiles.active=local > ${logFile} 2>&1"
-                    }
+                withMaven(globalMavenSettingsConfig: 'global-settings', jdk: 'JDK17', maven: 'Maven3', traceability: true) {
+                    sh "mvn deploy -Dspring.profiles.active=local"
                 }
             }
         }
@@ -122,10 +81,8 @@ pipeline {
         stage('Build & Tag Docker Image') {
             steps {
                 script {
-                    currentStage = 'Build & Tag Docker Image'
-                    logFile = "${workspaceDir}/docker_build_tag.log"
                     withDockerRegistry(credentialsId: 'docker-cred') {
-                        sh "docker build -t samixouerfelli/etudiant-service:latest . > ${logFile} 2>&1"
+                        sh "docker build -t samixouerfelli/etudiant-service:latest ."
                     }
                 }
             }
@@ -134,10 +91,8 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    currentStage = 'Push Docker Image'
-                    logFile = "${workspaceDir}/docker_push.log"
                     withDockerRegistry(credentialsId: 'docker-cred') {
-                        sh "docker push samixouerfelli/etudiant-service:latest > ${logFile} 2>&1"
+                        sh "docker push samixouerfelli/etudiant-service:latest"
                     }
                 }
             }
@@ -145,39 +100,31 @@ pipeline {
 
         stage('Deploy To Kubernetes') {
             steps {
-                script {
-                    currentStage = 'Deploy To Kubernetes'
-                    logFile = "${workspaceDir}/kubernetes_deploy.log"
-                    withKubeConfig(
-                        caCertificate: '', 
-                        clusterName: 'devops-k8s-cluster', 
-                        contextName: 'devops-k8s-cluster', 
-                        credentialsId: 'k8-cred', 
-                        namespace: 'devops-project', 
-                        serverUrl: 'https://devops-k8s-devops-resource--8172e1-o65hj7y3.hcp.centralus.azmk8s.io:443'
-                    ) {
-                        sh "kubectl apply -f etudiant-dep.yml > ${logFile} 2>&1"
-                    }
+                withKubeConfig(
+                    caCertificate: '', 
+                    clusterName: 'devops-k8s-cluster', 
+                    contextName: 'devops-k8s-cluster', 
+                    credentialsId: 'k8-cred', 
+                    namespace: 'devops-project', 
+                    serverUrl: 'https://devops-k8s-devops-resource--8172e1-o65hj7y3.hcp.centralus.azmk8s.io:443'
+                ) {
+                    sh "kubectl apply -f etudiant-dep.yml"
                 }
             }
         }
 
         stage('Verify the Deployment') {
             steps {
-                script {
-                    currentStage = 'Verify the Deployment'
-                    logFile = "${workspaceDir}/kubernetes_verify.log"
-                    withKubeConfig(
-                        caCertificate: '', 
-                        clusterName: 'devops-k8s-cluster', 
-                        contextName: 'devops-k8s-cluster', 
-                        credentialsId: 'k8-cred', 
-                        namespace: 'devops-project', 
-                        serverUrl: 'https://devops-k8s-devops-resource--8172e1-o65hj7y3.hcp.centralus.azmk8s.io:443'
-                    ) {
-                        sh "kubectl get pods -n devops-project > ${logFile} 2>&1"
-                        sh "kubectl get svc -n devops-project >> ${logFile} 2>&1"
-                    }
+                withKubeConfig(
+                    caCertificate: '', 
+                    clusterName: 'devops-k8s-cluster', 
+                    contextName: 'devops-k8s-cluster', 
+                    credentialsId: 'k8-cred', 
+                    namespace: 'devops-project', 
+                    serverUrl: 'https://devops-k8s-devops-resource--8172e1-o65hj7y3.hcp.centralus.azmk8s.io:443'
+                ) {
+                    sh "kubectl get pods -n devops-project"
+                    sh "kubectl get svc -n devops-project"
                 }
             }
         }
@@ -190,20 +137,6 @@ pipeline {
                 def buildNumber = env.BUILD_NUMBER
                 def pipelineStatus = currentBuild.result ?: 'SUCCESS'
                 def bannerColor = pipelineStatus.toUpperCase() == 'SUCCESS' ? 'green' : 'red'
-                def htmlLogFile = "stage_logs.html" // Relative path for attachment
-
-                // Only gather error logs if the build has failed
-                if (pipelineStatus != 'SUCCESS' && fileExists(logFile)) {
-                    def errorSnippet = readFile(logFile).split('\n')[-10..-1].join("<br>")
-                    writeFile file: htmlLogFile, text: """
-                        <html>
-                        <body>
-                        <h2>Failed Stage: ${currentStage}</h2>
-                        <p><strong>Error Details (if any):</strong><br> ${errorSnippet}</p>
-                        </body>
-                        </html>
-                    """
-                }
 
                 def body = """
                     <html>
@@ -213,8 +146,7 @@ pipeline {
                         <div style="background-color: ${bannerColor}; padding: 10px;">
                             <h3 style="color: white;">Pipeline Status: ${pipelineStatus.toUpperCase()}</h3>
                         </div>
-                        <p><strong>Failed Stage:</strong> ${currentStage}</p>
-                        <p>Check the <a href="${BUILD_URL}">console output</a> for more details.</p>
+                        <p>Check the <a href="${BUILD_URL}">console output</a>.</p>
                     </div>
                     </body>
                     </html>
@@ -226,8 +158,7 @@ pipeline {
                     to: 'sami.ouerfelli@pm.me',
                     from: 'jenkins@server.com',
                     replyTo: 'jenkins@server.com',
-                    mimeType: 'text/html',
-                    attachmentsPattern: 'stage_logs.html' // Relative path for attachment
+                    mimeType: 'text/html'
                 )
             }
         }
