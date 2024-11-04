@@ -1,200 +1,200 @@
-#---
-## MySQL Deployment
-#apiVersion: apps/v1
-#kind: Deployment
-#metadata:
-#  name: mysql
-#spec:
-#  selector:
-#    matchLabels:
-#      app: mysql
-#  strategy:
-#    type: Recreate
-#  template:
-#    metadata:
-#      labels:
-#        app: mysql
-#    spec:
-#      containers:
-#      - image: mysql:8
-#        name: mysql
-#        env:
-#        - name: MYSQL_ROOT_PASSWORD
-#          value: "root"
-#        - name: MYSQL_DATABASE
-#          value: "db"
-#        ports:
-#        - containerPort: 3306
-#          name: mysql
-#---
-## MySQL Service
-#apiVersion: v1
-#kind: Service
-#metadata:
-#  name: mysql-service
-#spec:
-#  ports:
-#  - port: 3306
-#  selector:
-#    app: mysql
-#---
-## Java Application Deployment
-#apiVersion: apps/v1
-#kind: Deployment
-#metadata:
-#  name: foyerapp
-#spec:
-#  replicas: 1
-#  selector:
-#    matchLabels:
-#      app: foyerapp
-#  template:
-#    metadata:
-#      labels:
-#        app: foyerapp
-#    spec:
-#      containers:
-#      - name: foyerapp
-#        image: hamouda1412/foyerproject:latest
-#        ports:
-#        - containerPort: 8089
-#        env:
-#        - name: SPRING_DATASOURCE_URL
-#          value: jdbc:mysql://mysql-service:3306/db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-#        - name: SPRING_DATASOURCE_USERNAME
-#          value: root
-#        - name: SPRING_DATASOURCE_PASSWORD
-#          value: root
-#        - name: SERVER_ADDRESS
-#          value: "0.0.0.0"
-#---
-## Foyer Application Service
-#apiVersion: v1
-#kind: Service
-#metadata:
-#  name: foyerapp-service
-#spec:
-#  type: NodePort
-#  ports:
-#  - port: 80
-#    targetPort: 8089
-#    nodePort: 30080  # Specify a port in the range 30000-32767
-#  selector:
-#    app: foyerapp
-
 ---
 # MySQL Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mysql
+ name: mysql
 spec:
-  selector:
-    matchLabels:
-      app: mysql
-  strategy:
-    type: Recreate
-  template:
-    metadata:
-      labels:
-        app: mysql
-    spec:
-      serviceAccountName: mysql-sa  # Specify a restricted service account
-      containers:
-        - image: mysql:8
-          name: mysql
-          env:
-            - name: MYSQL_ROOT_PASSWORD
-              value: "root"
-            - name: MYSQL_DATABASE
-              value: "db"
-          ports:
-            - containerPort: 3306
-              name: mysql
-          resources:
-            requests:
-              memory: "256Mi"     # Request minimum memory
-              cpu: "250m"         # Request minimum CPU
-              storage: "1Gi"      # Request minimum storage
-            limits:
-              memory: "512Mi"     # Limit memory usage
-              cpu: "500m"         # Limit CPU usage
-              storage: "5Gi"      # Limit storage usage
+ selector:
+   matchLabels:
+     app: mysql
+ strategy:
+   type: Recreate
+ template:
+   metadata:
+     labels:
+       app: mysql
+   spec:
+     containers:
+     - image: mysql:8
+       name: mysql
+       env:
+       - name: MYSQL_ROOT_PASSWORD
+         value: "root"
+       - name: MYSQL_DATABASE
+         value: "db"
+       ports:
+       - containerPort: 3306
+         name: mysql
 ---
 # MySQL Service
 apiVersion: v1
 kind: Service
 metadata:
-  name: mysql-service
+ name: mysql-service
 spec:
-  ports:
-    - port: 3306
-  selector:
-    app: mysql
+ ports:
+ - port: 3306
+ selector:
+   app: mysql
 ---
 # Java Application Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: foyerapp
+ name: foyerapp
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: foyerapp
-  template:
-    metadata:
-      labels:
-        app: foyerapp
-    spec:
-      serviceAccountName: foyerapp-sa  # Specify a restricted service account
-      containers:
-        - name: foyerapp
-          image: hamouda1412/foyerproject-ahmeddridi:latest
-          ports:
-            - containerPort: 8089
-          env:
-            - name: SPRING_DATASOURCE_URL
-              value: jdbc:mysql://mysql-service:3306/db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-            - name: SPRING_DATASOURCE_USERNAME
-              value: root
-            - name: SPRING_DATASOURCE_PASSWORD
-              value: root
-            - name: SERVER_ADDRESS
-              value: "0.0.0.0"
-          resources:
-            requests:
-              memory: "512Mi"     # Request minimum memory
-              cpu: "500m"         # Request minimum CPU
-              storage: "2Gi"      # Request minimum storage
-            limits:
-              memory: "1Gi"       # Limit memory usage
-              cpu: "1"            # Limit CPU usage
-              storage: "10Gi"     # Limit storage usage
+ replicas: 1
+ selector:
+   matchLabels:
+     app: foyerapp
+ template:
+   metadata:
+     labels:
+       app: foyerapp
+   spec:
+     containers:
+     - name: foyerapp
+       image: hamouda1412/foyerproject-ahmeddridi:latest
+       ports:
+       - containerPort: 8089
+       env:
+       - name: SPRING_DATASOURCE_URL
+         value: jdbc:mysql://mysql-service:3306/db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+       - name: SPRING_DATASOURCE_USERNAME
+         value: root
+       - name: SPRING_DATASOURCE_PASSWORD
+         value: root
+       - name: SERVER_ADDRESS
+         value: "0.0.0.0"
 ---
 # Foyer Application Service
 apiVersion: v1
 kind: Service
 metadata:
-  name: foyerapp-service
+ name: foyerapp-service
 spec:
-  type: NodePort
-  ports:
-    - port: 80
-      targetPort: 8089
-      nodePort: 30080  # Specify a port in the range 30000-32767
-  selector:
-    app: foyerapp
+ type: NodePort
+ ports:
+ - port: 80
+   targetPort: 8089
+   nodePort: 30080  # Specify a port in the range 30000-32767
+ selector:
+   app: foyerapp
+
 ---
-# MySQL Service Account
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: mysql-sa
----
-# Foyer Application Service Account
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: foyerapp-sa
+# # MySQL Deployment
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: mysql
+# spec:
+#   selector:
+#     matchLabels:
+#       app: mysql
+#   strategy:
+#     type: Recreate
+#   template:
+#     metadata:
+#       labels:
+#         app: mysql
+#     spec:
+#       serviceAccountName: mysql-sa  # Specify a restricted service account
+#       containers:
+#         - image: mysql:8
+#           name: mysql
+#           env:
+#             - name: MYSQL_ROOT_PASSWORD
+#               value: "root"
+#             - name: MYSQL_DATABASE
+#               value: "db"
+#           ports:
+#             - containerPort: 3306
+#               name: mysql
+#           resources:
+#             requests:
+#               memory: "256Mi"     # Request minimum memory
+#               cpu: "250m"         # Request minimum CPU
+#               storage: "1Gi"      # Request minimum storage
+#             limits:
+#               memory: "512Mi"     # Limit memory usage
+#               cpu: "500m"         # Limit CPU usage
+#               storage: "5Gi"      # Limit storage usage
+# ---
+# # MySQL Service
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: mysql-service
+# spec:
+#   ports:
+#     - port: 3306
+#   selector:
+#     app: mysql
+# ---
+# # Java Application Deployment
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: foyerapp
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: foyerapp
+#   template:
+#     metadata:
+#       labels:
+#         app: foyerapp
+#     spec:
+#       serviceAccountName: foyerapp-sa  # Specify a restricted service account
+#       containers:
+#         - name: foyerapp
+#           image: hamouda1412/foyerproject-ahmeddridi:latest
+#           ports:
+#             - containerPort: 8089
+#           env:
+#             - name: SPRING_DATASOURCE_URL
+#               value: jdbc:mysql://mysql-service:3306/db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+#             - name: SPRING_DATASOURCE_USERNAME
+#               value: root
+#             - name: SPRING_DATASOURCE_PASSWORD
+#               value: root
+#             - name: SERVER_ADDRESS
+#               value: "0.0.0.0"
+#           resources:
+#             requests:
+#               memory: "512Mi"     # Request minimum memory
+#               cpu: "500m"         # Request minimum CPU
+#               storage: "2Gi"      # Request minimum storage
+#             limits:
+#               memory: "1Gi"       # Limit memory usage
+#               cpu: "1"            # Limit CPU usage
+#               storage: "10Gi"     # Limit storage usage
+# ---
+# # Foyer Application Service
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: foyerapp-service
+# spec:
+#   type: NodePort
+#   ports:
+#     - port: 80
+#       targetPort: 8089
+#       nodePort: 30080  # Specify a port in the range 30000-32767
+#   selector:
+#     app: foyerapp
+# ---
+# # MySQL Service Account
+# apiVersion: v1
+# kind: ServiceAccount
+# metadata:
+#   name: mysql-sa
+# ---
+# # Foyer Application Service Account
+# apiVersion: v1
+# kind: ServiceAccount
+# metadata:
+#   name: foyerapp-sa
 
