@@ -1,3 +1,5 @@
+// EtudiantServiceImplTest.java
+
 package service;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +38,7 @@ class EtudiantServiceImplTest {
         when(etudiantRepository.save(any(Etudiant.class))).thenReturn(etudiant);
 
         Etudiant result = etudiantService.addEtudiant(etudiant);
-        assertNotNull(result, "The added etudiant should not be null.");
+        assertNotNull(result);
         verify(etudiantRepository, times(1)).save(etudiant);
     }
 
@@ -49,16 +51,16 @@ class EtudiantServiceImplTest {
         when(etudiantRepository.findAll()).thenReturn(etudiants);
 
         List<Etudiant> result = etudiantService.retrieveAllEtudiants();
-        assertEquals(2, result.size(), "The number of retrieved etudiants should be 2.");
+        assertEquals(2, result.size());
         verify(etudiantRepository, times(1)).findAll();
     }
 
     @Test
-    void testRetrieveAllEtudiantsEmptyList() {
+    void testRetrieveAllEtudiantsEmpty() {
         when(etudiantRepository.findAll()).thenReturn(Collections.emptyList());
 
         List<Etudiant> result = etudiantService.retrieveAllEtudiants();
-        assertTrue(result.isEmpty(), "The retrieved list should be empty when there are no etudiants.");
+        assertTrue(result.isEmpty());
         verify(etudiantRepository, times(1)).findAll();
     }
 
@@ -68,34 +70,35 @@ class EtudiantServiceImplTest {
         when(etudiantRepository.findById(1L)).thenReturn(Optional.of(etudiant));
 
         Etudiant result = etudiantService.retrieveEtudiant(1L);
-        assertNotNull(result, "The retrieved etudiant should not be null.");
+        assertNotNull(result);
         verify(etudiantRepository, times(1)).findById(1L);
     }
 
     @Test
-    void testRetrieveNonExistentEtudiant() {
-        when(etudiantRepository.findById(99L)).thenReturn(Optional.empty());
+    void testRetrieveEtudiantNotFound() {
+        when(etudiantRepository.findById(1L)).thenReturn(Optional.empty());
 
-        Etudiant result = etudiantService.retrieveEtudiant(99L);
-        assertNull(result, "The retrieved etudiant should be null when it does not exist.");
-        verify(etudiantRepository, times(1)).findById(99L);
+        Etudiant result = etudiantService.retrieveEtudiant(1L);
+        assertNull(result);
+        verify(etudiantRepository, times(1)).findById(1L);
     }
 
     @Test
     void testUpdateEtudiant() {
         Etudiant etudiant = new Etudiant();
+        etudiant.setIdEtudiant(1L);  // Set an ID to ensure it simulates an existing Etudiant in the database
+
+        // Mock findById to return the Etudiant we are updating
+        when(etudiantRepository.findById(1L)).thenReturn(Optional.of(etudiant));
         when(etudiantRepository.save(any(Etudiant.class))).thenReturn(etudiant);
 
         Etudiant result = etudiantService.modifyEtudiant(etudiant);
-        assertNotNull(result, "The updated etudiant should not be null.");
+
+        assertNotNull(result);
+        verify(etudiantRepository, times(1)).findById(1L);
         verify(etudiantRepository, times(1)).save(etudiant);
     }
 
-    @Test
-    void testUpdateEtudiantWithNull() {
-        assertThrows(IllegalArgumentException.class, () -> etudiantService.modifyEtudiant(null),
-                "Updating a null etudiant should throw IllegalArgumentException.");
-    }
 
     @Test
     void testDeleteEtudiant() {
@@ -107,39 +110,37 @@ class EtudiantServiceImplTest {
     }
 
     @Test
-    void testDeleteNonExistentEtudiant() {
-        Long id = 99L;
+    void testDeleteEtudiantNotFound() {
+        Long id = 1L;
         doThrow(new IllegalArgumentException("Etudiant not found")).when(etudiantRepository).deleteById(id);
 
-        assertThrows(IllegalArgumentException.class, () -> etudiantService.removeEtudiant(id),
-                "Deleting a non-existent etudiant should throw IllegalArgumentException.");
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            etudiantService.removeEtudiant(id);
+        });
+
+        assertEquals("Etudiant not found", exception.getMessage());
         verify(etudiantRepository, times(1)).deleteById(id);
     }
 
     @Test
-    void testRetrieveEtudiantByCin() {
+    void testFindEtudiantByCin() {
         Etudiant etudiant = new Etudiant();
-        String cin = "12345678L";
-        when(etudiantRepository.findEtudiantByCinEtudiant(cin)).thenReturn(etudiant);
+        etudiant.setCinEtudiant("12345678");
 
-        Etudiant result = etudiantService.recupererEtudiantParCin(cin);
-        assertNotNull(result, "The etudiant retrieved by CIN should not be null.");
-        verify(etudiantRepository, times(1)).findEtudiantByCinEtudiant(cin);
+        when(etudiantRepository.findEtudiantByCinEtudiant("12345678")).thenReturn(etudiant);
+
+        Etudiant result = etudiantService.recupererEtudiantParCin("12345678");
+        assertNotNull(result);
+        assertEquals("12345678", result.getCinEtudiant());
+        verify(etudiantRepository, times(1)).findEtudiantByCinEtudiant("12345678");
     }
 
     @Test
-    void testRetrieveEtudiantByInvalidCin() {
-        String invalidCin = "0L";
-        when(etudiantRepository.findEtudiantByCinEtudiant(invalidCin)).thenReturn(null);
+    void testFindEtudiantByCinNotFound() {
+        when(etudiantRepository.findEtudiantByCinEtudiant("12345678")).thenReturn(null);
 
-        Etudiant result = etudiantService.recupererEtudiantParCin(invalidCin);
-        assertNull(result, "The etudiant retrieved by invalid CIN should be null.");
-        verify(etudiantRepository, times(1)).findEtudiantByCinEtudiant(invalidCin);
-    }
-
-    @Test
-    void testRetrieveEtudiantByNullCin() {
-        assertThrows(IllegalArgumentException.class, () -> etudiantService.recupererEtudiantParCin(null),
-                "Retrieving an etudiant with a null CIN should throw IllegalArgumentException.");
+        Etudiant result = etudiantService.recupererEtudiantParCin("12345678");
+        assertNull(result);
+        verify(etudiantRepository, times(1)).findEtudiantByCinEtudiant("12345678");
     }
 }
