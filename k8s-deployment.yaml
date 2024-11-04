@@ -91,7 +91,7 @@ spec:
     spec:
       containers:
         - name: myapp
-          image: lookabj/myapp:latest
+          image: lookabj/melekbejaoui-5arctic1-g2-devopsproject:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8089
