@@ -150,7 +150,7 @@ spec:
       serviceAccountName: foyerapp-sa  # Specify a restricted service account
       containers:
         - name: foyerapp
-          image: hamouda1412/foyerproject_AhmedDridi:latest
+          image: hamouda1412/foyerproject-ahmeddridi:latest
           ports:
             - containerPort: 8089
           env:
