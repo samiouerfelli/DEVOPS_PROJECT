@@ -1,37 +1,28 @@
 package tn.esprit.tpfoyer.entity;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import jakarta.persistence.*;
-import lombok.*;
-import lombok.experimental.FieldDefaults;
-
+import java.util.HashSet;
 import java.util.Set;
 
-
-@Entity
-@Getter
-@Setter
-@AllArgsConstructor
+@Data
 @NoArgsConstructor
-@ToString
-@FieldDefaults(level = AccessLevel.PRIVATE)
 public class Chambre {
+    private long idChambre = 0L;
+    private long numeroChambre = 0L;
+    private TypeChambre typeC;
+    private Set<Reservation> reservations = new HashSet<>(); // Initialize here
+    private Bloc bloc;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    long idChambre;
-
-    long numeroChambre;
-
-    @Enumerated(EnumType.STRING)
-    TypeChambre typeC;
-
-
-
-    @OneToMany
-    Set<Reservation> reservations;
-
-    @ManyToOne(cascade = CascadeType.ALL)
-    Bloc bloc;
-
+    @Override
+    public String toString() {
+        return "Chambre{" +
+                "idChambre=" + idChambre +
+                ", numeroChambre=" + numeroChambre +
+                ", typeC=" + typeC +
+                ", reservations=" + reservations +
+                ", bloc=" + bloc +
+                '}';
+    }
 }

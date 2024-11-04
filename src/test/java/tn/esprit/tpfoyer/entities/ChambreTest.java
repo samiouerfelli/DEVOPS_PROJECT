@@ -1,14 +1,12 @@
 package tn.esprit.tpfoyer.entities;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import tn.esprit.tpfoyer.entity.Chambre;
 import tn.esprit.tpfoyer.entity.Bloc;
-import tn.esprit.tpfoyer.entity.Reservation;
 import tn.esprit.tpfoyer.entity.TypeChambre;
 
 import static org.junit.jupiter.api.Assertions.*;
-import java.util.HashSet;
-import java.util.Set;
 
 class ChambreTest {
 
@@ -27,7 +25,7 @@ class ChambreTest {
 
         // Assert that the default values are as expected
         assertEquals(0L, chambre.getIdChambre()); // Default ID should be initialized
-        assertEquals(0L, chambre.getNumeroChambre()); // Default should be zero as per default behavior
+        assertEquals(0L, chambre.getNumeroChambre()); // Default should be zero
         assertNull(chambre.getTypeC()); // Type should be null by default
         assertTrue(chambre.getReservations().isEmpty()); // Reservations set should be empty
         assertNull(chambre.getBloc()); // Bloc should be null by default
@@ -38,7 +36,6 @@ class ChambreTest {
         // Set values using setters
         chambre.setNumeroChambre(101);
         chambre.setTypeC(TypeChambre.SIMPLE); // Assuming SIMPLE is a valid enum value
-        chambre.setReservations(new HashSet<>());
 
         // Create a mock Bloc and set it
         Bloc mockBloc = new Bloc();
