@@ -337,6 +337,29 @@ pipeline {
             }
         }
 
+        stage('Download and Load Docker Image') {
+            steps {
+                script {
+                    def tarFile = "${imageName}-${version}.tar"
+                    def nexusUrl = "http://10.0.2.15:8081/repository/docker-images-raw/com/example/docker/${imageName}/${version}/${tarFile}"
+
+                    // Download tar file from Nexus
+                    sh "wget ${nexusUrl} -O ${tarFile}"
+
+                    // Load the tar file into Docker
+                    sh "docker load -i ${tarFile}"
+
+                    // Retag the image for deployment
+                    def fullImageTag = "10.0.2.15:8081/${imageName}:${version}"
+                    sh "docker tag ${imageName}:${version} ${fullImageTag}"
+
+                    // Push to a Docker registry if needed
+                    sh "docker push ${fullImageTag}"
+                }
+            }
+        }
+
+
         stage('Test K8S Access') {
             steps {
                 script {
