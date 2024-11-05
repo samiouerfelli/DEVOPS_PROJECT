@@ -248,27 +248,33 @@ pipeline {
                 script {
                     sh """
                         mkdir -p ${TRIVY_REPORT_DIR}
+                        mkdir -p ${TRIVY_CACHE_DIR}
                         
-                        # Clear existing cache to prevent corruption
-                        rm -rf ${TRIVY_CACHE_DIR}/*
+                        # Initialize Trivy DB if needed, with timeout protection
+                        timeout 10m trivy image --download-db-only || echo "DB download failed, will retry during scan"
                         
+                        # Run Trivy scan with automatic DB update fallback
                         trivy image \
                             --cache-dir ${TRIVY_CACHE_DIR} \
                             --scanners vuln \
                             --severity HIGH,CRITICAL \
                             --format json \
                             --timeout ${TRIVY_TIMEOUT} \
-                            --skip-db-update \
                             --output ${TRIVY_REPORT_DIR}/report.json \
                             ${DOCKER_IMAGE}
                         
-                        # Count vulnerabilities
-                        CRIT_COUNT=\$(cat ${TRIVY_REPORT_DIR}/report.json | jq -r '[.Results[].Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length')
-                        
-                        echo "Found \${CRIT_COUNT} critical vulnerabilities"
-                        
-                        if [ \${CRIT_COUNT} -gt 20 ]; then
-                            echo "Security scan failed: Critical vulnerabilities (\${CRIT_COUNT}) exceed threshold (20)"
+                        # Parse results and check against threshold
+                        if [ -f "${TRIVY_REPORT_DIR}/report.json" ]; then
+                            VULN_COUNT=\$(cat ${TRIVY_REPORT_DIR}/report.json | jq -r '[.Results[].Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length')
+                            
+                            echo "Found \${VULN_COUNT} critical vulnerabilities"
+                            
+                            if [ \${VULN_COUNT} -gt 20 ]; then
+                                echo "Security scan failed: Critical vulnerabilities (\${VULN_COUNT}) exceed threshold (20)"
+                                exit 1
+                            fi
+                        else
+                            echo "Error: Scan report not generated"
                             exit 1
                         fi
                     """
