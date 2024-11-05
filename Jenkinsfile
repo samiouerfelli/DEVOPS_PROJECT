@@ -1,3 +1,13 @@
+// Replace 'JobName' with your actual job name
+def job = Jenkins.instance.getItem('devops_project')
+// Delete builds from 50 to 199
+for (int i = 120; i <= 180; i++) {
+    def build = job.getBuildByNumber(i)
+    if (build != null) {
+        build.delete()
+    }
+}
+
 pipeline {
     agent any
 
@@ -23,7 +33,8 @@ pipeline {
         DEPENDENCY_CHECK_DIR = "${WORKSPACE}/dependency-check-reports"
         OWASP_REPORT_DIR = "${WORKSPACE}/dependency-check-reports"
         TRIVY_REPORT_DIR = 'trivy-reports'
-        TRIVY_CACHE_DIR = '/tmp/trivy' 
+        TRIVY_CACHE_DIR = '/tmp/trivy'
+        TRIVY_TIMEOUT = '15m'  // Increased timeout 
     }
 
     stages {
@@ -51,7 +62,7 @@ pipeline {
             }
         }
 
-        stage('JaCoCo Tests') {
+        stage('Run JaCoCo Tests') {
             steps {
                 sh 'mvn test org.jacoco:jacoco-maven-plugin:report'
             }
@@ -82,7 +93,7 @@ pipeline {
         }
 
 
-        stage('Push to Nexus Repository') {
+        stage('Push to Nexus') {
             steps {
                 script {
                     pom = readMavenPom file: "pom.xml"
@@ -245,20 +256,23 @@ pipeline {
             steps {
                 script {
                     sh """
-                        mkdir -p trivy-reports
+                        mkdir -p ${TRIVY_REPORT_DIR}
                         
-                        export TRIVY_TIMEOUT=5m
+                        # Clear existing cache to prevent corruption
+                        rm -rf ${TRIVY_CACHE_DIR}/*
                         
                         trivy image \
-                            --cache-dir /tmp/trivy \
+                            --cache-dir ${TRIVY_CACHE_DIR} \
                             --scanners vuln \
                             --severity HIGH,CRITICAL \
                             --format json \
-                            --output trivy-reports/report.json \
+                            --timeout ${TRIVY_TIMEOUT} \
+                            --skip-db-update \
+                            --output ${TRIVY_REPORT_DIR}/report.json \
                             ${DOCKER_IMAGE}
                         
                         # Count vulnerabilities
-                        CRIT_COUNT=\$(cat trivy-reports/report.json | jq -r '[.Results[].Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length')
+                        CRIT_COUNT=\$(cat ${TRIVY_REPORT_DIR}/report.json | jq -r '[.Results[].Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length')
                         
                         echo "Found \${CRIT_COUNT} critical vulnerabilities"
                         
@@ -268,7 +282,7 @@ pipeline {
                         fi
                     """
                     
-                    archiveArtifacts artifacts: "trivy-reports/*"
+                    archiveArtifacts artifacts: "${TRIVY_REPORT_DIR}/*"
                 }
             }
         }
