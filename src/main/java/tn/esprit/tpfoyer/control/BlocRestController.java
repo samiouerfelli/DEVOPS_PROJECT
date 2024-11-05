@@ -25,25 +25,26 @@ public class BlocRestController {
     @Operation(description = "WS de récuperation de tous les Blocs ")
     public List<Bloc> getBlocs() {
         return blocService.retrieveAllBlocs();
-
+        //return listBlocs;
     }
 
 
     // http://localhost:8089/tpfoyer/bloc/retrieve-bloc/8
     @GetMapping("/retrieve-bloc/{bloc-id}")
     public Bloc retrieveBloc(@PathVariable("bloc-id") Long bId) {
-        return blocService.retrieveBloc(bId);
+        Bloc bloc = blocService.retrieveBloc(bId);
+        return bloc;
 
     }
 
     // http://localhost:8089/tpfoyer/bloc/add-bloc
     @PostMapping("/add-bloc")
     public Bloc addBloc(@RequestBody Bloc c) {
-        return blocService.addBloc(c);
+        Bloc bloc = blocService.addBloc(c);
+        return bloc;
     }
 
-
-
+    // http://localhost:8089/tpfoyer/bloc/remove-bloc/{bloc-id}
     @DeleteMapping("/remove-bloc/{bloc-id}")
     public void removeBloc(@PathVariable("bloc-id") Long chId) {
         blocService.removeBloc(chId);
@@ -52,12 +53,14 @@ public class BlocRestController {
     // http://localhost:8089/tpfoyer/bloc/modify-bloc
     @PutMapping("/modify-bloc")
     public Bloc modifyBloc(@RequestBody Bloc c) {
-        return blocService.modifyBloc(c);
+        Bloc bloc =blocService.modifyBloc(c);
+        return bloc;
     }
 
     @GetMapping("/trouver-blocs-sans-foyer")
     public List<Bloc> getBlocswirhoutFoyer() {
-        return blocService.trouverBlocsSansFoyer();
+        List<Bloc> listBlocs = blocService.trouverBlocsSansFoyer();
+        return listBlocs;
     }
 
     @GetMapping("/get-bloc-nb-c/{nb}/{c}")

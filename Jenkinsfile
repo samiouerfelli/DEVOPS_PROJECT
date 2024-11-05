@@ -23,13 +23,10 @@ pipeline {
         DEPENDENCY_CHECK_DIR = "${WORKSPACE}/dependency-check-reports"
         OWASP_REPORT_DIR = "${WORKSPACE}/dependency-check-reports"
         TRIVY_REPORT_DIR = 'trivy-reports'
-        TRIVY_CACHE_DIR = '/tmp/trivy'
-        TRIVY_TIMEOUT = '15m'  // Increased timeout
-        reportDir = "${WORKSPACE}/dependency-check-reports"
+        TRIVY_CACHE_DIR = '/tmp/trivy' 
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 checkout scm
@@ -69,10 +66,9 @@ pipeline {
                         sh 'java -version'
                         sh """
                         mvn sonar:sonar \
-                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                            -Dsonar.sources=src/main/java \
-                            -Dsonar.java.binaries=target/classes \
-                            -Dsonar.exclusions=**/test/**,**/resources/**,**/*.spec.java
+                          -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                          -Dsonar.java.coveragePlugin=jacoco \
+                          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
                         """
                     }
                 }
@@ -86,7 +82,7 @@ pipeline {
         }
 
 
-        stage('Push to Nexus') {
+        stage('Push to Nexus Repository') {
             steps {
                 script {
                     pom = readMavenPom file: "pom.xml"
@@ -127,36 +123,88 @@ pipeline {
         stage('OWASP Dependency Check') {
             steps {
                 script {
-                    // Clean and prepare report directory
-                    sh "rm -rf ${reportDir} && mkdir -p ${reportDir} && chmod -R 777 ${reportDir}"
-
-                    // Run Dependency Check with optimized configuration
+                    def reportDir = "${WORKSPACE}/dependency-check-reports"
+                    
+                    // Debug: Show current directory and contents
+                    sh """
+                        echo "Current directory: \$(pwd)"
+                        echo "Directory contents before cleanup:"
+                        ls -la
+                        
+                        echo "Cleaning and creating report directory..."
+                        rm -rf ${reportDir} || true
+                        mkdir -p ${reportDir}
+                        chmod -R 777 ${reportDir}
+                        
+                        echo "Maven target directory contents:"
+                        ls -la target/ || echo "No target directory found"
+                    """
+                    
+                    // Run Dependency Check with minimal configuration
                     dependencyCheck(
                         additionalArguments: """--out '${reportDir}' 
-                                                --scan '${WORKSPACE}' 
-                                                --format XML 
-                                                --format HTML 
-                                                --prettyPrint 
-                                                --log '${reportDir}/dependency-check.log' 
-                                                --nvdApiKey '${env.NVD_API_KEY}'""",
+                            --scan '${WORKSPACE}' 
+                            --format XML 
+                            --format HTML 
+                            --prettyPrint 
+                            --log '${reportDir}/dependency-check.log'
+                            --nvdApiKey '28b6b1bb-0c7a-4897-8217-f745efd1d1a0'""",
                         odcInstallation: 'OWASP-Dependency-Check'
                     )
+                    
+                    // Debug: Show generated files
+                    sh """
+                        echo "Report directory contents after scan:"
+                        ls -la ${reportDir}/
+                        
+                        if [ -f ${reportDir}/dependency-check.log ]; then
+                            echo "=== Dependency Check Log ==="
+                            cat ${reportDir}/dependency-check.log
+                            echo "==========================="
+                        fi
+                    """
                 }
             }
             post {
                 always {
                     script {
-                        // Archive artifacts
-                        archiveArtifacts artifacts: "${reportDir}/**/*", allowEmptyArchive: true
-
-                        // Publish reports
+                        echo "Starting post-build actions..."
+                        
+                        // Check if reports exist
+                        sh """
+                            echo "Checking for report files..."
+                            if [ -f "${WORKSPACE}/dependency-check-reports/dependency-check-report.xml" ]; then
+                                echo "XML report exists"
+                            else
+                                echo "XML report is missing"
+                            fi
+                            
+                            if [ -f "${WORKSPACE}/dependency-check-reports/dependency-check-report.html" ]; then
+                                echo "HTML report exists"
+                            else
+                                echo "HTML report is missing"
+                            fi
+                        """
+                        
                         try {
-                            dependencyCheckPublisher(pattern: "${reportDir}/dependency-check-report.xml")
+                            // Archive artifacts first
+                            archiveArtifacts(
+                                artifacts: 'dependency-check-reports/**/*',
+                                allowEmptyArchive: true,
+                                onlyIfSuccessful: false
+                            )
+                            
+                            // Try to publish the report
+                            dependencyCheckPublisher(
+                                pattern: 'dependency-check-reports/dependency-check-report.xml'
+                            )
+                            
+                            // Try to publish HTML
                             publishHTML(target: [
                                 allowMissing: true,
                                 alwaysLinkToLastBuild: true,
                                 keepAll: true,
-                                reportDir: reportDir,
+                                reportDir: 'dependency-check-reports',
                                 reportFiles: 'dependency-check-report.html',
                                 reportName: 'OWASP Dependency Check Report'
                             ])
@@ -168,11 +216,21 @@ pipeline {
                 }
                 failure {
                     script {
-                        sh "cat ${reportDir}/dependency-check.log || echo 'No dependency check log file found'"
+                        echo "Dependency Check stage failed. Checking for logs..."
+                        sh """
+                            if [ -f "${WORKSPACE}/dependency-check-reports/dependency-check.log" ]; then
+                                echo "=== Full Dependency Check Log ==="
+                                cat "${WORKSPACE}/dependency-check-reports/dependency-check.log"
+                                echo "================================"
+                            else
+                                echo "No dependency check log file found"
+                            fi
+                        """
                     }
                 }
             }
         }
+
 
         stage('Build Docker Image') {
             steps {
@@ -187,39 +245,30 @@ pipeline {
             steps {
                 script {
                     sh """
-                        mkdir -p ${TRIVY_REPORT_DIR}
-                        mkdir -p ${TRIVY_CACHE_DIR}
+                        mkdir -p trivy-reports
                         
-                        # Initialize Trivy DB if needed, with timeout protection
-                        timeout 10m trivy image --download-db-only || echo "DB download failed, will retry during scan"
+                        export TRIVY_TIMEOUT=5m
                         
-                        # Run Trivy scan with automatic DB update fallback
                         trivy image \
-                            --cache-dir ${TRIVY_CACHE_DIR} \
+                            --cache-dir /tmp/trivy \
                             --scanners vuln \
                             --severity HIGH,CRITICAL \
                             --format json \
-                            --timeout ${TRIVY_TIMEOUT} \
-                            --output ${TRIVY_REPORT_DIR}/report.json \
+                            --output trivy-reports/report.json \
                             ${DOCKER_IMAGE}
                         
-                        # Parse results and check against threshold
-                        if [ -f "${TRIVY_REPORT_DIR}/report.json" ]; then
-                            VULN_COUNT=\$(cat ${TRIVY_REPORT_DIR}/report.json | jq -r '[.Results[].Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length')
-                            
-                            echo "Found \${VULN_COUNT} critical vulnerabilities"
-                            
-                            if [ \${VULN_COUNT} -gt 20 ]; then
-                                echo "Security scan failed: Critical vulnerabilities (\${VULN_COUNT}) exceed threshold (20)"
-                                exit 1
-                            fi
-                        else
-                            echo "Error: Scan report not generated"
+                        # Count vulnerabilities
+                        CRIT_COUNT=\$(cat trivy-reports/report.json | jq -r '[.Results[].Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length')
+                        
+                        echo "Found \${CRIT_COUNT} critical vulnerabilities"
+                        
+                        if [ \${CRIT_COUNT} -gt 20 ]; then
+                            echo "Security scan failed: Critical vulnerabilities (\${CRIT_COUNT}) exceed threshold (20)"
                             exit 1
                         fi
                     """
                     
-                    archiveArtifacts artifacts: "${TRIVY_REPORT_DIR}/*"
+                    archiveArtifacts artifacts: "trivy-reports/*"
                 }
             }
         }
@@ -257,44 +306,22 @@ pipeline {
             }
         }
 
-        // stage('Push to Docker Hub') {
-        //     steps {
-        //         script {
-        //             withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials-id', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
-        //                 sh '''
-        //                     echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin
-                            
-        //                     # Tag the image with Docker Hub username
-        //                     docker tag ${DOCKER_IMAGE} ${DOCKERHUB_USERNAME}/melekbejaoui-5arctic1-g2-devopsproject:latest
-                            
-        //                     # Push the tagged image
-        //                     docker push ${DOCKERHUB_USERNAME}/melekbejaoui-5arctic1-g2-devopsproject:latest
-                            
-        //                     docker logout
-        //                 '''
-        //             }
-        //         }
-        //     }
-        // }
-
-        stage('Download and Load Docker Image') {
+        stage('Push to Docker Hub') {
             steps {
                 script {
-                    def tarFile = "${imageName}-${version}.tar"
-                    def nexusUrl = "http://10.0.2.15:8081/repository/docker-images-raw/com/example/docker/${imageName}/${version}/${tarFile}"
-
-                    // Download tar file from Nexus
-                    sh "wget ${nexusUrl} -O ${tarFile}"
-
-                    // Load the tar file into Docker
-                    sh "docker load -i ${tarFile}"
-
-                    // Retag the image for deployment
-                    def fullImageTag = "10.0.2.15:8081/${imageName}:${version}"
-                    sh "docker tag ${imageName}:${version} ${fullImageTag}"
-
-                    // Push to a Docker registry if needed
-                    sh "docker push ${fullImageTag}"
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials-id', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                        sh '''
+                            echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin
+                            
+                            # Tag the image with Docker Hub username
+                            docker tag ${DOCKER_IMAGE} ${DOCKERHUB_USERNAME}/melekbejaoui-5arctic1-g2-devopsproject:latest
+                            
+                            # Push the tagged image
+                            docker push ${DOCKERHUB_USERNAME}/melekbejaoui-5arctic1-g2-devopsproject:latest
+                            
+                            docker logout
+                        '''
+                    }
                 }
             }
         }

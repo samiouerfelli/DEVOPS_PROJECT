@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class BlocTest {
-   private static final String BLOC_A = "Bloc A";
+    private static final String BLOC_A = "Bloc A";
 
     private Bloc bloc;
 
@@ -23,12 +23,12 @@ public class BlocTest {
     @Test
     void testDefaultConstructor() {
         // Assert that default constructor initializes fields to default values
-//        assertEquals(0, bloc.getIdBloc());
-//        assertNull(bloc.getNomBloc());
-//        assertEquals(0, bloc.getCapaciteBloc());
-//        assertNull(bloc.getFoyer());
-//        assertNotNull(bloc.getChambres());
-//        assertTrue(bloc.getChambres().isEmpty());
+        assertEquals(0, bloc.getIdBloc());
+        assertNull(bloc.getNomBloc());
+        assertEquals(0, bloc.getCapaciteBloc());
+        assertNull(bloc.getFoyer());
+        assertNotNull(bloc.getChambres());
+        assertTrue(bloc.getChambres().isEmpty());
     }
 
     @Test
@@ -84,4 +84,3 @@ public class BlocTest {
         assertTrue(toStringResult.contains("capaciteBloc=100"));
     }
 }
-

@@ -6,16 +6,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import tn.esprit.tpfoyer.entity.Universite;
-import tn.esprit.tpfoyer.repository.*;
-import tn.esprit.tpfoyer.service.*;
+import tn.esprit.tpfoyer.repository.UniversiteRepository;
+import tn.esprit.tpfoyer.service.UniversiteServiceImpl;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class UniversiteServiceImplTest {
+ class UniversiteServiceImplTest {
 
     @Mock
     private UniversiteRepository universiteRepository;
@@ -26,64 +27,70 @@ class UniversiteServiceImplTest {
     private Universite universite;
 
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         MockitoAnnotations.openMocks(this);
-        universite = new Universite();
-        universite.setIdUniversite(1L);
-        universite.setNomUniversite("Test University");
-        universite.setAdresse("123 Test Address");
+        universite = new Universite(1, "Test University", "123 Test St", null);
     }
 
     @Test
-    void testRetrieveAllUniversites() {
+     void testRetrieveAllUniversites() {
+        // Arrange
         when(universiteRepository.findAll()).thenReturn(Arrays.asList(universite));
 
-        var universites = universiteService.retrieveAllUniversites();
+        // Act
+        List<Universite> result = universiteService.retrieveAllUniversites();
 
-        assertEquals(1, universites.size());
-        assertEquals("Test University", universites.get(0).getNomUniversite());
+        // Assert
+        assertEquals(1, result.size());
+        assertEquals(universite, result.get(0));
         verify(universiteRepository, times(1)).findAll();
     }
 
     @Test
-    void testRetrieveUniversite() {
+     void testRetrieveUniversite() {
+        // Arrange
         when(universiteRepository.findById(1L)).thenReturn(Optional.of(universite));
 
-        Universite found = universiteService.retrieveUniversite(1L);
+        // Act
+        Universite result = universiteService.retrieveUniversite(1L);
 
-        assertNotNull(found);
-        assertEquals("Test University", found.getNomUniversite());
+        // Assert
+        assertEquals(universite, result);
         verify(universiteRepository, times(1)).findById(1L);
     }
 
     @Test
-    void testAddUniversite() {
+     void testAddUniversite() {
+        // Arrange
         when(universiteRepository.save(universite)).thenReturn(universite);
 
-        Universite created = universiteService.addUniversite(universite);
+        // Act
+        Universite result = universiteService.addUniversite(universite);
 
-        assertNotNull(created);
-        assertEquals("Test University", created.getNomUniversite());
+        // Assert
+        assertEquals(universite, result);
         verify(universiteRepository, times(1)).save(universite);
     }
 
     @Test
-    void testModifyUniversite() {
+     void testModifyUniversite() {
+        // Arrange
         when(universiteRepository.save(universite)).thenReturn(universite);
 
-        Universite modified = universiteService.modifyUniversite(universite);
+        // Act
+        Universite result = universiteService.modifyUniversite(universite);
 
-        assertNotNull(modified);
-        assertEquals("Test University", modified.getNomUniversite());
+        // Assert
+        assertEquals(universite, result);
         verify(universiteRepository, times(1)).save(universite);
     }
 
     @Test
-    void testRemoveUniversite() {
-        doNothing().when(universiteRepository).deleteById(1L);
-
+     void testRemoveUniversite() {
+        // Act
         universiteService.removeUniversite(1L);
 
+        // Assert
         verify(universiteRepository, times(1)).deleteById(1L);
     }
 }

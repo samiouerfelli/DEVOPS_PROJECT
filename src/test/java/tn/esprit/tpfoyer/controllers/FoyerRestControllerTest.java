@@ -1,109 +1,116 @@
 package tn.esprit.tpfoyer.controllers;
 
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.junit.jupiter.MockitoExtension;
-import tn.esprit.tpfoyer.control.*;
-import tn.esprit.tpfoyer.entity.*;
-import tn.esprit.tpfoyer.service.*;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import tn.esprit.tpfoyer.control.FoyerRestController;
+import tn.esprit.tpfoyer.entity.Foyer;
+import tn.esprit.tpfoyer.service.IFoyerService;
 
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
-@ExtendWith(MockitoExtension.class)
- class FoyerRestControllerTest {
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-    @InjectMocks
-    private FoyerRestController foyerRestController;
+class FoyerRestControllerTest {
+
+    private MockMvc mockMvc;
 
     @Mock
     private IFoyerService foyerService;
 
-    private Foyer foyer;
+    @InjectMocks
+    private FoyerRestController foyerRestController;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        foyer = new Foyer();
-        foyer.setIdFoyer(1L);
-        foyer.setNomFoyer("Test Foyer");
-        foyer.setCapaciteFoyer(100);
+        mockMvc = MockMvcBuilders.standaloneSetup(foyerRestController).build();
     }
 
     @Test
-    void testGetFoyers() {
-        // Arrange
-        when(foyerService.retrieveAllFoyers()).thenReturn(Arrays.asList(foyer));
+    void testAddFoyer() throws Exception {
+        Foyer foyer = new Foyer();
+        when(foyerService.addFoyer(any(Foyer.class))).thenReturn(foyer);
 
-        // Act
-        List<Foyer> response = foyerRestController.getFoyers();
+        mockMvc.perform(post("/foyer/add-foyer")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nomFoyer\":\"Foyer A\", \"capaciteFoyer\":100}"))
+                .andExpect(status().isCreated());
 
-        // Assert
-        assertEquals(1, response.size());
-        assertEquals("Test Foyer", response.get(0).getNomFoyer());
+        verify(foyerService, times(1)).addFoyer(any(Foyer.class));
+    }
+
+    @Test
+    void testRetrieveAllFoyers() throws Exception {
+        Foyer foyer1 = new Foyer();
+        Foyer foyer2 = new Foyer();
+        List<Foyer> foyers = Arrays.asList(foyer1, foyer2);
+
+        when(foyerService.retrieveAllFoyers()).thenReturn(foyers);
+
+        mockMvc.perform(get("/foyer/retrieve-all-foyers"))
+                .andExpect(status().isOk());
+
         verify(foyerService, times(1)).retrieveAllFoyers();
     }
 
     @Test
-    void testRetrieveFoyer() {
-        // Arrange
-        when(foyerService.retrieveFoyer(1L)).thenReturn(foyer);
+    void testRetrieveFoyerById() throws Exception {
+        Foyer foyer = new Foyer();
+        when(foyerService.retrieveFoyer(anyLong())).thenReturn(foyer);
 
-        // Act
-        Foyer found = foyerRestController.retrieveFoyer(1L);
+        mockMvc.perform(get("/foyer/retrieve-foyer/1"))
+                .andExpect(status().isOk());
 
-        // Assert
-        assertNotNull(found);
-        assertEquals("Test Foyer", found.getNomFoyer());
-        verify(foyerService, times(1)).retrieveFoyer(1L);
+        verify(foyerService, times(1)).retrieveFoyer(anyLong());
     }
 
     @Test
-    void testAddFoyer() {
-        // Arrange
-        when(foyerService.addFoyer(foyer)).thenReturn(foyer);
+    void testDeleteFoyer() throws Exception {
+        doNothing().when(foyerService).removeFoyer(anyLong());
 
-        // Act
-        Foyer created = foyerRestController.addFoyer(foyer);
+        mockMvc.perform(delete("/foyer/remove-foyer/1"))
+                .andExpect(status().isNoContent());
 
-        // Assert
-        assertNotNull(created);
-        assertEquals("Test Foyer", created.getNomFoyer());
-        verify(foyerService, times(1)).addFoyer(foyer);
+        verify(foyerService, times(1)).removeFoyer(anyLong());
     }
 
     @Test
-    void testRemoveFoyer() {
-        // Arrange
-        Long id = 1L;
-        doNothing().when(foyerService).removeFoyer(id);
+    void testModifyFoyer() throws Exception {
+        Foyer foyer = new Foyer();
+        when(foyerService.modifyFoyer(any(Foyer.class))).thenReturn(foyer);
 
-        // Act
-        foyerRestController.removeFoyer(id);
+        mockMvc.perform(put("/foyer/modify-foyer")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nomFoyer\":\"Updated Foyer\", \"capaciteFoyer\":150}"))
+                .andExpect(status().isOk());
 
-        // Assert
-        verify(foyerService, times(1)).removeFoyer(id);
+        verify(foyerService, times(1)).modifyFoyer(any(Foyer.class));
     }
 
     @Test
-    void testModifyFoyer() {
-        // Arrange
-        when(foyerService.modifyFoyer(foyer)).thenReturn(foyer);
+    void testRetrieveNonExistentFoyer() throws Exception {
+        when(foyerService.retrieveFoyer(anyLong())).thenReturn(null);
 
-        // Act
-        Foyer modified = foyerRestController.modifyFoyer(foyer);
+        mockMvc.perform(get("/foyer/retrieve-foyer/99"))
+                .andExpect(status().isNotFound());
+    }
 
-        // Assert
-        assertNotNull(modified);
-        assertEquals("Test Foyer", modified.getNomFoyer());
-        verify(foyerService, times(1)).modifyFoyer(foyer);
+    @Test
+    void testAddFoyerWithInvalidData() throws Exception {
+        mockMvc.perform(post("/foyer/add-foyer")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nomFoyer\":\"\", \"capaciteFoyer\":0}"))
+                .andExpect(status().isBadRequest());
     }
 }
-
