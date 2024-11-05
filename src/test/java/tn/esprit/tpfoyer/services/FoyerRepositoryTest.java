@@ -1,30 +1,21 @@
 package tn.esprit.tpfoyer.services;
 
-
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-
-
-
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.junit.jupiter.api.Test;
-
-import tn.esprit.tpfoyer.entity.*;
-
-import tn.esprit.tpfoyer.repository.*;
-
-
+import tn.esprit.tpfoyer.entity.Foyer;
+import tn.esprit.tpfoyer.repository.FoyerRepository;
 import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.*;
-@SpringBootTest
+
+@DataJpaTest // This will only load JPA components and a limited context for testing repository classes
 class FoyerRepositoryTest {
 
     @Autowired
     private FoyerRepository foyerRepository;
 
     @Test
-     void testSaveFoyer() {
+    void testSaveFoyer() {
         // Arrange
         Foyer foyer = new Foyer();
         foyer.setNomFoyer("Test Foyer");
@@ -39,7 +30,7 @@ class FoyerRepositoryTest {
     }
 
     @Test
-     void testFindAllFoyers() {
+    void testFindAllFoyers() {
         // Arrange
         Foyer foyer = new Foyer();
         foyer.setNomFoyer("Test Foyer");
