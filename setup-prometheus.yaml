@@ -1,12 +1,9 @@
----
-# Namespace
 apiVersion: v1
 kind: Namespace
 metadata:
   name: monitoring
 
 ---
-# Service Account
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -14,7 +11,6 @@ metadata:
   namespace: monitoring
 
 ---
-# ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -38,7 +34,6 @@ rules:
   verbs: ["get"]
 
 ---
-# ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -53,7 +48,6 @@ subjects:
   namespace: monitoring
 
 ---
-# ConfigMap
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -95,28 +89,13 @@ data:
           target_label: __metrics_path__
           replacement: /api/v1/nodes/${1}/proxy/metrics
 
-      - job_name: 'node-exporter'
-        kubernetes_sd_configs:
-        - role: endpoints
-        relabel_configs:
-        - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name]
-          action: keep
-          regex: monitoring;node-exporter
-        - action: labelmap
-          regex: __meta_kubernetes_node_label_(.+)
-
-      - job_name: 'kube-state-metrics'
-        kubernetes_sd_configs:
-        - role: endpoints
-        relabel_configs:
-        - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name]
-          action: keep
-          regex: monitoring;kube-state-metrics
-
-      - job_name: 'kubernetes-pods'
+      - job_name: 'spring-boot-app'
         kubernetes_sd_configs:
         - role: pod
         relabel_configs:
+        - source_labels: [__meta_kubernetes_namespace]
+          regex: myapp
+          action: keep
         - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
           action: keep
           regex: true
@@ -129,9 +108,35 @@ data:
           regex: ([^:]+)(?::\d+)?;(\d+)
           replacement: $1:$2
           target_label: __address__
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: kubernetes_namespace
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: kubernetes_pod_name
 
+      - job_name: 'mysql-metrics'
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+              - myapp
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_label_app]
+          regex: mysql
+          action: keep
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          regex: metrics
+          action: keep
+        - source_labels: [__meta_kubernetes_namespace]
+          target_label: kubernetes_namespace
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: kubernetes_service_name
+          
 ---
-# PersistentVolume
+# prometheus-storage.yaml
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -145,17 +150,8 @@ spec:
   hostPath:
     path: /var/lib/kind/volumes/prometheus
     type: DirectoryOrCreate
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: kubernetes.io/hostname
-          operator: In
-          values:
-          - devops-cluster-control-plane
 
 ---
-# PersistentVolumeClaim
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -169,7 +165,6 @@ spec:
       storage: 5Gi
 
 ---
-# Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -186,19 +181,46 @@ spec:
         app: prometheus
     spec:
       serviceAccountName: prometheus
+      securityContext:
+        fsGroup: 65534
+        runAsUser: 65534
+        runAsGroup: 65534
       containers:
       - name: prometheus
         image: prom/prometheus:v2.45.0
         args:
         - "--config.file=/etc/prometheus/prometheus.yml"
         - "--storage.tsdb.path=/prometheus"
+        - "--storage.tsdb.retention.time=15d"
+        - "--web.enable-lifecycle"
+        - "--storage.tsdb.no-lockfile"
         ports:
         - containerPort: 9090
+          name: http
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9090
+          initialDelaySeconds: 30
+          timeoutSeconds: 30
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: 9090
+          initialDelaySeconds: 30
+          timeoutSeconds: 30
         volumeMounts:
         - name: prometheus-config
           mountPath: /etc/prometheus/
         - name: prometheus-storage
           mountPath: /prometheus
+        resources:
+          requests:
+            cpu: 500m
+            memory: 500Mi
+          limits:
+            cpu: 1
+            memory: 1Gi
       volumes:
       - name: prometheus-config
         configMap:
@@ -208,7 +230,6 @@ spec:
           claimName: prometheus-pvc
 
 ---
-# Service
 apiVersion: v1
 kind: Service
 metadata:

@@ -408,7 +408,7 @@ pipeline {
             }
         }
 
-        stage('Configure Grafana Datasource') {
+        stage('Configure Datasource') {
             steps {
                 script {
                     sh '''
@@ -484,13 +484,13 @@ pipeline {
                         -d '{
                             "dashboard": {
                                 "id": null,
-                                "title": "Kubernetes Cluster Monitoring",
-                                "tags": ["kubernetes", "monitoring"],
+                                "title": "Application Performance Monitoring",
+                                "tags": ["kubernetes", "monitoring", "performance"],
                                 "timezone": "browser",
                                 "refresh": "10s",
                                 "panels": [
                                     {
-                                        "title": "Pod Restart Count",
+                                        "title": "API Server Error Rate (%)",
                                         "type": "timeseries",
                                         "gridPos": {
                                             "h": 8,
@@ -500,21 +500,37 @@ pipeline {
                                         },
                                         "targets": [
                                             {
-                                                "expr": "sum(kube_pod_container_status_restarts_total) by (pod)",
-                                                "legendFormat": "{{pod}}",
+                                                "expr": "sum(rate(apiserver_request_total{code=~\\"5..\\"}[5m])) / sum(rate(apiserver_request_total[5m])) * 100",
+                                                "legendFormat": "Error Rate",
                                                 "interval": "",
                                                 "exemplar": true
                                             }
                                         ],
                                         "options": {
                                             "tooltip": {
-                                                "mode": "multi",
-                                                "sort": "desc"
+                                                "mode": "single",
+                                                "sort": "none"
+                                            }
+                                        },
+                                        "fieldConfig": {
+                                            "defaults": {
+                                                "color": {
+                                                    "mode": "palette-classic"
+                                                },
+                                                "thresholds": {
+                                                    "mode": "absolute",
+                                                    "steps": [
+                                                        { "value": null, "color": "green" },
+                                                        { "value": 1, "color": "yellow" },
+                                                        { "value": 5, "color": "red" }
+                                                    ]
+                                                },
+                                                "unit": "percent"
                                             }
                                         }
                                     },
                                     {
-                                        "title": "Network Receive Rate",
+                                        "title": "MySQL Slow Queries Rate",
                                         "type": "timeseries",
                                         "gridPos": {
                                             "h": 8,
@@ -524,22 +540,37 @@ pipeline {
                                         },
                                         "targets": [
                                             {
-                                                "expr": "rate(node_network_receive_bytes_total[5m])",
-                                                "legendFormat": "{{device}}",
+                                                "expr": "rate(mysql_global_status_slow_queries[5m])",
+                                                "legendFormat": "Slow Queries",
                                                 "interval": "",
                                                 "exemplar": true
                                             }
                                         ],
                                         "options": {
                                             "tooltip": {
-                                                "mode": "multi",
-                                                "sort": "desc"
+                                                "mode": "single",
+                                                "sort": "none"
+                                            }
+                                        },
+                                        "fieldConfig": {
+                                            "defaults": {
+                                                "color": {
+                                                    "mode": "palette-classic"
+                                                },
+                                                "thresholds": {
+                                                    "mode": "absolute",
+                                                    "steps": [
+                                                        { "value": null, "color": "green" },
+                                                        { "value": 5, "color": "yellow" },
+                                                        { "value": 10, "color": "red" }
+                                                    ]
+                                                }
                                             }
                                         }
                                     },
                                     {
-                                        "title": "Pod Status by Phase",
-                                        "type": "piechart",
+                                        "title": "JVM Memory Usage (%)",
+                                        "type": "gauge",
                                         "gridPos": {
                                             "h": 8,
                                             "w": 12,
@@ -548,17 +579,37 @@ pipeline {
                                         },
                                         "targets": [
                                             {
-                                                "expr": "sum by (phase) (kube_pod_status_phase)",
-                                                "legendFormat": "{{phase}}",
+                                                "expr": "jvm_memory_used_bytes{job=\\"spring-boot-app\\"} / jvm_memory_max_bytes{job=\\"spring-boot-app\\"} * 100",
+                                                "legendFormat": "{{area}}",
                                                 "interval": "",
                                                 "exemplar": true
                                             }
                                         ],
                                         "options": {
-                                            "legend": {
-                                                "displayMode": "table",
-                                                "placement": "right",
-                                                "values": ["value"]
+                                            "orientation": "auto",
+                                            "reduceOptions": {
+                                                "calcs": ["lastNotNull"],
+                                                "fields": "",
+                                                "values": false
+                                            },
+                                            "showThresholdLabels": false,
+                                            "showThresholdMarkers": true
+                                        },
+                                        "fieldConfig": {
+                                            "defaults": {
+                                                "color": {
+                                                    "mode": "thresholds"
+                                                },
+                                                "thresholds": {
+                                                    "mode": "absolute",
+                                                    "steps": [
+                                                        { "value": null, "color": "green" },
+                                                        { "value": 70, "color": "yellow" },
+                                                        { "value": 85, "color": "red" }
+                                                    ]
+                                                },
+                                                "unit": "percent",
+                                                "max": 100
                                             }
                                         }
                                     }
