@@ -68,15 +68,17 @@ pipeline {
                         sh 'java -version'
                         sh """
                         mvn sonar:sonar \
-                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                        -Dsonar.java.coveragePlugin=jacoco \
-                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-                        -Dsonar.inclusions=**/*.class
+                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                            -Dsonar.java.coveragePlugin=jacoco \
+                            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+                            -Dsonar.inclusions=**/*.class \
+                            -Dsonar.coverage.exclusions=**/*Test*  # Exclude test classes if needed
                         """
                     }
                 }
             }
         }
+
 
 
         stage('Build Package') {
