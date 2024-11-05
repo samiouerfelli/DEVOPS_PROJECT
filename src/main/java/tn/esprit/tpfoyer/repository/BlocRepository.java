@@ -74,18 +74,6 @@ import java.util.List;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     /* No need to code CRUD here. Its is already in the
     interfaces provided by the framework Spring Data JPA :
        - CrudRepository or
