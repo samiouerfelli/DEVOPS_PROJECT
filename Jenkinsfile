@@ -257,47 +257,26 @@ pipeline {
             }
         }
 
-        // stage('Push to Docker Hub') {
-        //     steps {
-        //         script {
-        //             withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials-id', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
-        //                 sh '''
-        //                     echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin
-                            
-        //                     # Tag the image with Docker Hub username
-        //                     docker tag ${DOCKER_IMAGE} ${DOCKERHUB_USERNAME}/melekbejaoui-5arctic1-g2-devopsproject:latest
-                            
-        //                     # Push the tagged image
-        //                     docker push ${DOCKERHUB_USERNAME}/melekbejaoui-5arctic1-g2-devopsproject:latest
-                            
-        //                     docker logout
-        //                 '''
-        //             }
-        //         }
-        //     }
-        // }
-
-        stage('Download and Load Docker Image') {
+        stage('Push to Docker Hub') {
             steps {
                 script {
-                    def tarFile = "${imageName}-${version}.tar"
-                    def nexusUrl = "http://10.0.2.15:8081/repository/docker-images-raw/com/example/docker/${imageName}/${version}/${tarFile}"
-
-                    // Download tar file from Nexus
-                    sh "wget ${nexusUrl} -O ${tarFile}"
-
-                    // Load the tar file into Docker
-                    sh "docker load -i ${tarFile}"
-
-                    // Retag the image for deployment
-                    def fullImageTag = "10.0.2.15:8081/${imageName}:${version}"
-                    sh "docker tag ${imageName}:${version} ${fullImageTag}"
-
-                    // Push to a Docker registry if needed
-                    sh "docker push ${fullImageTag}"
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials-id', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                        sh '''
+                            echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin
+                            
+                            # Tag the image with Docker Hub username
+                            docker tag ${DOCKER_IMAGE} ${DOCKERHUB_USERNAME}/melekbejaoui-5arctic1-g2-devopsproject:latest
+                            
+                            # Push the tagged image
+                            docker push ${DOCKERHUB_USERNAME}/melekbejaoui-5arctic1-g2-devopsproject:latest
+                            
+                            docker logout
+                        '''
+                    }
                 }
             }
         }
+
 
         stage('Test K8S Access') {
             steps {
