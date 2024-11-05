@@ -1,6 +1,8 @@
 package tn.esprit.tpfoyer.entities;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import tn.esprit.tpfoyer.entity.Chambre;
 import tn.esprit.tpfoyer.entity.Bloc;
 import tn.esprit.tpfoyer.entity.Reservation;
@@ -9,7 +11,7 @@ import tn.esprit.tpfoyer.entity.TypeChambre;
 import static org.junit.jupiter.api.Assertions.*;
 import java.util.HashSet;
 import java.util.Set;
-
+@ExtendWith(MockitoExtension.class)
 class ChambreTest {
 
     private Chambre chambre;

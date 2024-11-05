@@ -9,7 +9,6 @@ import tn.esprit.tpfoyer.entity.Foyer;
 import static org.junit.jupiter.api.Assertions.*;
 import java.util.HashSet;
 import java.util.Set;
-
 public class BlocTest {
    private static final String BLOC_A = "Bloc A";
 
