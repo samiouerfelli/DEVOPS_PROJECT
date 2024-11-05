@@ -1,22 +1,15 @@
 package tn.esprit.tpfoyer.services;
 
-
-
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-
-
-
-import org.junit.jupiter.api.Test;
-
-import tn.esprit.tpfoyer.entity.*;
-
-import tn.esprit.tpfoyer.repository.*;
-
+import tn.esprit.tpfoyer.entity.Foyer;
+import tn.esprit.tpfoyer.repository.FoyerRepository;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+
 @SpringBootTest
 class FoyerRepositoryTest {
 
