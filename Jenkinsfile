@@ -127,36 +127,88 @@ pipeline {
         stage('OWASP Dependency Check') {
             steps {
                 script {
-                    // Clean and prepare report directory
-                    sh "rm -rf ${reportDir} && mkdir -p ${reportDir} && chmod -R 777 ${reportDir}"
-
-                    // Run Dependency Check with optimized configuration
+                    def reportDir = "${WORKSPACE}/dependency-check-reports"
+                    
+                    // Debug: Show current directory and contents
+                    sh """
+                        echo "Current directory: \$(pwd)"
+                        echo "Directory contents before cleanup:"
+                        ls -la
+                        
+                        echo "Cleaning and creating report directory..."
+                        rm -rf ${reportDir} || true
+                        mkdir -p ${reportDir}
+                        chmod -R 777 ${reportDir}
+                        
+                        echo "Maven target directory contents:"
+                        ls -la target/ || echo "No target directory found"
+                    """
+                    
+                    // Run Dependency Check with minimal configuration
                     dependencyCheck(
                         additionalArguments: """--out '${reportDir}' 
-                                                --scan '${WORKSPACE}' 
-                                                --format XML 
-                                                --format HTML 
-                                                --prettyPrint 
-                                                --log '${reportDir}/dependency-check.log' 
-                                                --nvdApiKey '${env.NVD_API_KEY}'""",
+                            --scan '${WORKSPACE}' 
+                            --format XML 
+                            --format HTML 
+                            --prettyPrint 
+                            --log '${reportDir}/dependency-check.log'
+                            --nvdApiKey '28b6b1bb-0c7a-4897-8217-f745efd1d1a0'""",
                         odcInstallation: 'OWASP-Dependency-Check'
                     )
+                    
+                    // Debug: Show generated files
+                    sh """
+                        echo "Report directory contents after scan:"
+                        ls -la ${reportDir}/
+                        
+                        if [ -f ${reportDir}/dependency-check.log ]; then
+                            echo "=== Dependency Check Log ==="
+                            cat ${reportDir}/dependency-check.log
+                            echo "==========================="
+                        fi
+                    """
                 }
             }
             post {
                 always {
                     script {
-                        // Archive artifacts
-                        archiveArtifacts artifacts: "${reportDir}/**/*", allowEmptyArchive: true
-
-                        // Publish reports
+                        echo "Starting post-build actions..."
+                        
+                        // Check if reports exist
+                        sh """
+                            echo "Checking for report files..."
+                            if [ -f "${WORKSPACE}/dependency-check-reports/dependency-check-report.xml" ]; then
+                                echo "XML report exists"
+                            else
+                                echo "XML report is missing"
+                            fi
+                            
+                            if [ -f "${WORKSPACE}/dependency-check-reports/dependency-check-report.html" ]; then
+                                echo "HTML report exists"
+                            else
+                                echo "HTML report is missing"
+                            fi
+                        """
+                        
                         try {
-                            dependencyCheckPublisher(pattern: "${reportDir}/dependency-check-report.xml")
+                            // Archive artifacts first
+                            archiveArtifacts(
+                                artifacts: 'dependency-check-reports/**/*',
+                                allowEmptyArchive: true,
+                                onlyIfSuccessful: false
+                            )
+                            
+                            // Try to publish the report
+                            dependencyCheckPublisher(
+                                pattern: 'dependency-check-reports/dependency-check-report.xml'
+                            )
+                            
+                            // Try to publish HTML
                             publishHTML(target: [
                                 allowMissing: true,
                                 alwaysLinkToLastBuild: true,
                                 keepAll: true,
-                                reportDir: reportDir,
+                                reportDir: 'dependency-check-reports',
                                 reportFiles: 'dependency-check-report.html',
                                 reportName: 'OWASP Dependency Check Report'
                             ])
@@ -168,7 +220,16 @@ pipeline {
                 }
                 failure {
                     script {
-                        sh "cat ${reportDir}/dependency-check.log || echo 'No dependency check log file found'"
+                        echo "Dependency Check stage failed. Checking for logs..."
+                        sh """
+                            if [ -f "${WORKSPACE}/dependency-check-reports/dependency-check.log" ]; then
+                                echo "=== Full Dependency Check Log ==="
+                                cat "${WORKSPACE}/dependency-check-reports/dependency-check.log"
+                                echo "================================"
+                            else
+                                echo "No dependency check log file found"
+                            fi
+                        """
                     }
                 }
             }
@@ -183,43 +244,33 @@ pipeline {
             }
         }
 
-        stage('Trivy Security Scan') {
+        stage('Trivy Scan') {
             steps {
                 script {
                     sh """
                         mkdir -p ${TRIVY_REPORT_DIR}
-                        mkdir -p ${TRIVY_CACHE_DIR}
                         
-                        # Initialize Trivy DB if needed, with timeout protection
-                        timeout 10m trivy image --download-db-only || echo "DB download failed, will retry during scan"
+                        # Run Trivy scan for vulnerabilities only (skip secrets for speed)
+                        trivy image \\
+                            --scanners vuln \\
+                            --severity HIGH,CRITICAL \\
+                            --format json \\
+                            --output ${TRIVY_REPORT_DIR}/report.json \\
+                            $DOCKER_IMAGE
+
+                        # Check for critical vulnerabilities and fail if exceeds threshold
+                        CRITICAL_COUNT=\$(cat ${TRIVY_REPORT_DIR}/report.json | jq -r '.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities[] | select(.Severity == "CRITICAL") | .VulnerabilityID' | wc -l)
                         
-                        # Run Trivy scan with automatic DB update fallback
-                        trivy image \
-                            --cache-dir ${TRIVY_CACHE_DIR} \
-                            --scanners vuln \
-                            --severity HIGH,CRITICAL \
-                            --format json \
-                            --timeout ${TRIVY_TIMEOUT} \
-                            --output ${TRIVY_REPORT_DIR}/report.json \
-                            ${DOCKER_IMAGE}
+                        echo "Found \$CRITICAL_COUNT critical vulnerabilities"
                         
-                        # Parse results and check against threshold
-                        if [ -f "${TRIVY_REPORT_DIR}/report.json" ]; then
-                            VULN_COUNT=\$(cat ${TRIVY_REPORT_DIR}/report.json | jq -r '[.Results[].Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length')
-                            
-                            echo "Found \${VULN_COUNT} critical vulnerabilities"
-                            
-                            if [ \${VULN_COUNT} -gt 20 ]; then
-                                echo "Security scan failed: Critical vulnerabilities (\${VULN_COUNT}) exceed threshold (20)"
-                                exit 1
-                            fi
-                        else
-                            echo "Error: Scan report not generated"
+                        if [ \$CRITICAL_COUNT -gt ${MAX_CRITICAL_VULNS} ]; then
+                            echo "Failed: Too many critical vulnerabilities!"
                             exit 1
                         fi
                     """
                     
-                    archiveArtifacts artifacts: "${TRIVY_REPORT_DIR}/*"
+                    // Archive the report
+                    archiveArtifacts "${TRIVY_REPORT_DIR}/*"
                 }
             }
         }
