@@ -11,7 +11,7 @@ spec:
     metadata:
       labels:
         app: devops
-    spec:
+    spec: # Noncompliant
       containers:
         - name: devops
           image: cyrine105/devops:latest
