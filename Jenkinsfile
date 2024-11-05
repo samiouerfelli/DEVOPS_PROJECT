@@ -29,31 +29,6 @@ pipeline {
 
     stages {
 
-        stage('Cleanup Builds') {
-            steps {
-                script {
-                    // Using Jenkins Pipeline approved methods
-                    def job = currentBuild.project
-                    def buildsToDelete = []
-                    
-                    // Collect builds to delete
-                    for (int i = 50; i <= 100; i++) {
-                        def build = job.getBuildByNumber(i)
-                        if (build != null) {
-                            buildsToDelete.add(build)
-                        }
-                    }
-                    
-                    // Delete collected builds
-                    buildsToDelete.each { build ->
-                        build.delete()
-                    }
-                    
-                    echo "Completed cleanup of builds between #50 and #199"
-                }
-            }
-        }
-
         stage('Checkout') {
             steps {
                 checkout scm
