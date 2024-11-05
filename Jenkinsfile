@@ -24,7 +24,8 @@ pipeline {
         OWASP_REPORT_DIR = "${WORKSPACE}/dependency-check-reports"
         TRIVY_REPORT_DIR = 'trivy-reports'
         TRIVY_CACHE_DIR = '/tmp/trivy'
-        TRIVY_TIMEOUT = '15m'  // Increased timeout 
+        TRIVY_TIMEOUT = '15m'  // Increased timeout
+        reportDir = "${WORKSPACE}/dependency-check-reports"
     }
 
     stages {
@@ -128,8 +129,6 @@ pipeline {
         stage('OWASP Dependency Check') {
             steps {
                 script {
-                    def reportDir = "${WORKSPACE}/dependency-check-reports"
-
                     // Clean and prepare report directory
                     sh "rm -rf ${reportDir} && mkdir -p ${reportDir} && chmod -R 777 ${reportDir}"
 
