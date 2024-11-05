@@ -146,15 +146,16 @@ pipeline {
                         ls -la target/ || echo "No target directory found"
                     """
                     
-                    // Run Dependency Check with minimal configuration
+                    // Run Dependency Check with optimized configuration
                     dependencyCheck(
                         additionalArguments: """--out '${reportDir}' 
                             --scan '${WORKSPACE}' 
                             --format XML 
                             --format HTML 
                             --prettyPrint 
-                            --log '${reportDir}/dependency-check.log'
-                            --nvdApiKey '28b6b1bb-0c7a-4897-8217-f745efd1d1a0'""",
+                            --log '${reportDir}/dependency-check.log' 
+                            --nvdApiKey 'YOUR_NVD_API_KEY' 
+                            --disableUpdates""", // Disable updates to avoid waiting
                         odcInstallation: 'OWASP-Dependency-Check'
                     )
                     
@@ -178,39 +179,28 @@ pipeline {
                         
                         // Check if reports exist
                         sh """
-                            echo "Checking for report files..."
-                            if [ -f "${WORKSPACE}/dependency-check-reports/dependency-check-report.xml" ]; then
-                                echo "XML report exists"
-                            else
-                                echo "XML report is missing"
-                            fi
-                            
-                            if [ -f "${WORKSPACE}/dependency-check-reports/dependency-check-report.html" ]; then
-                                echo "HTML report exists"
-                            else
-                                echo "HTML report is missing"
-                            fi
+                            for report in dependency-check-report.xml dependency-check-report.html; do
+                                if [ -f "${reportDir}/\$report" ]; then
+                                    echo "\$report exists"
+                                else
+                                    echo "\$report is missing"
+                                fi
+                            done
                         """
-                        
+
                         try {
                             // Archive artifacts first
-                            archiveArtifacts(
-                                artifacts: 'dependency-check-reports/**/*',
-                                allowEmptyArchive: true,
-                                onlyIfSuccessful: false
-                            )
+                            archiveArtifacts artifacts: "${reportDir}/**/*", allowEmptyArchive: true
                             
                             // Try to publish the report
-                            dependencyCheckPublisher(
-                                pattern: 'dependency-check-reports/dependency-check-report.xml'
-                            )
+                            dependencyCheckPublisher(pattern: "${reportDir}/dependency-check-report.xml")
                             
-                            // Try to publish HTML
+                            // Try to publish HTML report
                             publishHTML(target: [
                                 allowMissing: true,
                                 alwaysLinkToLastBuild: true,
                                 keepAll: true,
-                                reportDir: 'dependency-check-reports',
+                                reportDir: reportDir,
                                 reportFiles: 'dependency-check-report.html',
                                 reportName: 'OWASP Dependency Check Report'
                             ])
@@ -224,9 +214,9 @@ pipeline {
                     script {
                         echo "Dependency Check stage failed. Checking for logs..."
                         sh """
-                            if [ -f "${WORKSPACE}/dependency-check-reports/dependency-check.log" ]; then
+                            if [ -f "${reportDir}/dependency-check.log" ]; then
                                 echo "=== Full Dependency Check Log ==="
-                                cat "${WORKSPACE}/dependency-check-reports/dependency-check.log"
+                                cat "${reportDir}/dependency-check.log"
                                 echo "================================"
                             else
                                 echo "No dependency check log file found"
@@ -236,6 +226,7 @@ pipeline {
                 }
             }
         }
+
 
 
         stage('Build Docker Image') {
