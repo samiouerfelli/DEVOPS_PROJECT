@@ -69,10 +69,9 @@ pipeline {
                         sh """
                         mvn sonar:sonar \
                             -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                            -Dsonar.java.coveragePlugin=jacoco \
-                            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-                            -Dsonar.inclusions=**/*.class \
-                            -Dsonar.coverage.exclusions=**/*Test*  # Exclude test classes if needed
+                            -Dsonar.sources=src/main/java \
+                            -Dsonar.java.binaries=target/classes \
+                            -Dsonar.exclusions=**/test/**,**/resources/**,**/*.spec.java
                         """
                     }
                 }
