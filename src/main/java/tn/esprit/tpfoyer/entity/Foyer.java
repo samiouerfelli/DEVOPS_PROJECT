@@ -32,5 +32,4 @@ public class Foyer {
     @JsonIgnore
     Set<Bloc> blocs;
 
-    // No @ToString.Exclude so that universite and blocs can be included in the toString output
 }
