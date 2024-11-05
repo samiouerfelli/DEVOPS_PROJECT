@@ -1,12 +1,69 @@
+# MySQL Secret (to securely store database credentials)
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-secret
+type: Opaque
+data:
+  mysql-root-password: <base64_encoded_root_password> # Replace with base64 encoded password, e.g., `echo -n "yourpassword" | base64`
+
+# MySQL Deployment (runs a MySQL instance in the cluster)
+---
 apiVersion: apps/v1
-kind: Deployment # Kubernetes resource kind we are creating
+kind: Deployment
+metadata:
+  name: mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:5.7
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: mysql-root-password
+            - name: MYSQL_DATABASE
+              value: devops
+          ports:
+            - containerPort: 3306 # MySQL default port
+
+# MySQL Service (internal ClusterIP service for backend connection)
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+spec:
+  selector:
+    app: mysql
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+  clusterIP: None # Headless service for stateful applications like MySQL
+
+# Spring Boot Backend Deployment
+---
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: arsidevops-deployment
 spec:
   selector:
     matchLabels:
       app: arsidevops
-  replicas: 2 # Number of replicas that will be created for this deployment
+  replicas: 2 # Number of replicas
   template:
     metadata:
       labels:
@@ -14,23 +71,32 @@ spec:
     spec:
       containers:
         - name: arsidevops
-          image: arselenebelhayej/arsidevopss:latest # Image that will be used to containers in the cluster
+          image: arselenebelhayej/arsidevopss:latest # Image for the backend application
           imagePullPolicy: Always
           ports:
-            - containerPort: 8080 # The port that the container is running on in the cluster
+            - containerPort: 8085 # Port on which the backend app runs
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://mysql-service:3306/devops?createDatabaseIfNotExist=true
+            - name: SPRING_DATASOURCE_USERNAME
+              value: root
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: mysql-root-password
 
-
+# Spring Boot Backend Service
 ---
-
-apiVersion: v1 # Kubernetes API version
-kind: Service # Kubernetes resource kind we are creating
-metadata: # Metadata of the resource kind we are creating
-  name: arsidevops-ssvc
+apiVersion: v1
+kind: Service
+metadata:
+  name: arsidevops-service
 spec:
   selector:
     app: arsidevops
   ports:
-    - protocol: "TCP"
-      port: 8080 # The port that the service is running on in the cluster
-      targetPort: 8080 # The port exposed by the service
-  type: NodePort # type of the service.
+    - protocol: TCP
+      port: 8085
+      targetPort: 8085
+  type: ClusterIP # Set to ClusterIP for internal access within Kind
