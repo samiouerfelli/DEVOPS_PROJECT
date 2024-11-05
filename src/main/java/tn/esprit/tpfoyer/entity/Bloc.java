@@ -8,6 +8,7 @@ import lombok.experimental.FieldDefaults;
 import java.util.HashSet;
 import java.util.Set;
 
+
 @Entity
 @Getter
 @Setter
@@ -27,9 +28,10 @@ public class Bloc {
     @ManyToOne(cascade = CascadeType.ALL)
     Foyer foyer;
 
-    @OneToMany(mappedBy = "bloc", cascade = CascadeType.ALL, orphanRemoval = true) // Added orphanRemoval
+    @OneToMany(mappedBy = "bloc")
     @JsonIgnore
     @ToString.Exclude
-    Set<Chambre> chambres = new HashSet<>(); // Initialize here
+    Set<Chambre> chambres = new HashSet<>();
 
 }
+

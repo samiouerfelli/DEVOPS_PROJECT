@@ -1,21 +1,22 @@
-package tn.esprit.tpfoyer.controllers;
+package tn.esprit.tpfoyer;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import tn.esprit.tpfoyer.control.UniversiteRestController;
+
+import tn.esprit.tpfoyer.control.*;
 import tn.esprit.tpfoyer.entity.Universite;
-import tn.esprit.tpfoyer.service.IUniversiteService;
+import tn.esprit.tpfoyer.service.*;
 
 import java.util.Arrays;
-import java.util.List;
+
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
- class UniversiteRestControllerTest {
+class UniversiteRestControllerTest {
 
     @Mock
     private IUniversiteService universiteService;
@@ -26,70 +27,64 @@ import static org.mockito.Mockito.*;
     private Universite universite;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         MockitoAnnotations.openMocks(this);
-        universite = new Universite(1, "Test University", "123 Test St", null);
+        universite = new Universite();
+        universite.setIdUniversite(1L);
+        universite.setNomUniversite("Test University");
+        universite.setAdresse("123 Test Address");
     }
 
     @Test
-     void testGetUniversites() {
-        // Arrange
+    void testGetUniversites() {
         when(universiteService.retrieveAllUniversites()).thenReturn(Arrays.asList(universite));
 
-        // Act
-        List<Universite> result = universiteRestController.getUniversites();
+        var response = universiteRestController.getUniversites();
 
-        // Assert
-        assertEquals(1, result.size());
-        assertEquals(universite, result.get(0));
+        assertEquals(1, response.size());
+        assertEquals("Test University", response.get(0).getNomUniversite());
         verify(universiteService, times(1)).retrieveAllUniversites();
     }
 
     @Test
-     void testRetrieveUniversite() {
-        // Arrange
+    void testRetrieveUniversite() {
         when(universiteService.retrieveUniversite(1L)).thenReturn(universite);
 
-        // Act
-        Universite result = universiteRestController.retrieveUniversite(1L);
+        Universite found = universiteRestController.retrieveUniversite(1L);
 
-        // Assert
-        assertEquals(universite, result);
+        assertNotNull(found);
+        assertEquals("Test University", found.getNomUniversite());
         verify(universiteService, times(1)).retrieveUniversite(1L);
     }
 
     @Test
-     void testAddUniversite() {
-        // Arrange
+    void testAddUniversite() {
         when(universiteService.addUniversite(universite)).thenReturn(universite);
 
-        // Act
-        Universite result = universiteRestController.addUniversite(universite);
+        Universite created = universiteRestController.addUniversite(universite);
 
-        // Assert
-        assertEquals(universite, result);
+        assertNotNull(created);
+        assertEquals("Test University", created.getNomUniversite());
         verify(universiteService, times(1)).addUniversite(universite);
     }
 
     @Test
-     void testRemoveUniversite() {
-        // Act
+    void testRemoveUniversite() {
+        doNothing().when(universiteService).removeUniversite(1L);
+
         universiteRestController.removeUniversite(1L);
 
-        // Assert
         verify(universiteService, times(1)).removeUniversite(1L);
     }
 
     @Test
-     void testModifyUniversite() {
-        // Arrange
+    void testModifyUniversite() {
         when(universiteService.modifyUniversite(universite)).thenReturn(universite);
 
-        // Act
-        Universite result = universiteRestController.modifyUniversite(universite);
+        Universite modified = universiteRestController.modifyUniversite(universite);
 
-        // Assert
-        assertEquals(universite, result);
+        assertNotNull(modified);
+        assertEquals("Test University", modified.getNomUniversite());
         verify(universiteService, times(1)).modifyUniversite(universite);
     }
 }

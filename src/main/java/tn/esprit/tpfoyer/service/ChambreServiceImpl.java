@@ -34,7 +34,8 @@ public class ChambreServiceImpl implements IChambreService {
     }
 
     public Chambre modifyChambre(Chambre c) {
-        return chambreRepository.save(c);
+        c= chambreRepository.save(c);
+        return c;
     }
 
     public void removeChambre(Long chambreId) {

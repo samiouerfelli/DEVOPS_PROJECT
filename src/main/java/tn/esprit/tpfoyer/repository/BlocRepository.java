@@ -23,43 +23,11 @@ import java.util.List;
 @Repository
  public interface BlocRepository extends JpaRepository<Bloc, Long> {
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   // Récupérer les Blocs qui ont une capacité supérieure à 50 :
 
    List<Bloc> findAllByCapaciteBlocGreaterThan(long c);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+   // Récupérer les Blocs qui ont une capacité inférieurs à 50 :
 
     // Récupérer tous les Blocs qui ont un nom qui commence par "Bl" :
     List<Bloc> findAllByNomBlocStartingWith(String c);
@@ -80,7 +48,6 @@ import java.util.List;
        - PagingAndSortingRepository or
        - JpaRepository
      */
-
 
     Bloc findBlocByNomBlocAndCapaciteBlocGreaterThan(String nb, long c);
 

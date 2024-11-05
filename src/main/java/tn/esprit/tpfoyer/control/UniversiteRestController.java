@@ -31,6 +31,7 @@ public class UniversiteRestController {
         return universiteService.addUniversite(u);
     }
 
+
     @DeleteMapping("/remove-universite/{universite-id}")
     public void removeUniversite(@PathVariable("universite-id") Long uId) {
         universiteService.removeUniversite(uId);

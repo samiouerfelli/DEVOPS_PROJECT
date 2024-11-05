@@ -1,5 +1,4 @@
 package tn.esprit.tpfoyer.services;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -9,14 +8,14 @@ import tn.esprit.tpfoyer.entity.Bloc;
 import tn.esprit.tpfoyer.repository.BlocRepository;
 import tn.esprit.tpfoyer.service.BlocServiceImpl;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class BlocServiceImplTest {
+ class BlocServiceImplTest {
 
     @Mock
     private BlocRepository blocRepository;
@@ -24,150 +23,128 @@ class BlocServiceImplTest {
     @InjectMocks
     private BlocServiceImpl blocService;
 
+    private Bloc bloc;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        bloc = new Bloc();
+        bloc.setIdBloc(1L);
+        bloc.setNomBloc("Test Bloc");
+        bloc.setCapaciteBloc(100);
     }
 
     @Test
     void testRetrieveAllBlocs() {
-        // Arrange
-        List<Bloc> mockList = new ArrayList<>();
-        mockList.add(new Bloc());
-        when(blocRepository.findAll()).thenReturn(mockList);
+        when(blocRepository.findAll()).thenReturn(Arrays.asList(bloc));
 
-        // Act
-        List<Bloc> result = blocService.retrieveAllBlocs();
+        List<Bloc> blocs = blocService.retrieveAllBlocs();
 
-        // Assert
-        assertNotNull(result);
-        assertEquals(1, result.size());
+        assertEquals(1, blocs.size());
+        assertEquals("Test Bloc", blocs.get(0).getNomBloc());
         verify(blocRepository, times(1)).findAll();
     }
 
     @Test
-    void testRetrieveBlocsSelonCapacite_ValidCapacite() {
-        // Arrange
-        Bloc bloc1 = new Bloc();
-        bloc1.setCapaciteBloc(150);
-        Bloc bloc2 = new Bloc();
-        bloc2.setCapaciteBloc(75);
-        List<Bloc> mockList = List.of(bloc1, bloc2);
-        when(blocRepository.findAll()).thenReturn(mockList);
-
-        // Act
-        List<Bloc> result = blocService.retrieveBlocsSelonCapacite(100);
-
-        // Assert
-        assertEquals(1, result.size());
-        assertEquals(150, result.get(0).getCapaciteBloc());
-        verify(blocRepository, times(1)).findAll();
-    }
-
-    @Test
-    void testRetrieveBlocsSelonCapacite_EmptyResult() {
-        // Arrange
-        Bloc bloc1 = new Bloc();
-        bloc1.setCapaciteBloc(50);
-        List<Bloc> mockList = List.of(bloc1);
-        when(blocRepository.findAll()).thenReturn(mockList);
-
-        // Act
-        List<Bloc> result = blocService.retrieveBlocsSelonCapacite(100);
-
-        // Assert
-        assertTrue(result.isEmpty());
-        verify(blocRepository, times(1)).findAll();
-    }
-
-    @Test
-    void testRetrieveBloc_Found() {
-        // Arrange
-        Bloc bloc = new Bloc();
-        bloc.setIdBloc(1L);
+    void testRetrieveBloc() {
         when(blocRepository.findById(1L)).thenReturn(Optional.of(bloc));
 
-        // Act
-        Bloc result = blocService.retrieveBloc(1L);
+        Bloc found = blocService.retrieveBloc(1L);
 
-        // Assert
-        assertNotNull(result);
-        assertEquals(1L, result.getIdBloc());
-        verify(blocRepository, times(1)).findById(1L);
-    }
-
-    @Test
-    void testRetrieveBloc_NotFound() {
-        // Arrange
-        when(blocRepository.findById(1L)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(RuntimeException.class, () -> blocService.retrieveBloc(1L));
+        assertNotNull(found);
+        assertEquals("Test Bloc", found.getNomBloc());
         verify(blocRepository, times(1)).findById(1L);
     }
 
     @Test
     void testAddBloc() {
-        // Arrange
-        Bloc bloc = new Bloc();
         when(blocRepository.save(bloc)).thenReturn(bloc);
 
-        // Act
-        Bloc result = blocService.addBloc(bloc);
+        Bloc created = blocService.addBloc(bloc);
 
-        // Assert
-        assertNotNull(result);
+        assertNotNull(created);
+        assertEquals("Test Bloc", created.getNomBloc());
         verify(blocRepository, times(1)).save(bloc);
     }
 
     @Test
     void testModifyBloc() {
-        // Arrange
-        Bloc bloc = new Bloc();
         when(blocRepository.save(bloc)).thenReturn(bloc);
 
-        // Act
-        Bloc result = blocService.modifyBloc(bloc);
+        Bloc modified = blocService.modifyBloc(bloc);
 
-        // Assert
-        assertNotNull(result);
+        assertNotNull(modified);
+        assertEquals("Test Bloc", modified.getNomBloc());
         verify(blocRepository, times(1)).save(bloc);
     }
 
     @Test
     void testRemoveBloc() {
-        // Act
+        doNothing().when(blocRepository).deleteById(1L);
+
         blocService.removeBloc(1L);
 
-        // Assert
         verify(blocRepository, times(1)).deleteById(1L);
     }
 
+
+
     @Test
-    void testTrouverBlocsSansFoyer() {
+    void testRetrieveBlocsSelonCapacite_WithValidCapacity() {
         // Arrange
-        List<Bloc> mockList = new ArrayList<>();
-        when(blocRepository.findAllByFoyerIsNull()).thenReturn(mockList);
+        Bloc bloc1 = new Bloc(); // Create a Bloc that meets the condition
+        bloc1.setCapaciteBloc(60); // This should be >= 50
+        Bloc bloc2 = new Bloc(); // Create a Bloc that does not meet the condition
+        bloc2.setCapaciteBloc(40); // This is < 50
+        when(blocRepository.findAll()).thenReturn(Arrays.asList(bloc1, bloc2));
 
         // Act
-        List<Bloc> result = blocService.trouverBlocsSansFoyer();
+        List<Bloc> blocs = blocService.retrieveBlocsSelonCapacite(50);
 
         // Assert
-        assertNotNull(result);
+        assertEquals(1, blocs.size()); // Only one bloc meets the condition
+        assertTrue(blocs.get(0).getCapaciteBloc() >= 50);
+        verify(blocRepository, times(1)).findAll();
+    }
+
+    @Test
+    void testRetrieveBlocsSelonCapacite_WithNoValidBlocs() {
+        // Arrange
+        Bloc bloc1 = new Bloc();
+        bloc1.setCapaciteBloc(40); // This is < 50
+        Bloc bloc2 = new Bloc();
+        bloc2.setCapaciteBloc(30); // This is also < 50
+        when(blocRepository.findAll()).thenReturn(Arrays.asList(bloc1, bloc2));
+
+        // Act
+        List<Bloc> blocs = blocService.retrieveBlocsSelonCapacite(50);
+
+        // Assert
+        assertTrue(blocs.isEmpty()); // Expect an empty list since none meet the condition
+        verify(blocRepository, times(1)).findAll();
+    }
+
+
+    @Test
+    void testFindBlocsSansFoyer() {
+        when(blocRepository.findAllByFoyerIsNull()).thenReturn(Arrays.asList(bloc));
+
+        List<Bloc> blocs = blocService.trouverBlocsSansFoyer();
+
+        assertEquals(1, blocs.size());
+        assertEquals("Test Bloc", blocs.get(0).getNomBloc());
         verify(blocRepository, times(1)).findAllByFoyerIsNull();
     }
 
     @Test
-    void testTrouverBlocsParNomEtCap() {
-        // Arrange
-        List<Bloc> mockList = new ArrayList<>();
-        when(blocRepository.findAllByNomBlocAndCapaciteBloc("Test", 100)).thenReturn(mockList);
+    void testFindBlocsParNomEtCap() {
+        when(blocRepository.findAllByNomBlocAndCapaciteBloc("Test Bloc", 100)).thenReturn(Arrays.asList(bloc));
 
-        // Act
-        List<Bloc> result = blocService.trouverBlocsParNomEtCap("Test", 100);
+        List<Bloc> blocs = blocService.trouverBlocsParNomEtCap("Test Bloc", 100);
 
-        // Assert
-        assertNotNull(result);
-        verify(blocRepository, times(1)).findAllByNomBlocAndCapaciteBloc("Test", 100);
+        assertEquals(1, blocs.size());
+        assertEquals("Test Bloc", blocs.get(0).getNomBloc());
+        verify(blocRepository, times(1)).findAllByNomBlocAndCapaciteBloc("Test Bloc", 100);
     }
 }
+

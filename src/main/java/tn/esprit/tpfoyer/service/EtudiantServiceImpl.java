@@ -1,5 +1,7 @@
 package tn.esprit.tpfoyer.service;
 
+
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import tn.esprit.tpfoyer.entity.Etudiant;
 import tn.esprit.tpfoyer.repository.EtudiantRepository;
@@ -7,37 +9,32 @@ import tn.esprit.tpfoyer.repository.EtudiantRepository;
 import java.util.List;
 
 @Service
+@AllArgsConstructor
 public class EtudiantServiceImpl implements IEtudiantService {
 
-    private EtudiantRepository etudiantRepository;
 
-    @Override
-    public Etudiant addEtudiant(Etudiant etudiant) {
-        return etudiantRepository.save(etudiant);
-    }
+    EtudiantRepository etudiantRepository;
 
-    @Override
     public List<Etudiant> retrieveAllEtudiants() {
         return etudiantRepository.findAll();
     }
-
-    @Override
-    public Etudiant retrieveEtudiant(Long idEtudiant) {
-        return etudiantRepository.findById(idEtudiant).orElse(null);
+    public Etudiant retrieveEtudiant(Long etudiantId) {
+        return etudiantRepository.findById(etudiantId).get();
     }
-
-    @Override
-    public Etudiant modifyEtudiant(Etudiant etudiant) {
-        return etudiantRepository.save(etudiant);
+    public Etudiant addEtudiant(Etudiant c) {
+        return etudiantRepository.save(c);
     }
-
-    @Override
-    public void removeEtudiant(Long idEtudiant) {
-        etudiantRepository.deleteById(idEtudiant);
+    public Etudiant modifyEtudiant(Etudiant c) {
+        return etudiantRepository.save(c);
     }
-
-    @Override
-    public Etudiant recupererEtudiantParCin(Long cin) {
+    public void removeEtudiant(Long etudiantId) {
+        etudiantRepository.deleteById(etudiantId);
+    }
+    public Etudiant recupererEtudiantParCin(long cin)
+    {
         return etudiantRepository.findEtudiantByCinEtudiant(cin);
     }
+
+
+
 }
