@@ -129,72 +129,32 @@ pipeline {
             steps {
                 script {
                     def reportDir = "${WORKSPACE}/dependency-check-reports"
-                    
-                    // Debug: Show current directory and contents
-                    sh """
-                        echo "Current directory: \$(pwd)"
-                        echo "Directory contents before cleanup:"
-                        ls -la
-                        
-                        echo "Cleaning and creating report directory..."
-                        rm -rf ${reportDir} || true
-                        mkdir -p ${reportDir}
-                        chmod -R 777 ${reportDir}
-                        
-                        echo "Maven target directory contents:"
-                        ls -la target/ || echo "No target directory found"
-                    """
-                    
+
+                    // Clean and prepare report directory
+                    sh "rm -rf ${reportDir} && mkdir -p ${reportDir} && chmod -R 777 ${reportDir}"
+
                     // Run Dependency Check with optimized configuration
                     dependencyCheck(
                         additionalArguments: """--out '${reportDir}' 
-                            --scan '${WORKSPACE}' 
-                            --format XML 
-                            --format HTML 
-                            --prettyPrint 
-                            --log '${reportDir}/dependency-check.log' 
-                            --nvdApiKey 'YOUR_NVD_API_KEY' 
-                            --disableUpdates""", // Disable updates to avoid waiting
+                                                --scan '${WORKSPACE}' 
+                                                --format XML 
+                                                --format HTML 
+                                                --prettyPrint 
+                                                --log '${reportDir}/dependency-check.log' 
+                                                --nvdApiKey '${env.NVD_API_KEY}'""",
                         odcInstallation: 'OWASP-Dependency-Check'
                     )
-                    
-                    // Debug: Show generated files
-                    sh """
-                        echo "Report directory contents after scan:"
-                        ls -la ${reportDir}/
-                        
-                        if [ -f ${reportDir}/dependency-check.log ]; then
-                            echo "=== Dependency Check Log ==="
-                            cat ${reportDir}/dependency-check.log
-                            echo "==========================="
-                        fi
-                    """
                 }
             }
             post {
                 always {
                     script {
-                        echo "Starting post-build actions..."
-                        
-                        // Check if reports exist
-                        sh """
-                            for report in dependency-check-report.xml dependency-check-report.html; do
-                                if [ -f "${reportDir}/\$report" ]; then
-                                    echo "\$report exists"
-                                else
-                                    echo "\$report is missing"
-                                fi
-                            done
-                        """
+                        // Archive artifacts
+                        archiveArtifacts artifacts: "${reportDir}/**/*", allowEmptyArchive: true
 
+                        // Publish reports
                         try {
-                            // Archive artifacts first
-                            archiveArtifacts artifacts: "${reportDir}/**/*", allowEmptyArchive: true
-                            
-                            // Try to publish the report
                             dependencyCheckPublisher(pattern: "${reportDir}/dependency-check-report.xml")
-                            
-                            // Try to publish HTML report
                             publishHTML(target: [
                                 allowMissing: true,
                                 alwaysLinkToLastBuild: true,
@@ -211,16 +171,7 @@ pipeline {
                 }
                 failure {
                     script {
-                        echo "Dependency Check stage failed. Checking for logs..."
-                        sh """
-                            if [ -f "${reportDir}/dependency-check.log" ]; then
-                                echo "=== Full Dependency Check Log ==="
-                                cat "${reportDir}/dependency-check.log"
-                                echo "================================"
-                            else
-                                echo "No dependency check log file found"
-                            fi
-                        """
+                        sh "cat ${reportDir}/dependency-check.log || echo 'No dependency check log file found'"
                     }
                 }
             }
