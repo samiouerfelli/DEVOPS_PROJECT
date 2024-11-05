@@ -244,33 +244,43 @@ pipeline {
             }
         }
 
-        stage('Trivy Scan') {
+        stage('Trivy Security Scan') {
             steps {
                 script {
                     sh """
                         mkdir -p ${TRIVY_REPORT_DIR}
+                        mkdir -p ${TRIVY_CACHE_DIR}
                         
-                        # Run Trivy scan for vulnerabilities only (skip secrets for speed)
-                        trivy image \\
-                            --scanners vuln \\
-                            --severity HIGH,CRITICAL \\
-                            --format json \\
-                            --output ${TRIVY_REPORT_DIR}/report.json \\
-                            $DOCKER_IMAGE
-
-                        # Check for critical vulnerabilities and fail if exceeds threshold
-                        CRITICAL_COUNT=\$(cat ${TRIVY_REPORT_DIR}/report.json | jq -r '.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities[] | select(.Severity == "CRITICAL") | .VulnerabilityID' | wc -l)
+                        # Initialize Trivy DB if needed, with timeout protection
+                        timeout 10m trivy image --download-db-only || echo "DB download failed, will retry during scan"
                         
-                        echo "Found \$CRITICAL_COUNT critical vulnerabilities"
+                        # Run Trivy scan with automatic DB update fallback
+                        trivy image \
+                            --cache-dir ${TRIVY_CACHE_DIR} \
+                            --scanners vuln \
+                            --severity HIGH,CRITICAL \
+                            --format json \
+                            --timeout ${TRIVY_TIMEOUT} \
+                            --output ${TRIVY_REPORT_DIR}/report.json \
+                            ${DOCKER_IMAGE}
                         
-                        if [ \$CRITICAL_COUNT -gt ${MAX_CRITICAL_VULNS} ]; then
-                            echo "Failed: Too many critical vulnerabilities!"
+                        # Parse results and check against threshold
+                        if [ -f "${TRIVY_REPORT_DIR}/report.json" ]; then
+                            VULN_COUNT=\$(cat ${TRIVY_REPORT_DIR}/report.json | jq -r '[.Results[].Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length')
+                            
+                            echo "Found \${VULN_COUNT} critical vulnerabilities"
+                            
+                            if [ \${VULN_COUNT} -gt 20 ]; then
+                                echo "Security scan failed: Critical vulnerabilities (\${VULN_COUNT}) exceed threshold (20)"
+                                exit 1
+                            fi
+                        else
+                            echo "Error: Scan report not generated"
                             exit 1
                         fi
                     """
                     
-                    // Archive the report
-                    archiveArtifacts "${TRIVY_REPORT_DIR}/*"
+                    archiveArtifacts artifacts: "${TRIVY_REPORT_DIR}/*"
                 }
             }
         }
