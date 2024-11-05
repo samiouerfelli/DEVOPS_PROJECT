@@ -23,8 +23,8 @@ public class ConfigAOP {
 
     @After("execution(* tn.esprit.tpfoyer.service.*.add*(..))")
     public void logMethodOut(JoinPoint joinPoint) {
-        String name = joinPoint.getSignature().getName();
-        log.info("Execution Réussie ! ");
+        String name=joinPoint.getSignature().getName();
+        log.info("Execution Réussie ! "+name);
     }
 
     @Around("execution(* tn.esprit.tpfoyer.service.*.*(..))")
