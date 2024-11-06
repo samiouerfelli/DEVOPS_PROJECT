@@ -143,7 +143,7 @@ resource "azurerm_virtual_machine" "vm" {
 
 resource "azurerm_kubernetes_cluster" "k8s" {
   name                = "devops-k8s-cluster"
-  location            = azurerm_resource_group.DevOps_rg.location
+  location            = "eastus"
   resource_group_name = azurerm_resource_group.DevOps_rg.name
   dns_prefix          = "k8s-cluster"
 
@@ -163,10 +163,4 @@ resource "azurerm_kubernetes_cluster" "k8s" {
   }
 }
 
-resource "azurerm_kubernetes_cluster_node_pool" "additional_node_pool" {
-  name                  = "aks-pubcnodepool"
-  kubernetes_cluster_id = azurerm_kubernetes_cluster.k8s.id
-  vm_size               = "Standard_B2s"
-  node_count            = 1
-  enable_node_public_ip = true
-}
+
