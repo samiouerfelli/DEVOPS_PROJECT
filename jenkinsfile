@@ -106,7 +106,7 @@ pipeline {
                     contextName: 'devops-k8s-cluster', 
                     credentialsId: 'k8-cred', 
                     namespace: 'devops-project', 
-                    serverUrl: 'https://devops-k8s-devops-resource--8172e1-o65hj7y3.hcp.centralus.azmk8s.io:443'
+                    serverUrl: 'https://k8s-cluster-0tsrro7x.hcp.eastus.azmk8s.io:443'
                 ) {
                     sh "kubectl apply -f etudiant-dep.yml"
                 }
@@ -121,7 +121,7 @@ pipeline {
                     contextName: 'devops-k8s-cluster', 
                     credentialsId: 'k8-cred', 
                     namespace: 'devops-project', 
-                    serverUrl: 'https://devops-k8s-devops-resource--8172e1-o65hj7y3.hcp.centralus.azmk8s.io:443'
+                    serverUrl: 'https://k8s-cluster-0tsrro7x.hcp.eastus.azmk8s.io:443'
                 ) {
                     sh "kubectl get pods -n devops-project"
                     sh "kubectl get svc -n devops-project"
